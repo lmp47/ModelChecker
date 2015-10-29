@@ -39,7 +39,6 @@ import Data.ByteString.Char8 (pack, unpack, ByteString)
 import qualified Data.ByteString as BS
 import Data.Word
 import Data.Bits
-import System.Environment
 
 -- | Accepts a filepath for an AIGER (@aig@ or @aag@) file and
 -- returns the corresponding 'AigModel.Model'.
@@ -117,9 +116,9 @@ parseAig body (m:i:l:o:a:other) =
                             _ -> ([], acjfs)
       (ands, _)           = splitAt a $ removeJF ajfs other
   in
-  Model { inputs      = makeLiterals 1 (fromIntegral i)
+  Model { inputs      = makeLiterals 0 (fromIntegral $ i)
         , latches     = zipWith (:)
-                        (makeLiterals (fromIntegral $ i + 1) (fromIntegral l))
+                        (makeLiterals (fromIntegral $ i) (fromIntegral l))
                         [map litFromAiger $ pad (map read latch) 2 0 | latch <- (map words nexts)]
         , outputs     = map (litFromAiger.read) outs
         , ands        = parseAnds a (fromIntegral $ 2*(i + l)) (pack $ unlines ands) []
