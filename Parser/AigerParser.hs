@@ -1,5 +1,5 @@
 {-|
-Module : AigerParser
+Module : Parser.AigerParser
 Description: A parser for AIGER formats
 
 A parser for AIGER format
@@ -31,9 +31,9 @@ This parser disregards justice and fairness constraints
 and also disregards any symbols and comments.
 -}
 
-module AigerParser (getModelFromFile) where
+module Parser.AigerParser (getModelFromFile) where
 
-import AigModel
+import Parser.AigModel
 import Data.List.Split
 import Data.ByteString.Char8 (pack, unpack, ByteString)
 import qualified Data.ByteString as BS

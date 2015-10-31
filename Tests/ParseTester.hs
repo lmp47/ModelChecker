@@ -1,8 +1,8 @@
 -- A tester for the Aiger format readers
 
-import qualified AigerParser as This
-import qualified AigerTools as Tool
-import AigModel
+import qualified Parser.AigerParser as This
+import qualified Parser.AigerTools as Tool
+import Parser.AigModel
 import System.Directory
 import Data.List
 

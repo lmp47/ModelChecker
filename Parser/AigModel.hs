@@ -1,27 +1,27 @@
 {-|
-Module: AigModel
+Module: Parser.AigModel
 Description: A representation of AIG models
 
-A representation of AIG models
+A representation of AIG models.
 -}
 
 ---------------
 -- AIG Model --
 ---------------
 
-module AigModel ( Lit(Var, Neg, Boolean)
-                , Latch
-                , And
-                , Model( Model
-                       , inputs
-                       , latches
-                       , outputs
-                       , ands
-                       , bad
-                       , constraints
-                       )
-                , litFromAiger
-                ) where
+module Parser.AigModel ( Lit(Var, Neg, Boolean)
+                       , Latch
+                       , And
+                       , Model( Model
+                              , inputs
+                              , latches
+                              , outputs
+                              , ands
+                              , bad
+                              , constraints
+                              )
+                       , litFromAiger
+                       ) where
 
 import Data.Word
 import Data.List

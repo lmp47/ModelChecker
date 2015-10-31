@@ -1,7 +1,7 @@
 {-# LINE 1 "AigerTools.hsc" #-}
 {-|
 {-# LINE 2 "AigerTools.hsc" #-}
-Module: AigerTools
+Module: Parser.AigerTools
 Description: Alternate AIGER format parser
 
 Haskell bindings for a very small subset of @aiger.c@
@@ -11,10 +11,10 @@ files can be used)
 
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module AigerTools (getModelFromFile) where
+module Parser.AigerTools (getModelFromFile) where
 
-import AigModel (litFromAiger, Lit, Latch, And)
-import qualified AigModel as Model
+import Parser.AigModel (litFromAiger, Lit, Latch, And)
+import qualified Parser.AigModel as Model
 import Control.Monad
 import Foreign
 import Foreign.C.Types
