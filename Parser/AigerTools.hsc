@@ -30,7 +30,8 @@ getModelFromFile s = do
                      return $ getModel aiger
 
 getModel :: Aiger -> Model.Model
-getModel aiger = Model.Model { Model.inputs      = map getLit $ inputs aiger
+getModel aiger = Model.Model { Model.numVars     = numVars aiger
+                             , Model.numInputs   = numInputs aiger
                              , Model.latches     = map getLatch $ latches aiger
                              , Model.outputs     = map getLit $ outputs aiger
                              , Model.ands        = map getAnd $ ands aiger
@@ -59,7 +60,8 @@ getAnd and = [ litFromAiger $ fromIntegral $ lhs and
 
 -- The aiger_model struct datatype
 -- (with justice and fairness properties ignored)
-data Aiger = Aiger { inputs      :: [AigerLit]
+data Aiger = Aiger { numVars     :: Word
+                   , numInputs   :: Word
                    , latches     :: [AigerLatch]
                    , outputs     :: [AigerLit]
                    , ands        :: [AigerAnd]
@@ -81,7 +83,8 @@ instance Storable Aiger where
              numBad <- #{peek aiger, num_bad} ptr
              numConstraints <- #{peek aiger, num_constraints} ptr
              return Aiger
-               `ap` ((#{peek aiger, inputs} ptr) >>= peekArray (toInt numInputs))
+               `ap` (return (fromIntegral $ numInputs + numLatches + numAnds))
+               `ap` (return (fromIntegral $ numInputs))
                `ap` ((#{peek aiger, latches} ptr) >>= peekArray (toInt numLatches))
                `ap` ((#{peek aiger, outputs} ptr) >>= peekArray (toInt numOutputs))
                `ap` ((#{peek aiger, ands} ptr) >>= peekArray (toInt numAnds))

@@ -10,7 +10,8 @@ isPerm :: (Eq a, Ord a) => [a] -> [a] -> Bool
 isPerm l1 l2 = ((sort l1) == (sort $ l1 `intersect` l2))
 
 instance Eq Model where
-  (==) m1 m2 = (inputs m1) `isPerm` (inputs m2)                   &&
+  (==) m1 m2 = (numVars m1) == (numVars m2)                       &&
+               (numInputs m1) == (numInputs m2)                   &&
                (latches m1) `isPerm` (latches m2)                 &&
                (outputs m1) `isPerm` (outputs m2)                 &&
                (map sort $ ands m1) `isPerm` (map sort $ ands m2) &&
@@ -39,7 +40,10 @@ test filepath =
   print $  "Testing parser on examples/" ++ filepath
   if (model1 /= model2) then
     do -- todo: more helpful output
-    print ("Different Inputs: " ++ show ((inputs model1) \\ (inputs model2)))
+    print ("Different Variable Counts: " ++
+          (show $ numVars model1) ++ ", " ++ (show $ numVars model2))
+    print ("Different Input Counts: " ++
+          (show $ numInputs model1) ++ ", " ++ (show $ numInputs model2))
     print ("Different Latches: " ++ show ((latches model1) \\ (latches model2)))
     print ("Different Outputs: " ++ show ((outputs model1) \\ (outputs model2)))
     print ("Different Ands: " ++

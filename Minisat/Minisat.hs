@@ -15,9 +15,10 @@ module Minisat.Minisat ( Solver
                        , getVarValue
                        , addClause
                        , addClauses
-                       , solve ) where
+                       , solve
+                       , solveWithAssumps ) where
 
-import Parser.AigModel (Lit(Var, Neg), Latch, And)
+import Model.Model
 import Foreign
 import Foreign.C.Types
 import Foreign.C.String
@@ -27,7 +28,7 @@ import Foreign.C.String
 -----------------------
 
 -- | Adds variables 0 to n-1 to the solver.
-addVars :: Solver -> Int -> IO ()
+addVars :: Solver -> Word -> IO ()
 addVars solver n =
   if n > 0 then do
     newMinisatVar solver (fromIntegral $ n - 1) 0
@@ -35,7 +36,7 @@ addVars solver n =
   else return ()
 
 -- | Prints variables 0 to n-1 in the solver.
-printVars :: Solver -> Int -> IO ()
+printVars :: Solver -> Word -> IO ()
 printVars solver n =
   let k = fromIntegral $ n - 1 in
   do
@@ -44,11 +45,40 @@ printVars solver n =
   if (k /= 0) then printVars solver (n - 1) else return ()
 
 -- | Get the value of a variable in the solver.
-getVarValue :: Solver -> Int -> IO (Int)
+getVarValue :: Solver -> Word -> IO (Int)
 getVarValue solver n =
   do
   val <- valueMinisatVar solver (fromIntegral n)
   return $ fromIntegral val
+
+-- | Add a clause to a veclit
+addToVecLit :: Ptr MinisatVecLit -> [Lit] -> IO ()
+addToVecLit veclit clause =
+  case clause of
+  [] -> return ()
+  (v:vs) -> do
+            case v of
+              Var int ->
+                pushMinisatVar
+                veclit
+                (fromIntegral (int * 2))
+                (fromIntegral 1)
+              Neg int ->
+                pushMinisatVar
+                veclit
+                (fromIntegral (int * 2))
+                (fromIntegral 0)
+              Var' int ->
+                pushMinisatVar
+                veclit
+                (fromIntegral $ (int * 2) + 1)
+                (fromIntegral 1)
+              Neg' int ->
+                pushMinisatVar
+                veclit
+                (fromIntegral $ (int * 2) + 1)
+                (fromIntegral 0)
+            addToVecLit veclit vs
 
 -- | Add a clause to a solver.
 addClause :: Solver -> [Lit] -> IO CInt
@@ -59,32 +89,10 @@ addClause solver clause =
   addMinisatClause solver veclit
   deleteMinisatVecLit veclit
   return $ fromIntegral 0
-  where
-  addToVecLit veclit clause =
-    case clause of
-    [] -> return ()
-    (v:vs) -> do
-              case v of
-                Var int ->
-                  pushMinisatVar
-                  veclit
-                  (fromIntegral int)
-                  (fromIntegral 1)
-                Neg int ->
-                  pushMinisatVar
-                  veclit
-                  (fromIntegral int)
-                  (fromIntegral 0)
-              addToVecLit veclit vs
 
 -- | Add a list of clauses to a solver.
-addClauses :: Solver -> [[Lit]] -> IO ()
-addClauses solver clauses =
-  case clauses of
-  [] -> return ()
-  (c:cs) -> do
-            addClause solver c
-            addClauses solver cs
+addClauses :: Solver -> ([[Lit]] -> IO ())
+addClauses solver = mapM_ (addClause solver)
 
 -- | Have a solver solve with the clauses that have been added.
 solve :: Solver -> IO Bool
@@ -95,6 +103,21 @@ solve solver =
   then return False
   else do
        res <- solveMinisat solver
+       return $ res /= 0
+
+-- | Have a solver solve with the clauses that have been added
+-- along with given assumptions
+solveWithAssumps :: Solver -> [Lit] -> IO Bool
+solveWithAssumps solver assumps =
+  do
+  ok <- simplifyMinisat solver
+  if ok == 0
+  then return False
+  else do
+       veclit <- newMinisatVecLit
+       addToVecLit veclit assumps
+       addMinisatClause solver veclit
+       res <- solveMinisatWithAssumps solver veclit
        return $ res /= 0
 
 --------------------
@@ -131,8 +154,8 @@ foreign import ccall unsafe "addMinisatClause"
 foreign import ccall unsafe "simplifyMinisat"
   simplifyMinisat :: Solver -> IO CInt
 
-foreign import ccall unsafe "solveMinisatWithAssumptions"
-  solveMinisatWithAssumptions :: Solver -> Ptr MinisatVecLit -> IO CInt
+foreign import ccall unsafe "solveMinisatWithAssumps"
+  solveMinisatWithAssumps :: Solver -> Ptr MinisatVecLit -> IO CInt
 
 foreign import ccall unsafe "solveMinisat"
   solveMinisat :: Solver -> IO CInt

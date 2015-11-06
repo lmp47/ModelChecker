@@ -34,7 +34,8 @@ getModelFromFile s = do
                      return $ getModel aiger
 
 getModel :: Aiger -> Model.Model
-getModel aiger = Model.Model { Model.inputs      = map getLit $ inputs aiger
+getModel aiger = Model.Model { Model.numVars     = numVars aiger
+                             , Model.numInputs   = numInputs aiger
                              , Model.latches     = map getLatch $ latches aiger
                              , Model.outputs     = map getLit $ outputs aiger
                              , Model.ands        = map getAnd $ ands aiger
@@ -63,7 +64,8 @@ getAnd and = [ litFromAiger $ fromIntegral $ lhs and
 
 -- The aiger_model struct datatype
 -- (with justice and fairness properties ignored)
-data Aiger = Aiger { inputs      :: [AigerLit]
+data Aiger = Aiger { numVars     :: Word
+                   , numInputs   :: Word
                    , latches     :: [AigerLatch]
                    , outputs     :: [AigerLit]
                    , ands        :: [AigerAnd]
@@ -74,37 +76,37 @@ data Aiger = Aiger { inputs      :: [AigerLit]
 instance Storable Aiger where
 
   alignment _ = 8 --alignment (undefined :: CInt)
-{-# LINE 73 "AigerTools.hsc" #-}
+{-# LINE 75 "AigerTools.hsc" #-}
 
   sizeOf _ = (112)
-{-# LINE 75 "AigerTools.hsc" #-}
+{-# LINE 77 "AigerTools.hsc" #-}
 
   peek ptr = do
              numInputs <- (\hsc_ptr -> peekByteOff hsc_ptr 4) ptr
-{-# LINE 78 "AigerTools.hsc" #-}
-             numLatches <- (\hsc_ptr -> peekByteOff hsc_ptr 8) ptr
-{-# LINE 79 "AigerTools.hsc" #-}
-             numOutputs <- (\hsc_ptr -> peekByteOff hsc_ptr 12) ptr
 {-# LINE 80 "AigerTools.hsc" #-}
-             numAnds <- (\hsc_ptr -> peekByteOff hsc_ptr 16) ptr
+             numLatches <- (\hsc_ptr -> peekByteOff hsc_ptr 8) ptr
 {-# LINE 81 "AigerTools.hsc" #-}
-             numBad <- (\hsc_ptr -> peekByteOff hsc_ptr 20) ptr
+             numOutputs <- (\hsc_ptr -> peekByteOff hsc_ptr 12) ptr
 {-# LINE 82 "AigerTools.hsc" #-}
-             numConstraints <- (\hsc_ptr -> peekByteOff hsc_ptr 24) ptr
+             numAnds <- (\hsc_ptr -> peekByteOff hsc_ptr 16) ptr
 {-# LINE 83 "AigerTools.hsc" #-}
-             return Aiger
-               `ap` (((\hsc_ptr -> peekByteOff hsc_ptr 40) ptr) >>= peekArray (toInt numInputs))
+             numBad <- (\hsc_ptr -> peekByteOff hsc_ptr 20) ptr
+{-# LINE 84 "AigerTools.hsc" #-}
+             numConstraints <- (\hsc_ptr -> peekByteOff hsc_ptr 24) ptr
 {-# LINE 85 "AigerTools.hsc" #-}
+             return Aiger
+               `ap` (return (fromIntegral $ numInputs + numLatches + numAnds))
+               `ap` (return (fromIntegral $ numInputs))
                `ap` (((\hsc_ptr -> peekByteOff hsc_ptr 48) ptr) >>= peekArray (toInt numLatches))
-{-# LINE 86 "AigerTools.hsc" #-}
-               `ap` (((\hsc_ptr -> peekByteOff hsc_ptr 56) ptr) >>= peekArray (toInt numOutputs))
-{-# LINE 87 "AigerTools.hsc" #-}
-               `ap` (((\hsc_ptr -> peekByteOff hsc_ptr 96) ptr) >>= peekArray (toInt numAnds))
-{-# LINE 88 "AigerTools.hsc" #-}
-               `ap` (((\hsc_ptr -> peekByteOff hsc_ptr 64) ptr) >>= peekArray (toInt numBad))
 {-# LINE 89 "AigerTools.hsc" #-}
-               `ap` (((\hsc_ptr -> peekByteOff hsc_ptr 72) ptr) >>= peekArray (toInt numConstraints))
+               `ap` (((\hsc_ptr -> peekByteOff hsc_ptr 56) ptr) >>= peekArray (toInt numOutputs))
 {-# LINE 90 "AigerTools.hsc" #-}
+               `ap` (((\hsc_ptr -> peekByteOff hsc_ptr 96) ptr) >>= peekArray (toInt numAnds))
+{-# LINE 91 "AigerTools.hsc" #-}
+               `ap` (((\hsc_ptr -> peekByteOff hsc_ptr 64) ptr) >>= peekArray (toInt numBad))
+{-# LINE 92 "AigerTools.hsc" #-}
+               `ap` (((\hsc_ptr -> peekByteOff hsc_ptr 72) ptr) >>= peekArray (toInt numConstraints))
+{-# LINE 93 "AigerTools.hsc" #-}
              where
                toInt :: CUInt -> Int
                toInt = fromIntegral
@@ -121,17 +123,17 @@ data AigerLit = AigerLit CUInt
 instance Storable AigerLit where
 
   alignment _ = 8
-{-# LINE 106 "AigerTools.hsc" #-}
+{-# LINE 109 "AigerTools.hsc" #-}
 
   sizeOf _ = (32)
-{-# LINE 108 "AigerTools.hsc" #-}
+{-# LINE 111 "AigerTools.hsc" #-}
 
   peek ptr = return AigerLit `ap` ((\hsc_ptr -> peekByteOff hsc_ptr 0) ptr)
-{-# LINE 110 "AigerTools.hsc" #-}
+{-# LINE 113 "AigerTools.hsc" #-}
 
   poke ptr (AigerLit int) = do
     (\hsc_ptr -> pokeByteOff hsc_ptr 0) ptr int
-{-# LINE 113 "AigerTools.hsc" #-}
+{-# LINE 116 "AigerTools.hsc" #-}
 
 -- AigerLatch
 data AigerLatch = AigerLatch { lit   :: CUInt
@@ -142,26 +144,26 @@ data AigerLatch = AigerLatch { lit   :: CUInt
 instance Storable AigerLatch where
 
   alignment _ = 8
-{-# LINE 123 "AigerTools.hsc" #-}
+{-# LINE 126 "AigerTools.hsc" #-}
 
   sizeOf _ = (32)
-{-# LINE 125 "AigerTools.hsc" #-}
+{-# LINE 128 "AigerTools.hsc" #-}
 
   peek ptr = return AigerLatch
              `ap` ((\hsc_ptr -> peekByteOff hsc_ptr 0) ptr)
-{-# LINE 128 "AigerTools.hsc" #-}
+{-# LINE 131 "AigerTools.hsc" #-}
              `ap` ((\hsc_ptr -> peekByteOff hsc_ptr 4) ptr)
-{-# LINE 129 "AigerTools.hsc" #-}
+{-# LINE 132 "AigerTools.hsc" #-}
              `ap` ((\hsc_ptr -> peekByteOff hsc_ptr 8) ptr)
-{-# LINE 130 "AigerTools.hsc" #-}
+{-# LINE 133 "AigerTools.hsc" #-}
   
   poke ptr latch = do
     (\hsc_ptr -> pokeByteOff hsc_ptr 0) ptr $ lit(latch)
-{-# LINE 133 "AigerTools.hsc" #-}
+{-# LINE 136 "AigerTools.hsc" #-}
     (\hsc_ptr -> pokeByteOff hsc_ptr 4) ptr $ next(latch)
-{-# LINE 134 "AigerTools.hsc" #-}
+{-# LINE 137 "AigerTools.hsc" #-}
     (\hsc_ptr -> pokeByteOff hsc_ptr 8) ptr $ reset(latch)
-{-# LINE 135 "AigerTools.hsc" #-}
+{-# LINE 138 "AigerTools.hsc" #-}
 
 -- The aiger_and struct datatype
 data AigerAnd = AigerAnd { lhs  :: CUInt
@@ -172,26 +174,26 @@ data AigerAnd = AigerAnd { lhs  :: CUInt
 instance Storable AigerAnd where
 
   alignment _ = 4
-{-# LINE 145 "AigerTools.hsc" #-}
+{-# LINE 148 "AigerTools.hsc" #-}
   
   sizeOf _ = (12)
-{-# LINE 147 "AigerTools.hsc" #-}
+{-# LINE 150 "AigerTools.hsc" #-}
 
   peek ptr = return AigerAnd
              `ap` ((\hsc_ptr -> peekByteOff hsc_ptr 0) ptr)
-{-# LINE 150 "AigerTools.hsc" #-}
+{-# LINE 153 "AigerTools.hsc" #-}
              `ap` ((\hsc_ptr -> peekByteOff hsc_ptr 4) ptr)
-{-# LINE 151 "AigerTools.hsc" #-}
+{-# LINE 154 "AigerTools.hsc" #-}
              `ap` ((\hsc_ptr -> peekByteOff hsc_ptr 8) ptr)
-{-# LINE 152 "AigerTools.hsc" #-}
+{-# LINE 155 "AigerTools.hsc" #-}
 
   poke ptr and = do
     (\hsc_ptr -> pokeByteOff hsc_ptr 0) ptr $ lhs(and)
-{-# LINE 155 "AigerTools.hsc" #-}
+{-# LINE 158 "AigerTools.hsc" #-}
     (\hsc_ptr -> pokeByteOff hsc_ptr 4) ptr $ rhs0(and)
-{-# LINE 156 "AigerTools.hsc" #-}
+{-# LINE 159 "AigerTools.hsc" #-}
     (\hsc_ptr -> pokeByteOff hsc_ptr 8) ptr $ rhs1(and)
-{-# LINE 157 "AigerTools.hsc" #-}
+{-# LINE 160 "AigerTools.hsc" #-}
 
 -----------------
 -- C Functions --

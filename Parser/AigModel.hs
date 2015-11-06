@@ -13,7 +13,8 @@ module Parser.AigModel ( Lit(Var, Neg, Boolean)
                        , Latch
                        , And
                        , Model( Model
-                              , inputs
+                              , numVars
+                              , numInputs
                               , latches
                               , outputs
                               , ands
@@ -36,7 +37,8 @@ type Latch = [Lit]
 type And = [Lit]
 
 -- | A representation of an AIG model
-data Model = Model { inputs      :: [Lit]
+data Model = Model { numVars     :: Word
+                   , numInputs   :: Word
                    , latches     :: [Latch]
                    , outputs     :: [Lit]
                    , ands        :: [And]

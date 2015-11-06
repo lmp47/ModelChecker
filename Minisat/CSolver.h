@@ -12,7 +12,7 @@ extern "C" int addMinisatClause (Minisat::Solver* solver, Minisat::vec<Minisat::
 
 extern "C" int simplifyMinisat (Minisat::Solver* solver);
 
-extern "C" int solveMinisatWithAssumptions (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
+extern "C" int solveMinisatWithAssumps (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
 
 extern "C" int solveMinisat (Minisat::Solver* solver);
 

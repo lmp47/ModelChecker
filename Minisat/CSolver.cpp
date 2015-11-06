@@ -33,7 +33,7 @@ extern "C" int simplifyMinisat (Minisat::Solver* solver) {
   return solver -> simplify(); //returns bool
 }
 
-extern "C" int solveMinisatWithAssumptions (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps) {
+extern "C" int solveMinisatWithAssumps (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps) {
   return solver -> solve(*assumps); //returns bool
 }
 

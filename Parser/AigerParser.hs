@@ -82,7 +82,7 @@ parseAiger file =
 -- | A parser for ASCII AIGER format (.aag)
 parseAag :: [String] -> [Int] -> Model
 parseAag body (m:i:l:o:a:other) =
-  let (ins, loabcjfs)     = splitAt i body
+  let loabcjfs            = drop i body
       (latches, oabcjfs)  = splitAt l loabcjfs
       (outs, abcjfs)      = splitAt o oabcjfs
       (bad, acjfs)        = case other of
@@ -93,7 +93,8 @@ parseAag body (m:i:l:o:a:other) =
                             _ -> ([], acjfs)
       (ands, _)           = splitAt a $ removeJF ajfs other
   in 
-    Model { inputs      = map (litFromAiger.read) ins
+    Model { numVars     = fromIntegral m
+          , numInputs   = fromIntegral i
           , latches     = [map litFromAiger $ pad (map read latch) 3 0 | latch <- (map words latches)]
           , outputs     = map (litFromAiger.read) outs
           , ands        = [map (litFromAiger.read) and | and <- (map words ands)]
@@ -116,7 +117,8 @@ parseAig body (m:i:l:o:a:other) =
                             _ -> ([], acjfs)
       (ands, _)           = splitAt a $ removeJF ajfs other
   in
-  Model { inputs      = makeLiterals 0 (fromIntegral $ i)
+  Model { numVars     = fromIntegral m
+        , numInputs   = fromIntegral i
         , latches     = zipWith (:)
                         (makeLiterals (fromIntegral $ i) (fromIntegral l))
                         [map litFromAiger $ pad (map read latch) 2 0 | latch <- (map words nexts)]
