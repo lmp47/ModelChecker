@@ -12,6 +12,7 @@ module Minisat.Minisat ( Solver
                        , addVars
                        , printVars
                        , getVarValue
+                       , getLiterals
                        , addClause
                        , addClauses
                        , solve
@@ -23,6 +24,7 @@ import Foreign.C.Types
 import Foreign.C.String
 import Foreign.ForeignPtr
 import System.IO.Unsafe
+import Control.Monad
 
 -----------------------
 -- Wrapper Functions --
@@ -42,10 +44,11 @@ addVars solver' n =
   return solver
   where
   addVars' n solver =
-    if n > 0 then do
-      newMinisatVar solver (fromIntegral $ n - 1) 0
-      addVars' (n - 1) solver
-    else return solver
+    if n > 0
+      then do
+        newMinisatVar solver (fromIntegral $ n - 1) 0
+        addVars' (n - 1) solver
+      else return solver
 
 -- | Prints variables 0 to n - 1 in the solver.
 printVars :: Solver -> Word -> IO ()
@@ -53,9 +56,9 @@ printVars solver' n =
   let k = fromIntegral $ n - 1 in
   do
   solver <- solver'
-  int <- withForeignPtr solver (\x -> valueMinisatVar x k)
-  print $ "Value of var " ++ (show k) ++ ": " ++ (show $ fromIntegral int)
-  if (k /= 0) then printVars solver' (n - 1) else return ()
+  int <- withForeignPtr solver (`valueMinisatVar` k)
+  print $ "Value of var " ++ show k ++ ": " ++ show (fromIntegral int)
+  when (k /= 0) $ printVars solver' (n - 1)
 
 -- | Get the value of a variable in the solver.
 getVarValue :: Solver -> Word -> Int
@@ -65,6 +68,18 @@ getVarValue solver' n = unsafePerformIO res
         solver <- solver'
         val <- withForeignPtr solver (\x -> valueMinisatVar x (fromIntegral n))
         return $ fromIntegral val
+
+-- | Get the true literals in the solver.
+getLiterals :: Solver -> Word -> [Lit]
+getLiterals solver' n = getLits (n - 1)
+  where
+  getLits 0 = []
+  getLits k = case (k `rem` 2, getVarValue solver' k ) of
+              (0,0) -> Neg  (k `div` 2) : getLits (k - 1)
+              (0,1) -> Var  (k `div` 2) : getLits (k - 1)
+              (1,0) -> Neg' (k `div` 2) : getLits (k - 1)
+              (1,1) -> Var' (k `div` 2) : getLits (k - 1)
+              _     -> getLits (k - 1)
 
 -- | Add a clause to a veclit
 addToVecLit :: Ptr MinisatVecLit -> [Lit] -> IO ()
@@ -100,17 +115,16 @@ addClause :: Solver -> [Lit] -> Solver
 addClause solver' c =
   do
   solver <- solver'
-  withForeignPtr solver (\x -> addClause' x c)
+  withForeignPtr solver (`addClause'` c)
   return solver
 
 -- | Add a list of clauses to a solver.
-addClauses :: Solver -> ([[Lit]] -> Solver)
+addClauses :: Solver -> [[Lit]] -> Solver 
 addClauses solver' cs = 
   do
   solver <- solver'
   withForeignPtr solver (\x -> mapM_ (addClause' x) cs)
   return solver
-
 
 addClause' :: Ptr MinisatSolver -> [Lit] -> IO (Ptr MinisatSolver)
 addClause' solver clause =
@@ -121,7 +135,6 @@ addClause' solver clause =
   deleteMinisatVecLit veclit
   return solver
 
-
 -- | Have a solver solve with the clauses that have been added.
 solve :: Solver -> Bool
 solve solver' = unsafePerformIO res
@@ -131,11 +144,10 @@ solve solver' = unsafePerformIO res
     solver <- solver'
     ok <- withForeignPtr solver simplifyMinisat
     if ok == 0
-    then return False
-    else do
-         res <- withForeignPtr solver solveMinisat
-         return $ res /= 0
-
+      then return False
+      else do
+        res <- withForeignPtr solver solveMinisat
+        return $ res /= 0
 
 -- | Have a solver solve with the clauses that have been added
 -- along with given assumptions
@@ -146,22 +158,20 @@ solveWithAssumps solver' assumps = unsafePerformIO res
         solver <- solver'
         ok <- withForeignPtr solver simplifyMinisat
         if ok == 0
-        then return False
-        else withForeignPtr solver
-             (\solver ->
-             do
-             veclit <- newMinisatVecLit
-             addToVecLit veclit assumps
-             addMinisatClause solver veclit
-             res <- solveMinisatWithAssumps solver veclit
-             return $ res /= 0)
+          then return False
+          else withForeignPtr solver
+            (\solver ->
+            do
+            veclit <- newMinisatVecLit
+            addToVecLit veclit assumps
+            addMinisatClause solver veclit
+            res <- solveMinisatWithAssumps solver veclit
+            return $ res /= 0)
 
 
 --------------------
 -- Relevant Types --
 --------------------
-
---type Solver = Ptr MinisatSolver
 
 data MinisatSolver = MinisatSolver
 

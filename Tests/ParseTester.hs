@@ -38,18 +38,18 @@ test filepath =
   model1 <- This.getModelFromFile $ "examples/" ++ filepath
   model2 <- Tool.getModelFromFile $ "examples/" ++ filepath
   print $  "Testing parser on examples/" ++ filepath
-  if (model1 /= model2) then
-    do -- todo: more helpful output
-    print ("Different Variable Counts: " ++
-          (show $ numVars model1) ++ ", " ++ (show $ numVars model2))
-    print ("Different Input Counts: " ++
-          (show $ numInputs model1) ++ ", " ++ (show $ numInputs model2))
-    print ("Different Latches: " ++ show ((latches model1) \\ (latches model2)))
-    print ("Different Outputs: " ++ show ((outputs model1) \\ (outputs model2)))
-    print ("Different Ands: " ++
-           show ((map sort $ ands model1) \\ (map sort $ ands model2)))
-    print ("Different Bad:" ++ show ((bad model1) \\ (bad model2)))
-    print ("Different Constraints: " ++
-           show ((constraints model1) \\ (constraints model2)))
-    error "Failed test."
-  else return ()
+  if (model1 /= model2)
+    then do
+      print ("Different Variable Counts: " ++
+            (show $ numVars model1) ++ ", " ++ (show $ numVars model2))
+      print ("Different Input Counts: " ++
+            (show $ numInputs model1) ++ ", " ++ (show $ numInputs model2))
+      print ("Different Latches: " ++ show ((latches model1) \\ (latches model2)))
+      print ("Different Outputs: " ++ show ((outputs model1) \\ (outputs model2)))
+      print ("Different Ands: " ++
+             show ((map sort $ ands model1) \\ (map sort $ ands model2)))
+      print ("Different Bad:" ++ show ((bad model1) \\ (bad model2)))
+      print ("Different Constraints: " ++
+             show ((constraints model1) \\ (constraints model2)))
+      error "Failed test."
+    else return ()

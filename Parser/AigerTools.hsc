@@ -19,7 +19,7 @@ import Foreign.C.Types
 import Foreign.C.String
 import System.Environment
 
-#include "../aiger/aiger.h"
+#include "aiger/aiger.h"
 #let alignment t = "%lu", (unsigned long)offsetof(struct {char x__; t (y__); }, y__)
 
 -- | Accepts a filepath for an AIGER (@aig@ or @aag@) file and returns the
