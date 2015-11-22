@@ -29,4 +29,4 @@ test filepath =
   print $  "Testing algorithm on simple/" ++ filepath
   let model = toModel aigModel
   print $ "Safety property: " ++ show (safe $ model)
-  prove model (safe $ model) []
+  print $ show $ prove model (safe $ model)

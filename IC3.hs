@@ -1,8 +1,14 @@
+{- |
+Module : IC3
+Description : Model checking algorithm
+-}
+
 module IC3 ( prove ) where
 
 import Model.Model
 import Minisat.Minisat
 import Data.Word
+import System.IO.Unsafe
 
 data Frame = Frame { solver  :: Solver
                    , clauses :: [Clause] }
@@ -17,39 +23,68 @@ getFrame vars clauses = Frame { solver = addClauses (addVars newSolver vars) cla
 addTransitionToFrame f' model = Frame { solver = addClauses (solver f') (transition model)
                                       , clauses = clauses f' }
 
-prove :: Model -> Lit -> [Frame] -> IO ()
-prove model prop frames =
-  case initiation model prop frames of
-    Just frame -> do
-                  res <- consecution model prop [frame]
-                  if res then print "Proven." else print "Not proven."
-    Nothing -> print "Cannot prove."
+-- todo?: Return separate result if failure occurs in the initiation step
 
+-- | Given a model and a safety property, checks if the model satisfies the property
+prove :: Model -> Lit -> Bool
+prove model prop = unsafePerformIO ((print (show $ initial model)) >> return (fst $ prove' model prop [] False))
+
+prove' :: Model -> Lit -> [Frame] -> Bool -> (Bool, [Frame])
+prove' model prop frames lim =
+  case initiation model prop frames of
+    Just frame -> unsafePerformIO (print "prove' called" >> return (consecution model prop (frame:rest) lim))
+    Nothing -> unsafePerformIO (print "initiation failed" >> return (False, frames))
+  where
+  rest = case frames of
+         (f:fs) -> fs
+         _ -> []
+
+-- | Initiation phase of the algorithm
 initiation :: Model -> Lit -> [Frame] -> Maybe Frame
 initiation model prop frames =
   case frames of
     [] -> base (addTransitionToFrame (getFrame (vars model) $ initial model) model) prop
-    fs -> base (fs !! (length fs - 1)) prop
+    f:fs -> base f prop
 
-consecution :: Model -> Lit -> [Frame] -> IO Bool
-consecution model prop frames =
-  case frames of
-  (f:fs) -> if nextHas f [prop]
-            then do
-                 print $ "Frame " ++ show (length frames)
-                 case push f model of
-                   (True, _) -> return True
-                   (False, f') -> consecution model prop (f':f:fs)
-            else printVars (solver f) (vars model) >> error "Not handled yet."
-              -- getCTI frame
+-- | Consecution phase of the algorithm (calls subsequent consecution queries for
+-- other frames)
+consecution :: Model -> Lit -> [Frame] -> Bool -> (Bool, [Frame])
+consecution model prop frames lim =
+  consec frames []
+  where
+  consec [] acc = (False, acc)
+  consec (f:fs) acc =
+    if nextHas f [prop]
+    then
+      case (lim, fs) of
+      (True, [])  -> (True, acc ++ [f])
+      (False, []) -> pushFrame f (getFrame (vars model) []) acc fs
+      (_, f':fs')  -> pushFrame f f' acc fs'
+    else
+      proveOne (getCTI f (vars model)) (acc)
+  pushFrame f f' acc fs =
+      case push f model f' of
+      (True, _) -> (True, acc ++ (f:f':fs))
+      (False, f'') -> consec (f'':fs) (acc ++ [f])
+  -- Can prove at least one of the Lits in the first argument?
+  proveOne :: [Lit] -> [Frame] -> (Bool, [Frame])
+  proveOne [] fs = (False, fs)
+  proveOne _ [] = (False, [])
+  proveOne (l:ls) fs =
+    case prove' model l fs True of
+      (True, fs') -> (True, fs')
+      (False, fs') -> proveOne ls fs'
 
+-- | Get a counterexample to induction state
 getCTI :: Frame -> Word -> [Lit]
-getCTI frame numVars = map neg $ getLiterals (solver frame) numVars
+getCTI frame numVars =
+  let res = getLiterals (solver frame) numVars in
+    unsafePerformIO (print ("CTI: " ++ (show $ map neg res)) >> return res)
 
 -- Push clauses to next frame
-push :: Frame -> Model -> (Bool, Frame)
-push f model =
-  pusher (clauses f) True (getFrame (vars model) [])
+push :: Frame -> Model -> Frame -> (Bool, Frame)
+push f model frame =
+  pusher (clauses f) True frame
   where
   pusher (c:cs) b f' = 
     if nextHas f c

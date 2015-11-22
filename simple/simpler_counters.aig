@@ -1,0 +1,15 @@
+aig 9 0 3 1 6
+3
+5
+19
+6
+
+
+l0 w
+l1 x0
+l2 x1
+o0 o
+c
+bliftoaig
+1.9
+simple_counters.blif
