@@ -16,7 +16,15 @@ extern "C" int solveMinisatWithAssumps (Minisat::Solver* solver, Minisat::vec<Mi
 
 extern "C" int solveMinisat (Minisat::Solver* solver);
 
-extern "C" int valueMinisatVar (Minisat::Solver* solver, Minisat::Var var);
+extern "C" int* getMinisatConflictVec (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
+
+extern "C" int getMinisatConflictSize (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
+
+extern "C" int valueMinisatLit (Minisat::Lit lit);
+
+extern "C" int varMinisatLit (Minisat::Lit lit);
+
+extern "C" int valueMinisatVar (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps,Minisat::Var var);
 
 extern "C" Minisat::vec<Minisat::Lit>* newMinisatVecLit (void);
 

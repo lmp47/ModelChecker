@@ -11,11 +11,11 @@ library
   default-language: Haskell2010
   includes: Parser/aiger/aiger.h
   c-sources: Parser/aiger/aiger.c
-  include-dirs: ./Minisat, ./Tests, ./Parser
+  include-dirs: ./Minisat, ./Test, ./Parser
   extra-libraries: stdc++
 
 executable parseTest
-  main-is: Tests/ParseTester.hs
+  main-is: Test/ParseTester.hs
   other-modules: Parser.AigerParser, Parser.AigerTools, Parser.AigModel
   build-depends: base, split, bytestring, directory
   default-language: Haskell2010
@@ -23,7 +23,7 @@ executable parseTest
   c-sources: Parser/aiger/aiger.c
 
 executable minisatTest
-  main-is: Tests/MinisatTester.hs
+  main-is: Test/MinisatTester.hs
   other-modules: Minisat.Minisat, Model.Model
   build-depends: base
   default-language: Haskell2010
@@ -34,8 +34,31 @@ executable minisatTest
   extra-libraries: stdc++
 
 executable ic3Test
-  main-is: Tests/IC3Tester.hs
+  main-is: Test/IC3Tester.hs
   build-depends: base, split, bytestring, directory
+  default-language: Haskell2010
+  c-sources: Parser/aiger/aiger.c,
+    Minisat/CSolver.cpp,
+    Minisat/minisat/minisat/core/Solver.cc,
+    Minisat/minisat/minisat/utils/System.cc,
+    Minisat/minisat/minisat/utils/Options.cc
+  extra-libraries: stdc++
+
+Test-Suite tests
+  type: detailed-0.9
+  test-module: Test.Tests
+  other-modules: Parser.AigerParser
+               , Parser.AigModel
+               , Model.Model
+               , Minisat.Minisat
+               , IC3
+  build-depends: base
+               , split
+               , bytestring
+               , directory
+               , Cabal
+               , HUnit
+               , cabal-test-hunit
   default-language: Haskell2010
   c-sources: Parser/aiger/aiger.c,
     Minisat/CSolver.cpp,

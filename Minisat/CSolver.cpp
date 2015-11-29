@@ -38,12 +38,30 @@ extern "C" int solveMinisatWithAssumps (Minisat::Solver* solver, Minisat::vec<Mi
 }
 
 extern "C" int solveMinisat (Minisat::Solver* solver) {
-  bool res = solver -> solve();
   return solver -> solve(); //returns bool
 }
 
-extern "C" int valueMinisatVar (Minisat::Solver* solver, Minisat::Var var) {
-  Minisat::lbool value = solver -> value(var);
+extern "C" int* getMinisatConflictVec (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps) {
+  solver -> solve(*assumps);
+  return (int*) &((solver -> conflict).toVec()[0]);
+}
+
+extern "C" int getMinisatConflictSize (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps) {
+  solver -> solve(*assumps);
+  return (solver -> conflict).size();
+}
+
+extern "C" int valueMinisatLit (Minisat::Lit lit) {
+  return Minisat::sign(lit);
+}
+
+extern "C" int varMinisatLit (Minisat::Lit lit) {
+  return Minisat::var(lit);
+}
+
+extern "C" int valueMinisatVar (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps, Minisat::Var var) {
+  solver -> solve(*assumps);
+  Minisat::lbool value = (solver -> model)[var];
   return Minisat::toInt(value);
 }
 

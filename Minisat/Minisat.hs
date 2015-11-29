@@ -13,6 +13,8 @@ module Minisat.Minisat ( Solver
                        , printVars
                        , getVarValue
                        , getLiterals
+                       , getUnassigned
+                       , getConflictWithAssumps
                        , addClause
                        , addClauses
                        , solve
@@ -25,6 +27,7 @@ import Foreign.C.String
 import Foreign.ForeignPtr
 import System.IO.Unsafe
 import Control.Monad
+import Foreign.Marshal.Array
 
 -----------------------
 -- Wrapper Functions --
@@ -56,30 +59,48 @@ printVars solver' n =
   let k = fromIntegral $ n - 1 in
   do
   solver <- solver'
-  int <- withForeignPtr solver (`valueMinisatVar` k)
+  veclit <- newMinisatVecLit
+  int <- withForeignPtr solver (\x -> valueMinisatVar x veclit k)
   print $ "Value of var " ++ show k ++ ": " ++ show (fromIntegral int)
   when (k /= 0) $ printVars solver' (n - 1)
 
 -- | Get the value of a variable in the solver.
-getVarValue :: Solver -> Word -> Int
-getVarValue solver' n = unsafePerformIO res
+getVarValue :: Solver -> [Lit] -> Word -> Int
+getVarValue solver' assumps n = unsafePerformIO res
   where
   res = do
+        return $ solve solver'
         solver <- solver'
-        val <- withForeignPtr solver (\x -> valueMinisatVar x (fromIntegral n))
+        veclit <- newMinisatVecLit
+        addToVecLit veclit assumps
+        val <- withForeignPtr solver (\x -> valueMinisatVar x veclit (fromIntegral n))
         return $ fromIntegral val
 
 -- | Get the true literals in the solver.
-getLiterals :: Solver -> Word -> [Lit]
-getLiterals solver' n = getLits (n - 1)
+getLiterals :: Solver -> [Lit] -> Word -> [Lit]
+getLiterals solver' assumps n = getLits (n - 1)
   where
-  getLits 0 = []
-  getLits k = case (k `rem` 2, getVarValue solver' k ) of
-              (0,0) -> Neg  (k `div` 2) : getLits (k - 1)
-              (0,1) -> Var  (k `div` 2) : getLits (k - 1)
-              (1,0) -> Neg' (k `div` 2) : getLits (k - 1)
-              (1,1) -> Var' (k `div` 2) : getLits (k - 1)
-              _     -> getLits (k - 1)
+  getLits k = case getLit k (getVarValue solver' assumps k) of
+              Nothing -> if k == 0 then [] else getLits (k - 1)
+              Just l  -> if k == 0 then [l] else l:getLits (k - 1)
+  getLit k val = case (k `rem` 2, val) of
+                  (0,0) -> Just (Neg  (k `div` 2))
+                  (0,1) -> Just (Var  (k `div` 2))
+                  (1,0) -> Just (Neg' (k `div` 2))
+                  (1,1) -> Just (Var' (k `div` 2))
+                  _     -> Nothing
+
+-- | Get the unassigned variables in the solver.
+getUnassigned :: Solver -> [Lit] -> Word -> [Lit]
+getUnassigned solver' assumps n = getLits (n - 1)
+  where
+  getLits k = case getLit k (getVarValue solver' assumps k) of
+              (Nothing) -> if k == 0 then [] else getLits (k - 1)
+              (Just l ) -> if k == 0 then [l] else l:getLits (k - 1)
+  getLit k val = case (k `rem` 2, val) of
+                  (0,2) -> Just (Neg  (k `div` 2))
+                  (1,2) -> Just (Neg' (k `div` 2))
+                  _     -> Nothing
 
 -- | Add a clause to a veclit
 addToVecLit :: Ptr MinisatVecLit -> [Lit] -> IO ()
@@ -92,22 +113,22 @@ addToVecLit veclit clause =
                 pushMinisatVar
                 veclit
                 (fromIntegral (int * 2))
-                (fromIntegral 1)
+                1
               Neg int ->
                 pushMinisatVar
                 veclit
                 (fromIntegral (int * 2))
-                (fromIntegral 0)
+                0
               Var' int ->
                 pushMinisatVar
                 veclit
                 (fromIntegral $ (int * 2) + 1)
-                (fromIntegral 1)
+                1
               Neg' int ->
                 pushMinisatVar
                 veclit
                 (fromIntegral $ (int * 2) + 1)
-                (fromIntegral 0)
+                0
             addToVecLit veclit vs
 
 -- | Add a clause to a solver.
@@ -168,6 +189,30 @@ solveWithAssumps solver' assumps = unsafePerformIO res
             res <- solveMinisatWithAssumps solver veclit
             return $ res /= 0)
 
+-- | Get unsat core
+getConflictWithAssumps :: Solver -> [Lit] -> Maybe [Lit]
+getConflictWithAssumps solver assumps =
+  if solveWithAssumps solver assumps
+    then Nothing
+    else Just (unsafePerformIO conflict)
+  where
+  conflict = solver >>= (`withForeignPtr` getLits)
+  getLits ptr = do
+    veclit <- newMinisatVecLit
+    addToVecLit veclit assumps
+    vec <- getMinisatConflictVec ptr veclit
+    size <- getMinisatConflictSize ptr veclit
+    liftM (map fromMinisatLit) (peekArray (fromIntegral size) vec)
+  fromMinisatLit mLit = unsafePerformIO (
+    do
+    var <- liftM fromIntegral (varMinisatLit mLit) 
+    val <- liftM fromIntegral (valueMinisatLit mLit)
+    case (var `mod` 2 == 0, val == 0) of
+      (True, True)   -> return $ Var  (var `div` 2)
+      (True, False)  -> return $ Neg  (var `div` 2)
+      (False, True)  -> return $ Var' (var `div` 2)
+      (False, False) -> return $ Neg' (var `div` 2)
+    )
 
 --------------------
 -- Relevant Types --
@@ -175,7 +220,9 @@ solveWithAssumps solver' assumps = unsafePerformIO res
 
 data MinisatSolver = MinisatSolver
 
-data MinisatVecLit = MinisatVecLit
+type MinisatVecLit = [CInt]
+
+type MinisatLit = CInt
 
 type MinisatVar = CInt
 
@@ -207,8 +254,20 @@ foreign import ccall unsafe "solveMinisatWithAssumps"
 foreign import ccall unsafe "solveMinisat"
   solveMinisat :: Ptr MinisatSolver -> IO CInt
 
+foreign import ccall unsafe "getMinisatConflictVec"
+  getMinisatConflictVec :: Ptr MinisatSolver -> Ptr MinisatVecLit -> IO (Ptr CInt)
+
+foreign import ccall unsafe "getMinisatConflictSize"
+  getMinisatConflictSize :: Ptr MinisatSolver -> Ptr MinisatVecLit -> IO CInt
+
+foreign import ccall unsafe "valueMinisatLit"
+  valueMinisatLit :: MinisatLit -> IO CInt
+
+foreign import ccall unsafe "varMinisatLit"
+  varMinisatLit :: MinisatLit -> IO MinisatVar
+
 foreign import ccall unsafe "valueMinisatVar"
-  valueMinisatVar :: Ptr MinisatSolver -> CInt -> IO CInt
+  valueMinisatVar :: Ptr MinisatSolver -> Ptr MinisatVecLit -> CInt -> IO CInt
 
 foreign import ccall unsafe "newMinisatVecLit"
   newMinisatVecLit :: IO (Ptr MinisatVecLit)

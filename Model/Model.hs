@@ -8,7 +8,8 @@ module Model.Model ( Model (vars, initial, transition, safe)
                    , Clause
                    , toModel
                    , prime
-                   , neg ) where
+                   , neg
+                   , currentNext ) where
 
 import qualified Parser.AigModel as Aig
 import Data.Word
@@ -33,6 +34,7 @@ toLit lit =
 toNegLit :: Aig.Lit -> Lit
 toNegLit = neg.toLit
 
+-- | Negate a literal
 neg :: Lit -> Lit
 neg lit =
   case lit of
@@ -41,12 +43,24 @@ neg lit =
   Var' l -> Neg' l
   Neg' l -> Var' l
 
+-- | Convert an unprimed literal into a primed one
 prime :: Lit -> Lit
 prime lit =
   case lit of
   Var l -> Var' l
   Neg l -> Neg' l
   _     -> error ("Cannot prime a prime: " ++ show lit)
+
+-- | Split a list of literals into unprimed and primed lists of literals
+currentNext :: [Lit] -> ([Lit], [Lit])
+currentNext ls = cn ls [] []
+  where
+  cn [] curr next = (curr, next)
+  cn (l:ls) curr next =
+    case l of
+    Var _ -> cn ls (l:curr) next
+    Neg _ -> cn ls (l:curr) next
+    _     -> cn ls curr (l:next)
 
 -- | Turn 'Parser.AigModel.Model's into transition systems with a safety property
 toModel :: Aig.Model -> Model
@@ -62,9 +76,9 @@ toModel m =
   gates  = makeAnds $ Aig.ands m
   gates' = map (map prime) gates
   initial m =
-    latches ++ gates ++ map (\x -> [toLit x]) (Aig.constraints m)
+    latches ++ map (\x -> [toLit x]) (Aig.constraints m)
   transition m =
-    ins' ++ latches' ++ gates'
+    ins' ++ latches' ++ gates' ++ gates
   badprops = Aig.bad m
   outprops = Aig.outputs m
   prop | not (null badprops) = head badprops
