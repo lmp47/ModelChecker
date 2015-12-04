@@ -1,0 +1,37 @@
+.model counters
+.inputs
+.outputs o
+.latch w0p w0 0
+.names w0 w0p
+0 1
+.latch w1p w1 0
+.names w1 w0 w1p
+01 1
+10 1
+.latch w2p w 0
+.names w w1 w0 w2p
+011 1
+10- 1
+110 1
+.latch x0p x0 0
+.names x0 x0p
+0 1
+.latch x1p x1 0
+.names x1 x0 w x1p
+010 1
+100 1
+001 1
+111 1
+.latch x2p x2 0
+.names x2 x1 x0 w x2p
+0110 1
+10-0 1
+1100 1
+1110 0
+0001 1
+1-11 1
+11-1 1
+.names x2 x1 x0 o
+11- 1
+1-1 1
+.end

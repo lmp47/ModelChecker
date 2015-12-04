@@ -25,31 +25,25 @@ type Clause = [Lit]
 
 
 toLit :: Aig.Lit -> Lit
-toLit lit =
-  case lit of
-  Aig.Var l -> Var l
-  Aig.Neg l -> Neg l
-  _         -> error "Cannot get Lit from Boolean"
+toLit (Aig.Var l) = Var l
+toLit (Aig.Neg l) = Neg l
+toLit _           = error "Cannot get Lit from Boolean"
 
 toNegLit :: Aig.Lit -> Lit
 toNegLit = neg.toLit
 
 -- | Negate a literal
 neg :: Lit -> Lit
-neg lit =
-  case lit of
-  Var l  -> Neg  l
-  Neg l  -> Var  l
-  Var' l -> Neg' l
-  Neg' l -> Var' l
+neg (Var l)  = Neg  l
+neg (Neg l)  = Var  l
+neg (Var' l) = Neg' l
+neg (Neg' l) = Var' l
 
 -- | Convert an unprimed literal into a primed one
 prime :: Lit -> Lit
-prime lit =
-  case lit of
-  Var l -> Var' l
-  Neg l -> Neg' l
-  _     -> error ("Cannot prime a prime: " ++ show lit)
+prime (Var l) = Var' l
+prime (Neg l) = Neg' l
+prime lit   = error ("Cannot prime a prime: " ++ show lit)
 
 -- | Split a list of literals into unprimed and primed lists of literals
 currentNext :: [Lit] -> ([Lit], [Lit])
