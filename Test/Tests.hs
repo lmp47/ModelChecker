@@ -17,7 +17,7 @@ ic3Test = TestList ( map simpleTest
   [ ("simple1.aag", False), ("simple2.aag", True), ("simple3.aag", True)
   , ("simple4.aag", True), ("simple5.aag", False), ("simple6.aag", False)
   , ("simple7.aag", False), ("simpler_counters.aig", True)
-  , ("simple_counters.aig", True) ] )
+  , ("simple_counters.aig", True), ("counters3.aig", True) ] )
 
 simpleTest :: ([Char], Bool) -> Test
 simpleTest (name, bool) =
