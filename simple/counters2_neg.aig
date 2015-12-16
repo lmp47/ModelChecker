@@ -1,0 +1,16 @@
+aig 13 0 4 1 9
+3
+15
+7
+27
+18
+
+l0 w0
+l1 w
+l2 x0
+l3 x1
+o0 o
+c
+bliftoaig
+1.9
+counters2_neg.blif
