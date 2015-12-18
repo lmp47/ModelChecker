@@ -49,12 +49,12 @@ prime lit   = error ("Cannot prime a prime: " ++ show lit)
 currentNext :: [Lit] -> ([Lit], [Lit])
 currentNext ls = cn ls [] []
   where
-  cn [] curr next = (curr, next)
-  cn (l:ls) curr next =
-    case l of
-    Var _ -> cn ls (l:curr) next
-    Neg _ -> cn ls (l:curr) next
-    _     -> cn ls curr (l:next)
+    cn [] curr next = (curr, next)
+    cn (l:ls) curr next =
+      case l of
+      Var _ -> cn ls (l:curr) next
+      Neg _ -> cn ls (l:curr) next
+      _     -> cn ls curr (l:next)
 
 -- | Turn 'Parser.AigModel.Model's into transition systems with a safety property
 toModel :: Aig.Model -> Model
@@ -64,20 +64,20 @@ toModel m =
         , transition = transition m
         , safe = neg $ toLit prop}
   where
-  vars = 2 * Aig.numVars m
-  ins' = makePrimeInputs $ Aig.numInputs m
-  (latches, latches') = makeLatches $ Aig.latches m
-  gates  = makeAnds $ Aig.ands m
-  gates' = map (map prime) gates
-  initial m =
-    latches ++ map (\x -> [toLit x]) (Aig.constraints m)
-  transition m =
-    ins' ++ latches' ++ gates' ++ gates
-  badprops = Aig.bad m
-  outprops = Aig.outputs m
-  prop | not (null badprops) = head badprops
-       | not (null outprops) = head outprops
-       | otherwise = error "No property to prove."
+    vars = 2 * Aig.numVars m
+    ins' = makePrimeInputs $ Aig.numInputs m
+    (latches, latches') = makeLatches $ Aig.latches m
+    gates  = makeAnds $ Aig.ands m
+    gates' = map (map prime) gates
+    initial m =
+      latches ++ map (\x -> [toLit x]) (Aig.constraints m)
+    transition m =
+      ins' ++ latches' ++ gates' ++ gates
+    badprops = Aig.bad m
+    outprops = Aig.outputs m
+    prop | not (null badprops) = head badprops
+         | not (null outprops) = head outprops
+         | otherwise = error "No property to prove."
 
 -- Inputs
 -- in <==> in'
@@ -85,7 +85,7 @@ makePrimeInputs :: Word -> [Clause]
 makePrimeInputs numIns =
   if numIns > 0 then foldl1 (++) inputs' else [] 
   where
-  inputs' = [[[Var' input, Neg input], [Neg' input, Var input]] | input <- [0..(numIns - 1)]]
+    inputs' = [[[Var' input, Neg input], [Neg' input, Var input]] | input <- [0..(numIns - 1)]]
 
 -- Latches
 -- next <=> latch' = (next ==> latch') and (latch' ==> next)
@@ -98,13 +98,13 @@ makeLatches ([Aig.Var latch, next, init]:ls) =
   Aig.Boolean False -> (inits, [Neg' latch]:primes)
   _ -> (inits, [Var' latch, toNegLit next]:[Neg' latch, toLit next]:primes)
   where
-  rest = makeLatches ls
-  initRest = fst rest
-  primes = snd rest
-  inits = case init of
-          Aig.Boolean True  -> [Var latch]:initRest
-          Aig.Boolean False -> [Neg latch]:initRest
-          _ -> initRest
+    rest = makeLatches ls
+    initRest = fst rest
+    primes = snd rest
+    inits = case init of
+            Aig.Boolean True  -> [Var latch]:initRest
+            Aig.Boolean False -> [Neg latch]:initRest
+            _ -> initRest
 makeLatches [] = ([],[])
 
 -- Ands
@@ -114,10 +114,10 @@ makeLatches [] = ([],[])
 makeAnds :: [Aig.And] -> [Clause]
 makeAnds ([Aig.Var gate, in1, in2]:as) = and ++ rest
   where
-  and = case (in1, in2) of
-        (Aig.Boolean b1, Aig.Boolean b2) -> if b1 && b2 then [[Var gate]] else [[Neg gate]]
-        (Aig.Boolean b1, _) -> if b1 then [[Neg gate, toLit in2], [toNegLit in2, Var gate]] else [[Neg gate]]
-        (_, Aig.Boolean b2) -> if b2 then [[Neg gate, toLit in1], [toNegLit in1, Var gate]] else [[Neg gate]]
-        _ -> [[Neg gate, toLit in1], [Neg gate, toLit in2], [toNegLit in1, toNegLit in2, Var gate]]
-  rest = makeAnds as
+    and = case (in1, in2) of
+          (Aig.Boolean b1, Aig.Boolean b2) -> if b1 && b2 then [[Var gate]] else [[Neg gate]]
+          (Aig.Boolean b1, _) -> if b1 then [[Neg gate, toLit in2], [toNegLit in2, Var gate]] else [[Neg gate]]
+          (_, Aig.Boolean b2) -> if b2 then [[Neg gate, toLit in1], [toNegLit in1, Var gate]] else [[Neg gate]]
+          _ -> [[Neg gate, toLit in1], [Neg gate, toLit in2], [toNegLit in1, toNegLit in2, Var gate]]
+    rest = makeAnds as
 makeAnds [] = []

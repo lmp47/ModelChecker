@@ -33,7 +33,7 @@ prove model prop =
 -- | Get the smallest set of states given the current clauses
 getSmallest :: Model -> Frame -> Frame
 getSmallest model frame =
-  addTransitionToFrame (getFrame (vars model) (map (:[]) $ fst $ currentNext $ getLiterals (solver frame) [] (vars model))) model
+  addTransitionToFrame (getFrame (vars model) (map (:[]) $ fst $ currentNext $ getLiterals (solver frame) [])) model
 
 -- | Initiation phase of the algorithm
 initiation :: Model -> Clause -> [Frame] -> Maybe Frame
@@ -52,7 +52,7 @@ consecution model prop frame =
       then
         pushFrame f (getFrame (vars model) []) acc
       else
-        case ctiFound f (map neg $ getCTI f model prop) acc [prop] of
+        case ctiFound f (map neg $ getCTI f prop) acc [prop] of
           (True, f', acc') -> (clauses f' /= clauses f) && consec f' acc'
           (False, f', acc') -> False
     pushFrame f f' acc =
@@ -70,9 +70,9 @@ consecution model prop frame =
               then (True, f', acc')
             else nextCTI f' acc' negCTI p
     nextCTI frame acc negCTI p =
-      case getConflictWithAssumps (solver (addTransitionToFrame (getFrame (vars model) (map prime p:map prime negCTI:negCTI:(clauses frame))) model)) [] of
+      case getConflictWithAssumps (solver (addTransitionToFrame (getFrame (vars model) (map prime p:map prime negCTI:negCTI:clauses frame)) model)) [] of
         Just cex -> case ctiFound (last acc) (map neg cex) (take (length acc - 1) acc) negCTI of
-                      (True, f, fs) -> if nextHas f p then (True, (addClauseToFrame frame negCTI), fs ++ [f]) else (False, f, fs) -- need to push @ higher levels
+                      (True, f, fs) -> if nextHas f p then (True, addClauseToFrame frame negCTI, fs ++ [f]) else (False, f, fs) -- need to push @ higher levels
                       false -> false
         _        -> error ("Failing query succeeded: " ++ show (clauses frame) ++ " and " ++ show negCTI)
     -- Prove as many literals in the negated CTI clause as possible
@@ -81,22 +81,22 @@ consecution model prop frame =
       case initiation model clause acc of
         Nothing -> Nothing
         Just i  -> if nextHas (last acc) clause
-                     then Just (i:(map (\x -> addClauseToFrame x clause) (tail acc)), (addClauseToFrame f clause))
+                     then Just (i:map (`addClauseToFrame` clause) (tail acc), addClauseToFrame f clause)
                      else Nothing
 
 -- | Get a counterexample to induction state as a conjunction of literals
-getCTI :: Frame -> Model -> Lit -> [Lit]
-getCTI frame model prop =
+getCTI :: Frame -> Lit -> [Lit]
+getCTI frame prop =
     [x | x <- badCurrent, [x] `notElem` clauses frame]
   where
     -- Get unassigned variables
-    unassigned = getUnassigned (solver frame) [prime $ neg prop] (vars model)
+    unassigned = getUnassigned (solver frame) [prime $ neg prop]
     -- Assign the unassigned variables to get a single state
     assign cs = case getConflictWithAssumps (solver frame) (prime (neg prop):cs) of
                 Just (cl:cls) -> assign $ neg cl:filter (/= cl) cs
                 Nothing -> cs
     -- A single bad state
-    bad = getLiterals (solver frame) (prime (neg prop):assign unassigned) (vars model)
+    bad = getLiterals (solver frame) (prime (neg prop):assign unassigned)
     -- The bad assignments in the current state
     badCurrent = fst (currentNext bad)
 

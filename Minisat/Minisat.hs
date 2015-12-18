@@ -33,54 +33,63 @@ import Foreign.Marshal.Array
 -- Wrapper Functions --
 -----------------------
 
-type Solver = IO (ForeignPtr MinisatSolver)
+data Solver = Solver { solver  :: IO (ForeignPtr MinisatSolver)
+                     , numVars :: Word }
 
 newSolver :: Solver
-newSolver = newMinisatSolver >>= newForeignPtr deleteMinisatSolver
+newSolver = Solver { solver = newMinisatSolver >>= newForeignPtr deleteMinisatSolver
+                   , numVars = 0 }
 
 -- | Adds variables 0 to n - 1 to the solver.
 addVars :: Solver -> Word -> Solver
-addVars solver' n =
-  do
-  solver <- solver'
-  withForeignPtr solver (addVars' n)
-  return solver
+addVars s n =
+  Solver { solver  = addVars' (solver s) n
+         , numVars = max (numVars s) n }
   where
-  addVars' n solver =
-    if n > 0
-      then do
-        newMinisatVar solver (fromIntegral $ n - 1) 0
-        addVars' (n - 1) solver
-      else return solver
+    addVars' solver' n =
+      do
+      solver <- solver'
+      withForeignPtr solver (addVars'' n)
+      return solver
+    addVars'' n solver =
+      if n > 0
+        then do
+          newMinisatVar solver (fromIntegral $ n - 1) 0
+          addVars'' (n - 1) solver
+        else return solver
 
--- | Prints variables 0 to n - 1 in the solver.
-printVars :: Solver -> Word -> IO ()
-printVars solver' n =
-  let k = fromIntegral $ n - 1 in
-  do
-  solver <- solver'
-  veclit <- newMinisatVecLit
-  int <- withForeignPtr solver (\x -> valueMinisatVar x veclit k)
-  print $ "Value of var " ++ show k ++ ": " ++ show (fromIntegral int)
-  when (k /= 0) $ printVars solver' (n - 1)
+-- | Prints all the variables in the solver.
+printVars :: Solver -> IO ()
+printVars s =
+  printVars' (solver s) (numVars s)
+  where
+    printVars' :: IO (ForeignPtr MinisatSolver) -> Word -> IO ()
+    printVars' s n =
+      let k = fromIntegral $ n - 1 in
+      do
+      solver' <- s
+      veclit <- newMinisatVecLit
+      int <- withForeignPtr solver' (\x -> valueMinisatVar x veclit k)
+      print $ "Value of var " ++ show k ++ ": " ++ show (fromIntegral int)
+      when (k /= 0) $ printVars' s (n - 1)
 
 -- | Get the value of a variable in the solver.
 getVarValue :: Solver -> [Lit] -> Word -> Int
-getVarValue solver' assumps n = unsafePerformIO res
+getVarValue s assumps n = unsafePerformIO res
   where
-  res = do
-        return $ solve solver'
-        solver <- solver'
-        veclit <- newMinisatVecLit
-        addToVecLit veclit assumps
-        val <- withForeignPtr solver (\x -> valueMinisatVar x veclit (fromIntegral n))
-        return $ fromIntegral val
+    res = do
+          return $ solve s
+          solver' <- solver s
+          veclit <- newMinisatVecLit
+          addToVecLit veclit assumps
+          val <- withForeignPtr solver' (\x -> valueMinisatVar x veclit (fromIntegral n))
+          return $ fromIntegral val
 
 -- | Get the true literals in the solver.
-getLiterals :: Solver -> [Lit] -> Word -> [Lit]
-getLiterals solver' assumps n = getLits (n - 1)
+getLiterals :: Solver -> [Lit] -> [Lit]
+getLiterals s assumps = getLits (numVars s - 1)
   where
-  getLits k = case getLit k (getVarValue solver' assumps k) of
+  getLits k = case getLit k (getVarValue s assumps k) of
               Nothing -> if k == 0 then [] else getLits (k - 1)
               Just l  -> if k == 0 then [l] else l:getLits (k - 1)
   getLit k val = case (k `rem` 2, val) of
@@ -91,10 +100,10 @@ getLiterals solver' assumps n = getLits (n - 1)
                   _     -> Nothing
 
 -- | Get the unassigned variables in the solver.
-getUnassigned :: Solver -> [Lit] -> Word -> [Lit]
-getUnassigned solver' assumps n = getLits (n - 1)
+getUnassigned :: Solver -> [Lit] -> [Lit]
+getUnassigned s assumps = getLits (numVars s - 1)
   where
-  getLits k = case getLit k (getVarValue solver' assumps k) of
+  getLits k = case getLit k (getVarValue s assumps k) of
               (Nothing) -> if k == 0 then [] else getLits (k - 1)
               (Just l ) -> if k == 0 then [l] else l:getLits (k - 1)
   getLit k val = case (k `rem` 2, val) of
@@ -133,19 +142,23 @@ addToVecLit veclit clause =
 
 -- | Add a clause to a solver.
 addClause :: Solver -> [Lit] -> Solver
-addClause solver' c =
-  do
-  solver <- solver'
-  withForeignPtr solver (`addClause'` c)
-  return solver
+addClause s c =
+  Solver { solver =
+             do
+             solver' <- solver s
+             withForeignPtr solver' (`addClause'` c)
+             return solver'
+         , numVars = numVars s }
 
 -- | Add a list of clauses to a solver.
 addClauses :: Solver -> [[Lit]] -> Solver 
-addClauses solver' cs = 
-  do
-  solver <- solver'
-  withForeignPtr solver (\x -> mapM_ (addClause' x) cs)
-  return solver
+addClauses s cs = 
+  Solver { solver = 
+             do
+             solver' <- solver s
+             withForeignPtr solver' (\x -> mapM_ (addClause' x) cs)
+             return solver'
+         , numVars = numVars s }
 
 addClause' :: Ptr MinisatSolver -> [Lit] -> IO (Ptr MinisatSolver)
 addClause' solver clause =
@@ -158,29 +171,29 @@ addClause' solver clause =
 
 -- | Have a solver solve with the clauses that have been added.
 solve :: Solver -> Bool
-solve solver' = unsafePerformIO res
+solve s = unsafePerformIO res
   where
   res =
     do
-    solver <- solver'
-    ok <- withForeignPtr solver simplifyMinisat
+    solver' <- solver s
+    ok <- withForeignPtr solver' simplifyMinisat
     if ok == 0
       then return False
       else do
-        res <- withForeignPtr solver solveMinisat
+        res <- withForeignPtr solver' solveMinisat
         return $ res /= 0
 
 -- | Have a solver solve with the clauses that have been added
 -- along with given assumptions
 solveWithAssumps :: Solver -> [Lit] -> Bool
-solveWithAssumps solver' assumps = unsafePerformIO res
+solveWithAssumps s assumps = unsafePerformIO res
   where
   res = do
-        solver <- solver'
-        ok <- withForeignPtr solver simplifyMinisat
+        solver' <- solver s
+        ok <- withForeignPtr solver' simplifyMinisat
         if ok == 0
           then return False
-          else withForeignPtr solver
+          else withForeignPtr solver'
             (\solver ->
             do
             veclit <- newMinisatVecLit
@@ -191,12 +204,12 @@ solveWithAssumps solver' assumps = unsafePerformIO res
 
 -- | Get unsat core
 getConflictWithAssumps :: Solver -> [Lit] -> Maybe [Lit]
-getConflictWithAssumps solver assumps =
-  if solveWithAssumps solver assumps
+getConflictWithAssumps s assumps =
+  if solveWithAssumps s assumps
     then Nothing
     else Just (unsafePerformIO conflict)
   where
-  conflict = solver >>= (`withForeignPtr` getLits)
+  conflict = solver s >>= (`withForeignPtr` getLits)
   getLits ptr = do
     veclit <- newMinisatVecLit
     addToVecLit veclit assumps
