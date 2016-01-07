@@ -32,9 +32,18 @@ extern "C" int addMinisatClause (Minisat::Solver* solver, Minisat::vec<Minisat::
 extern "C" int simplifyMinisat (Minisat::Solver* solver) {
   return solver -> simplify(); //returns bool
 }
-
-extern "C" int solveMinisatWithAssumps (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps) {
-  return solver -> solve(*assumps); //returns bool
+extern "C" result *solveMinisatWithAssumps (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps) {
+  res.solved = solver -> solve(*assumps); //returns bool
+  if (res.solved) {
+    res.conflictSize = 0;
+  }
+  else {
+    res.conflictSize = (solver -> conflict).size();
+  }
+  res.modelSize = (solver -> model).size();
+  res.model = &((solver -> model)[0]);
+  res.conflict = (Minisat::Lit*) &((solver -> conflict).toVec()[0]);
+  return &res;
 }
 
 extern "C" int solveMinisat (Minisat::Solver* solver) {
@@ -60,7 +69,8 @@ extern "C" int varMinisatLit (Minisat::Lit lit) {
 }
 
 extern "C" int valueMinisatVar (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps, Minisat::Var var) {
-  solver -> solve(*assumps);
+  res.solved = solver -> solve(*assumps);
+ // std::cout << "vMVSolved: " << res.solved << std::endl;
   Minisat::lbool value = (solver -> model)[var];
   return Minisat::toInt(value);
 }

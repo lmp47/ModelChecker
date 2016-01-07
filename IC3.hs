@@ -41,64 +41,93 @@ initiation model prop [] =
     base (getSmallest model $ addTransitionToFrame (getFrame (vars model) $ initial model) model) prop
 initiation model prop (f:fs) = base f prop
 
+-- | Print the clauses per frame in the provided list of frames
+printFrames :: [Frame] -> IO ()
+printFrames [f] = print (show $ clauses f)
+printFrames (f:fs) = print ("Frame " ++ (show $ length fs)) >> print (show $ clauses f) >> printFrames fs
+printFrames [] = print "No frames in list."
+
 -- | Consecution phase of the algorithm (calls subsequent consecution queries for
 -- other frames)
 consecution :: Model -> Lit -> Frame -> Bool
 consecution model prop frame =
-  consec frame []
+  consec frame [] 20
   where
-    consec f acc =
+    -- Limit n on the number of times consec can be invoked
+    consec f acc 0 = unsafePerformIO (
+                      do
+                       return (propagate (acc ++ [f]))
+                       printFrames (reverse $ acc ++ [f])
+                       error "Limit of consec invocations reached." )
+    consec f acc n =
       if nextHas f [prop]
-      then
-        pushFrame f (getFrame (vars model) []) acc
+      then pushFrame f (getFrame (vars model) []) acc n
       else
-        case ctiFound f (map neg $ getCTI f prop) acc [prop] of
-          (True, f', acc') -> (clauses f' /= clauses f) && consec f' acc'
-          (False, f', acc') -> False
-    pushFrame f f' acc =
+        let cti = nextCTI f [prop] model in
+          case ctiFound f (fst $ currentNext cti) acc [prop] of
+            (True, f', acc') -> if (clauses f' /= clauses f)
+                                  then case propagate (acc' ++ [f']) of
+                                    Just fs -> consec (fs !! (length fs - 1)) (take (length fs - 1) fs) (n - 1)
+                                    Nothing -> True
+                                  else False
+            (False, f', acc') -> False
+    pushFrame f f' acc n =
         case push f model f' of
         (True, _) -> True
-        (False, f'') -> consec f'' (acc ++ [f])
+        (False, f'') -> consec f'' (acc ++ [f]) (n - 1)
+    propagate (f:f':frames) =
+      case push f model f' of
+        (True, f'') -> Nothing
+        (False, f'') -> case propagate (f'':frames) of
+                          Just fs -> Just (f:fs)
+                          Nothing -> Nothing
+    propagate frames = Just frames
     -- Try to prove CTI unreachable at current depth, given the negated CTI
+    {-# NOINLINE ctiFound #-}
     ctiFound f _ [] p = (False, f, [])
-    ctiFound f negCTI acc p =
-      case proveNegCTI negCTI acc f of
-        Nothing -> nextCTI f acc negCTI p
-        Just (acc', f'') ->
-          let f' = snd (push (last acc') model f'') in
-            if nextHas f' p
-              then (True, f', acc')
-            else nextCTI f' acc' negCTI p
-    nextCTI frame acc negCTI p =
-      case getConflictWithAssumps (solver (addTransitionToFrame (getFrame (vars model) (map prime p:map prime negCTI:negCTI:clauses frame)) model)) [] of
-        Just cex -> case ctiFound (last acc) (map neg cex) (take (length acc - 1) acc) negCTI of
-                      (True, f, fs) -> if nextHas f p then (True, addClauseToFrame frame negCTI, fs ++ [f]) else (False, f, fs) -- need to push @ higher levels
-                      false -> false
-        _        -> error ("Failing query succeeded: " ++ show (clauses frame) ++ " and " ++ show negCTI)
-    -- Prove as many literals in the negated CTI clause as possible
-    proveNegCTI :: Clause -> [Frame] -> Frame -> Maybe ([Frame], Frame)
-    proveNegCTI clause acc f =
-      case initiation model clause acc of
-        Nothing -> Nothing
-        Just i  -> if nextHas (last acc) clause
-                     then Just (i:map (`addClauseToFrame` clause) (tail acc), addClauseToFrame f clause)
-                     else Nothing
+    ctiFound f cti acc p =
+      if ( satisfiable (solveWithAssumps (solver (addTransitionToFrame (getFrame (vars model) (map neg cti:clauses (head acc))) model)) (map prime cti)) ||
+           not (satisfiable (solve (solver (addTransitionToFrame (getFrame (vars model) (map neg cti:clauses (head acc))) model )))))
+        then (False, f, acc)
+        else case pushCTI (map neg cti) acc f of
+               (Nothing, acc', f', []) -> if nextHas f' p
+                                           then (True, f', acc')
+                                           else ctiFound f' (fst (currentNext (nextCTI f' p model))) acc' p
+               (Just model, acc', f', fs) -> case ctiFound f' (fst (currentNext model)) acc' (map neg cti) of
+                                               (True, f'', acc'') -> (ctiFound f cti (acc'' ++ f'':(take (length fs - 1) fs)) p)
+                                               false              -> false
+    {-# NOINLINE pushCTI #-}
+    pushCTI negCTI [] f = (Nothing, [], f, [])
+    pushCTI negCTI acc f =
+      let res = solveWithAssumps (solver (addTransitionToFrame (getFrame (vars model) (negCTI:clauses (acc !! (length acc - 1)))) model)) (map (prime.neg) negCTI) in
+        if not (satisfiable res)
+          then (Nothing, (map (`addClauseToFrame` negCTI) acc), addClauseToFrame f negCTI, [])
+          else
+              case pushCTI negCTI (take (length acc - 1) acc) (acc !! (length acc - 1)) of
+                (Just m, acc', f', leftover)  -> (Just m, acc', f', leftover ++ [f])
+                (Nothing, acc', f', []) -> (Just (nextCTI (acc !! (length acc - 1)) negCTI model), acc', f', [f])
 
--- | Get a counterexample to induction state as a conjunction of literals
-getCTI :: Frame -> Lit -> [Lit]
-getCTI frame prop =
-    [x | x <- badCurrent, [x] `notElem` clauses frame]
+-- | Finds a CTI given a safety property clause
+nextCTI :: Frame -> Clause -> Model -> [Lit]
+nextCTI frame prop m =
+  case res of
+    Nothing -> error "No CTI found."
+    Just lits ->
+      if (satisfiable $ solveWithAssumps (solver (addTransitionToFrame (getFrame (vars m) (prop:clauses frame)) m)) (map (prime.neg) prop ++ getAssignment frame lits))
+        then lits ++ (getAssignment frame lits)
+        else lits -- error ("Could not assign: " ++ (show $ getAssignment frame lits))
   where
-    -- Get unassigned variables
-    unassigned = getUnassigned (solver frame) [prime $ neg prop]
-    -- Assign the unassigned variables to get a single state
-    assign cs = case getConflictWithAssumps (solver frame) (prime (neg prop):cs) of
-                Just (cl:cls) -> assign $ neg cl:filter (/= cl) cs
-                Nothing -> cs
-    -- A single bad state
-    bad = getLiterals (solver frame) (prime (neg prop):assign unassigned)
-    -- The bad assignments in the current state
-    badCurrent = fst (currentNext bad)
+    res =  model $ solveWithAssumps (solver (addTransitionToFrame (getFrame (vars m) (prop:clauses frame)) m)) (map (prime.neg) prop)
+
+getAssignment frame lits = assign (unassigned []) []
+  where
+    unassigned assigned = case getUnassigned (solver frame) (assigned ++ lits) of
+                            Just ls -> ls
+                            Nothing -> [] --error "Could not assign."
+    assign [] assigned = assigned
+    assign (c:cs) assigned = if satisfiable (solveWithAssumps (solver frame) (c:assigned ++ lits))
+                               then assign (unassigned (c:assigned)) (c:assigned)
+                               else assign (unassigned (neg c:assigned)) (neg c:assigned)
 
 -- | Push clauses to next frame
 push :: Frame -> Model -> Frame -> (Bool, Frame)
@@ -108,15 +137,15 @@ push f model =
     pusher (c:cs) b f' = 
       if (c `notElem` clauses f') && nextHas f c
       then pusher cs b (addClauseToFrame f' c)
-      else pusher cs False f'
+      else pusher cs (nextHas f c) f'
     pusher _ b f' = (b, addTransitionToFrame f' model)
 
 -- | Checks if I && (not P) is UNSAT
 base :: Frame -> Clause -> Maybe Frame
 base f property =
-  if solveWithAssumps (solver f) (map neg property)
-  then Nothing
-  else Just newFrame
+  if satisfiable (solveWithAssumps (solver f) (map neg property))
+    then Nothing
+    else Just newFrame
   where
     newFrame = addClauseToFrame f property
 
@@ -125,4 +154,4 @@ nextHas :: Frame -> Clause -> Bool
 nextHas f =
   next (solver f)
   where
-    next solver ls = not (solveWithAssumps solver (map (prime.neg) ls))
+    next solver ls = not (satisfiable (solveWithAssumps solver (map (prime.neg) ls)))

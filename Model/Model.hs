@@ -8,6 +8,7 @@ module Model.Model ( Model (vars, initial, transition, safe)
                    , Clause
                    , toModel
                    , prime
+                   , unprime
                    , neg
                    , currentNext ) where
 
@@ -43,7 +44,13 @@ neg (Neg' l) = Var' l
 prime :: Lit -> Lit
 prime (Var l) = Var' l
 prime (Neg l) = Neg' l
-prime lit   = error ("Cannot prime a prime: " ++ show lit)
+prime lit     = error ("Cannot prime a prime: " ++ show lit)
+
+-- | Convert a primed literal into an unprimed one
+unprime :: Lit -> Lit
+unprime (Var' l) = Var l
+unprime (Neg' l) = Neg l
+unprime lit      = error ("Cannot unprime an unprimed literal: " ++ show lit) 
 
 -- | Split a list of literals into unprimed and primed lists of literals
 currentNext :: [Lit] -> ([Lit], [Lit])

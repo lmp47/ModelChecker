@@ -1,34 +1,60 @@
-extern "C" void printMinisatStats (Minisat::Solver*);
+#ifdef __cplusplus
+#define minisatSolver Minisat::Solver
+#define minisatVar Minisat::Var
+#define minisatLit Minisat::Lit
+#define minisatVecLit Minisat::vec<Minisat::Lit>*
+extern "C" {
+#else
+typedef int minisatSolver;
+typedef int minisatVar;
+typedef int minisatLit;
+typedef void minisatVecLit;
+#endif
 
-extern "C" Minisat::Solver* newMinisatSolver (void);
+typedef struct result result;
 
-extern "C" void deleteMinisatSolver (Minisat::Solver* solver);
+struct result {
+  unsigned solved;
+  unsigned modelSize;
+  unsigned conflictSize;
+  Minisat::lbool *model;
+  Minisat::Lit *conflict;
+} res = {0, 0, 0, 0, 0};
 
-extern "C" Minisat::Var newMinisatVar (Minisat::Solver* solver, int upol, int dvar);
+void printMinisatStats (Minisat::Solver*);
 
-extern "C" void releaseMinisatVar (Minisat::Solver* solver, Minisat::Var var, int sign);
+Minisat::Solver* newMinisatSolver (void);
 
-extern "C" int addMinisatClause (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* ps);
+void deleteMinisatSolver (Minisat::Solver* solver);
 
-extern "C" int simplifyMinisat (Minisat::Solver* solver);
+Minisat::Var newMinisatVar (Minisat::Solver* solver, int upol, int dvar);
 
-extern "C" int solveMinisatWithAssumps (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
+void releaseMinisatVar (Minisat::Solver* solver, Minisat::Var var, int sign);
 
-extern "C" int solveMinisat (Minisat::Solver* solver);
+int addMinisatClause (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* ps);
 
-extern "C" int* getMinisatConflictVec (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
+int simplifyMinisat (Minisat::Solver* solver);
 
-extern "C" int getMinisatConflictSize (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
+result *solveMinisatWithAssumps (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
 
-extern "C" int valueMinisatLit (Minisat::Lit lit);
+int solveMinisat (Minisat::Solver* solver);
 
-extern "C" int varMinisatLit (Minisat::Lit lit);
+int *getMinisatConflictVec (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
 
-extern "C" int valueMinisatVar (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps,Minisat::Var var);
+int getMinisatConflictSize (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
 
-extern "C" Minisat::vec<Minisat::Lit>* newMinisatVecLit (void);
+int valueMinisatLit (Minisat::Lit lit);
 
-extern "C" void deleteMinisatVecLit (Minisat::vec<Minisat::Lit>* v);
+int varMinisatLit (Minisat::Lit lit);
 
-extern "C" void pushMinisatVar (Minisat::vec<Minisat::Lit>* v, Minisat::Var var, int sign);
+int valueMinisatVar (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps, Minisat::Var var);
 
+Minisat::vec<Minisat::Lit>* newMinisatVecLit (void);
+
+void deleteMinisatVecLit (Minisat::vec<Minisat::Lit>* v);
+
+void pushMinisatVar (Minisat::vec<Minisat::Lit>* v, Minisat::Var var, int sign);
+
+#ifdef __cplusplus
+}
+#endif

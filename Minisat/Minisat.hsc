@@ -1,6 +1,4 @@
-{-# LINE 1 "Minisat.hsc" #-}
 {-|
-{-# LINE 2 "Minisat.hsc" #-}
 Module: Minisat
 Description: Haskell bindings for some Minisat functions
 
@@ -31,10 +29,8 @@ import Control.Monad
 import Foreign.Marshal.Array
 import Data.List
 
-
-{-# LINE 33 "Minisat.hsc" #-}
-
-{-# LINE 34 "Minisat.hsc" #-}
+#include "CSolver_hsc.h"
+#let alignment t = "%lu", (unsigned long)offsetof(struct {char x__; t (y__); }, y__)
 
 -----------------------
 -- Wrapper Functions --
@@ -202,28 +198,23 @@ data Result = Result { satisfiable :: Bool
                      , model       :: Maybe [Lit] }
 
 instance Storable Result where
-  alignment _ = 8
-{-# LINE 202 "Minisat.hsc" #-}
-  sizeOf    _ = (32)
-{-# LINE 203 "Minisat.hsc" #-}
+  alignment _ = #{alignment result}
+  sizeOf    _ = #{size result}
   peek ptr    = do
-                res <- (\hsc_ptr -> peekByteOff hsc_ptr 0) ptr
-{-# LINE 205 "Minisat.hsc" #-}
+                res <- #{peek result, solved} ptr
                 let solved = neqz res
                 modelSize <- mSize
                 conflictSize <- cSize
                 model <- if solved
                            then
-                             do ptr <- (\hsc_ptr -> peekByteOff hsc_ptr 16) ptr
-{-# LINE 211 "Minisat.hsc" #-}
+                             do ptr <- #{peek result, model} ptr
                                 lbools <- (peekArray (fromIntegral modelSize) ptr)
                                 return (Just (makeLits lbools modelSize))
                            else return Nothing
                 conflict <- if solved
                               then return Nothing
                               else
-                                do ptr <- (\hsc_ptr -> peekByteOff hsc_ptr 24) ptr
-{-# LINE 218 "Minisat.hsc" #-}
+                                do ptr <- #{peek result, conflict} ptr
                                    c <- liftM (map fromMinisatLit) (peekArray (fromIntegral conflictSize) ptr)
                                    return (Just c)
                 return (Result solved conflict model)
@@ -231,11 +222,9 @@ instance Storable Result where
                   neqz :: CUInt -> Bool
                   neqz res = res /= 0
                   mSize :: IO CUInt
-                  mSize = (\hsc_ptr -> peekByteOff hsc_ptr 4) ptr
-{-# LINE 226 "Minisat.hsc" #-}
+                  mSize = #{peek result, modelSize} ptr
                   cSize :: IO CUInt
-                  cSize = (\hsc_ptr -> peekByteOff hsc_ptr 8) ptr
-{-# LINE 228 "Minisat.hsc" #-}
+                  cSize = #{peek result, conflictSize} ptr
                   makeLits :: [CUChar] -> CUInt -> [Lit]
                   makeLits lbools size =
                     let ts = filter (\x -> 1 == lbools !! (fromIntegral x)) [0..((fromIntegral size) - 1)]
