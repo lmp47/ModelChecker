@@ -1,12 +1,12 @@
 name: ModelChecker
 version: 0.1.0.0
 build-type: Custom
-cabal-version: >=1.10
+cabal-version: >=1.22
 
 library
   exposed-modules: Minisat.Minisat, Model.Model, Parser.AigerParser, Parser.AigerTools, Parser.AigModel
   other-extensions: ForeignFunctionInterface
-  build-depends: base >=4.7 && <4.8, split >=0.2 && <0.3, bytestring >=0.10 && <0.11, directory >=1.2 && <1.3
+  build-depends: base >=4.6 && <4.8, split >=0.2 && <0.3, bytestring >=0.10 && <0.11, directory >=1.2 && <1.3
   build-tools: hsc2hs
   default-language: Haskell2010
   includes: Parser/aiger/aiger.h
