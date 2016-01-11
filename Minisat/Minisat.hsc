@@ -54,7 +54,7 @@ addVars s n =
     addVars'' n solver =
       if n > 0
         then do
-          newMinisatVar solver (fromIntegral $ n - 1) 0
+          newMinisatVar solver (fromIntegral $ n - 1) 1
           addVars'' (n - 1) solver
         else return solver
 
@@ -62,9 +62,9 @@ addVars s n =
 getVarValue :: Solver -> [Lit] -> Word -> Int
 getVarValue s assumps n =
   if (fromMinisatLit (fromIntegral n)) `elem` lits
-    then 1
+    then 0
     else if (neg (fromMinisatLit (fromIntegral n))) `elem` lits
-           then 0
+           then 1
            else 2
   where
     lits = case model (solveWithAssumps s assumps) of
@@ -103,22 +103,22 @@ addToVecLit veclit clause =
                 pushMinisatVar
                 veclit
                 (fromIntegral (int * 2))
-                1
+                0
               Neg int ->
                 pushMinisatVar
                 veclit
                 (fromIntegral (int * 2))
-                0
+                1
               Var' int ->
                 pushMinisatVar
                 veclit
                 (fromIntegral $ (int * 2) + 1)
-                1
+                0
               Neg' int ->
                 pushMinisatVar
                 veclit
                 (fromIntegral $ (int * 2) + 1)
-                0
+                1
             addToVecLit veclit vs
 
 -- | Add a clause to a solver.
@@ -227,8 +227,8 @@ instance Storable Result where
                   cSize = #{peek result, conflictSize} ptr
                   makeLits :: [CUChar] -> CUInt -> [Lit]
                   makeLits lbools size =
-                    let ts = filter (\x -> 1 == lbools !! (fromIntegral x)) [0..((fromIntegral size) - 1)]
-                        fs = filter (\x -> 0 == lbools !! (fromIntegral x)) [0..((fromIntegral size) - 1)]
+                    let ts = filter (\x -> 0 == lbools !! (fromIntegral x)) [0..((fromIntegral size) - 1)]
+                        fs = filter (\x -> 1 == lbools !! (fromIntegral x)) [0..((fromIntegral size) - 1)]
                         negs  = filter (\x -> x `mod` 2 == 0) fs
                         negs' = filter (\x -> x `mod` 2 == 1) fs
                         vars  = filter (\x -> x `mod` 2 == 0) ts

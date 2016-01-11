@@ -1,5 +1,5 @@
 #ifdef __cplusplus
-#define minisatSolver Minisat::Solver
+#define minisatSolver Minisat::SimpSolver
 #define minisatVar Minisat::Var
 #define minisatLit Minisat::Lit
 #define minisatVecLit Minisat::vec<Minisat::Lit>*
@@ -21,33 +21,33 @@ struct result {
   Minisat::Lit *conflict;
 } res = {0, 0, 0, 0, 0};
 
-void printMinisatStats (Minisat::Solver*);
+void printMinisatStats (Minisat::SimpSolver*);
 
-Minisat::Solver* newMinisatSolver (void);
+Minisat::SimpSolver* newMinisatSolver (void);
 
-void deleteMinisatSolver (Minisat::Solver* solver);
+void deleteMinisatSolver (Minisat::SimpSolver* solver);
 
-Minisat::Var newMinisatVar (Minisat::Solver* solver, int upol, int dvar);
+Minisat::Var newMinisatVar (Minisat::SimpSolver* solver, int upol, int dvar);
 
-void releaseMinisatVar (Minisat::Solver* solver, Minisat::Var var, int sign);
+void releaseMinisatVar (Minisat::SimpSolver* solver, Minisat::Var var, int sign);
 
-int addMinisatClause (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* ps);
+int addMinisatClause (Minisat::SimpSolver* solver, Minisat::vec<Minisat::Lit>* ps);
 
-int simplifyMinisat (Minisat::Solver* solver);
+int simplifyMinisat (Minisat::SimpSolver* solver);
 
-result *solveMinisatWithAssumps (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
+result *solveMinisatWithAssumps (Minisat::SimpSolver* solver, Minisat::vec<Minisat::Lit>* assumps);
 
-int solveMinisat (Minisat::Solver* solver);
+int solveMinisat (Minisat::SimpSolver* solver);
 
-int *getMinisatConflictVec (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
+int *getMinisatConflictVec (Minisat::SimpSolver* solver, Minisat::vec<Minisat::Lit>* assumps);
 
-int getMinisatConflictSize (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps);
+int getMinisatConflictSize (Minisat::SimpSolver* solver, Minisat::vec<Minisat::Lit>* assumps);
 
 int valueMinisatLit (Minisat::Lit lit);
 
 int varMinisatLit (Minisat::Lit lit);
 
-int valueMinisatVar (Minisat::Solver* solver, Minisat::vec<Minisat::Lit>* assumps, Minisat::Var var);
+int valueMinisatVar (Minisat::SimpSolver* solver, Minisat::vec<Minisat::Lit>* assumps, Minisat::Var var);
 
 Minisat::vec<Minisat::Lit>* newMinisatVecLit (void);
 

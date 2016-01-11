@@ -29,6 +29,7 @@ executable minisatTest
   default-language: Haskell2010
   c-sources: Minisat/CSolver.cpp,
     Minisat/minisat/minisat/core/Solver.cc,
+    Minisat/minisat/minisat/simp/SimpSolver.cc,
     Minisat/minisat/minisat/utils/System.cc,
     Minisat/minisat/minisat/utils/Options.cc
   extra-libraries: stdc++
@@ -40,6 +41,7 @@ executable ic3Test
   c-sources: Parser/aiger/aiger.c,
     Minisat/CSolver.cpp,
     Minisat/minisat/minisat/core/Solver.cc,
+    Minisat/minisat/minisat/simp/SimpSolver.cc,
     Minisat/minisat/minisat/utils/System.cc,
     Minisat/minisat/minisat/utils/Options.cc
   extra-libraries: stdc++
@@ -63,6 +65,7 @@ Test-Suite tests
   c-sources: Parser/aiger/aiger.c,
     Minisat/CSolver.cpp,
     Minisat/minisat/minisat/core/Solver.cc,
+    Minisat/minisat/minisat/simp/SimpSolver.cc,
     Minisat/minisat/minisat/utils/System.cc,
     Minisat/minisat/minisat/utils/Options.cc
   extra-libraries: stdc++

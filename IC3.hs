@@ -30,15 +30,10 @@ prove model prop =
     Just frame -> consecution model prop frame
     Nothing -> False
 
--- | Get the smallest set of states given the current clauses
-getSmallest :: Model -> Frame -> Frame
-getSmallest model frame =
-  addTransitionToFrame (getFrame (vars model) (map (:[]) $ fst $ currentNext $ getLiterals (solver frame) [])) model
-
 -- | Initiation phase of the algorithm
 initiation :: Model -> Clause -> [Frame] -> Maybe Frame
 initiation model prop [] =
-    base (getSmallest model $ addTransitionToFrame (getFrame (vars model) $ initial model) model) prop
+    base (addTransitionToFrame (getFrame (vars model) $ initial model) model) prop
 initiation model prop (f:fs) = base f prop
 
 -- | Print the clauses per frame in the provided list of frames
@@ -51,13 +46,13 @@ printFrames [] = print "No frames in list."
 -- other frames)
 consecution :: Model -> Lit -> Frame -> Bool
 consecution model prop frame =
-  consec frame [] 20
+  consec frame [] 100
   where
     -- Limit n on the number of times consec can be invoked
     consec f acc 0 = unsafePerformIO (
                       do
-                       return (propagate (acc ++ [f]))
-                       printFrames (reverse $ acc ++ [f])
+                       --return (propagate (acc ++ [f]))
+                       --printFrames (reverse $ acc ++ [f])
                        error "Limit of consec invocations reached." )
     consec f acc n =
       if nextHas f [prop]
@@ -83,7 +78,6 @@ consecution model prop frame =
                           Nothing -> Nothing
     propagate frames = Just frames
     -- Try to prove CTI unreachable at current depth, given the negated CTI
-    {-# NOINLINE ctiFound #-}
     ctiFound f _ [] p = (False, f, [])
     ctiFound f cti acc p =
       if ( satisfiable (solveWithAssumps (solver (addTransitionToFrame (getFrame (vars model) (map neg cti:clauses (head acc))) model)) (map prime cti)) ||
@@ -96,7 +90,6 @@ consecution model prop frame =
                (Just model, acc', f', fs) -> case ctiFound f' (fst (currentNext model)) acc' (map neg cti) of
                                                (True, f'', acc'') -> (ctiFound f cti (acc'' ++ f'':(take (length fs - 1) fs)) p)
                                                false              -> false
-    {-# NOINLINE pushCTI #-}
     pushCTI negCTI [] f = (Nothing, [], f, [])
     pushCTI negCTI acc f =
       let res = solveWithAssumps (solver (addTransitionToFrame (getFrame (vars model) (negCTI:clauses (acc !! (length acc - 1)))) model)) (map (prime.neg) negCTI) in
@@ -113,17 +106,17 @@ nextCTI frame prop m =
   case res of
     Nothing -> error "No CTI found."
     Just lits ->
-      if (satisfiable $ solveWithAssumps (solver (addTransitionToFrame (getFrame (vars m) (prop:clauses frame)) m)) (map (prime.neg) prop ++ getAssignment frame lits))
-        then lits ++ (getAssignment frame lits)
-        else lits -- error ("Could not assign: " ++ (show $ getAssignment frame lits))
+      if (satisfiable $ solveWithAssumps (solver (addTransitionToFrame (getFrame (vars m) (clauses frame)) m)) (map (prime.neg) prop ++ getAssignment frame (lits ++ map (prime.neg) prop)))
+        then lits
+        else error "Incorrect model" --error ("Could not assign: " ++ (show $ getAssignment frame (map (prime.neg) prop)))
   where
-    res =  model $ solveWithAssumps (solver (addTransitionToFrame (getFrame (vars m) (prop:clauses frame)) m)) (map (prime.neg) prop)
+    res =  model $ solveWithAssumps (solver (addTransitionToFrame (getFrame (vars m) (clauses frame)) m)) (map (prime.neg) prop)
 
 getAssignment frame lits = assign (unassigned []) []
   where
     unassigned assigned = case getUnassigned (solver frame) (assigned ++ lits) of
                             Just ls -> ls
-                            Nothing -> [] --error "Could not assign."
+                            Nothing -> error "Could not assign."
     assign [] assigned = assigned
     assign (c:cs) assigned = if satisfiable (solveWithAssumps (solver frame) (c:assigned ++ lits))
                                then assign (unassigned (c:assigned)) (c:assigned)
@@ -137,7 +130,7 @@ push f model =
     pusher (c:cs) b f' = 
       if (c `notElem` clauses f') && nextHas f c
       then pusher cs b (addClauseToFrame f' c)
-      else pusher cs (nextHas f c) f'
+      else pusher cs (b && (nextHas f c)) f'
     pusher _ b f' = (b, addTransitionToFrame f' model)
 
 -- | Checks if I && (not P) is UNSAT

@@ -1,5 +1,5 @@
 #ifdef __cplusplus
-#define minisatSolver Minisat::Solver
+#define minisatSolver Minisat::SimpSolver
 #define minisatVar Minisat::Var
 #define minisatLit Minisat::Lit
 #define lbool Minisat::lbool
