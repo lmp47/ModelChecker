@@ -21,27 +21,25 @@ getFrame :: Word -> [Clause] -> Frame
 getFrame vars clauses = Frame { solver = addClauses (addVars newSolver vars) clauses
                               , clauses = clauses }
 
--- Keep transitions out of the clauses list
+-- | Keep transitions out of the clauses list
 addTransitionToFrame :: Frame -> Model -> Frame
 addTransitionToFrame f' model = Frame { solver = addClauses (solver f') (transition model)
                                       , clauses = clauses f' }
 
--- Get frame with given clauses and given model's transition relation and variables
+-- | Get frame with given clauses and given model's transition relation and variables
 getFrameWith :: [Clause] -> Model -> Frame
 getFrameWith clauses model = addTransitionToFrame (getFrame (vars model) clauses) model
 
 -- | Given a model and a safety property, checks if the model satisfies the property
 prove :: Model -> Lit -> Bool
 prove model prop =
-  case initiation model [prop] [] of
-    Just frame -> consecution model prop frame
-    Nothing -> False
+  initiation f0 [prop] && consecution model prop (addClauseToFrame f0 [prop])
+  where
+    f0 = getFrameWith (initial model) model
 
--- | Initiation phase of the algorithm
-initiation :: Model -> Clause -> [Frame] -> Maybe Frame
-initiation model prop [] =
-    base (addTransitionToFrame (getFrame (vars model) $ initial model) model) prop
-initiation model prop (f:fs) = base f prop
+-- | Initiation query. Checks if I && (not P) is UNSAT.
+initiation :: Frame -> Clause -> Bool
+initiation f property = not (satisfiable (solveWithAssumps (solver f) (map neg property)))
 
 -- | Print the clauses per frame in the provided list of frames
 printFrames :: [Frame] -> IO ()
@@ -84,23 +82,39 @@ consecution model prop frame =
     ctiFound f cti acc p =
       if satisfiable (solveWithAssumps (solver (getFrameWith (map neg cti:clauses (head acc)) model)) (map prime cti))
         then (False, f, acc)
-        else case pushCTI (map neg cti) acc f of
-               (Nothing, acc', f', []) -> if nextHas f' p
-                                           then (True, f', acc')
-                                           else ctiFound f' (fst (currentNext (nextCTI f' p model))) acc' p
-               (Just model, acc', f', fs) -> case ctiFound f' (fst (currentNext model)) acc' (map neg cti) of
-                                               (True, f'', acc'') -> ctiFound f cti (acc'' ++ f'':take (length fs - 1) fs) p
-                                               false              -> false
+        else
+          case pushCTI (map neg cti) acc f of
+            (Nothing, acc', f', []) -> if nextHas f' p
+                                         then (True, f', acc')
+                                         else ctiFound f' (fst (currentNext (nextCTI f' p model))) acc' p
+            (Just model, acc', f', fs) -> case ctiFound f' (fst (currentNext model)) acc' (map neg cti) of
+                                            (True, f'', acc'') -> ctiFound f cti
+                                                                    (acc'' ++ f'':take (length fs - 1) fs) p
+                                            false              -> false
     -- Find the deepest frame where the negated CTI holds
     pushCTI negCTI [] f = (Nothing, [], f, [])
     pushCTI negCTI acc f =
-      let res = solveWithAssumps (solver (getFrameWith (negCTI:clauses (acc !! (length acc - 1))) model)) (map (prime.neg) negCTI) in
+      let res = solveWithAssumps
+                  (solver (getFrameWith (negCTI:clauses (acc !! (length acc - 1))) model))
+                  (map (prime.neg) negCTI) in
         if not (satisfiable res)
-          then (Nothing, map (`addClauseToFrame` negCTI) acc, addClauseToFrame f negCTI, [])
+          then let negCTI' = inductiveGeneralization negCTI (head acc) f in
+           (Nothing, map (`addClauseToFrame` negCTI') acc, addClauseToFrame f negCTI', [])
           else
-              case pushCTI negCTI (take (length acc - 1) acc) (acc !! (length acc - 1)) of
-                (Just m, acc', f', leftover)  -> (Just m, acc', f', leftover ++ [f])
-                (Nothing, acc', f', []) -> (Just (nextCTI (acc !! (length acc - 1)) negCTI model), acc', f', [f])
+            case pushCTI negCTI (take (length acc - 1) acc) (acc !! (length acc - 1)) of
+              (Just m, acc', f', leftover)  -> (Just m, acc', f', leftover ++ [f])
+              (Nothing, acc', f', []) -> (Just (nextCTI (acc !! (length acc - 1)) negCTI model), acc', f', [f])
+
+-- | Find a minimal subclause of the provided clause that satisfies initiation and
+-- consecution.
+inductiveGeneralization clause f0 fk = generalize clause f0 fk []
+  where
+    -- May want to limit number of attempts and find an approximate minimal subclause instead
+    generalize [] _ _ needed = needed
+    generalize (c:cs) f0 fk needed =
+      if initiation f0 cs && nextHas fk cs
+        then generalize cs f0 fk needed
+        else generalize cs f0 fk (c:needed)
 
 -- | Finds a CTI given a safety property clause
 nextCTI :: Frame -> Clause -> Model -> [Lit]
@@ -122,16 +136,7 @@ push f model =
       else pusher cs (b && nextHas f c) f'
     pusher _ b f' = (b, addTransitionToFrame f' model)
 
--- | Checks if I && (not P) is UNSAT
-base :: Frame -> Clause -> Maybe Frame
-base f property =
-  if satisfiable (solveWithAssumps (solver f) (map neg property))
-    then Nothing
-    else Just newFrame
-  where
-    newFrame = addClauseToFrame f property
-
--- | Checks if F_k && T && (not P') is UNSAT, where P is a disjunction of literals
+-- | Consecution query. Checks if F_k && T && (not P') is UNSAT, where P is a disjunction of literals.
 nextHas :: Frame -> Clause -> Bool
 nextHas f =
   next (solver f)
