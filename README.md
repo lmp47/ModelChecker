@@ -5,6 +5,7 @@
     git submodule init
     git submodule update
     rm Parser/AigerTools.hsc
+    rm Minisat/Minisat.hsc
     cabal sandbox init
     cabal configure --enable-tests
     cabal build

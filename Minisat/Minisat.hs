@@ -40,6 +40,7 @@ import Data.List
 -- Wrapper Functions --
 -----------------------
 
+-- | Get a new solver.
 newSolver :: Solver
 newSolver = Solver { solver   = newMinisatSolver >>= newForeignPtr deleteMinisatSolver
                    , numVars  = 0 }
@@ -94,7 +95,7 @@ getUnassigned s assumps =
   varNums  = [0..(numVars s `div` 2)- 1]
   vars  = map Var varNums ++ map Var' varNums
 
--- | Add a clause to a veclit
+-- | Add a clause to a veclit.
 addToVecLit :: Ptr MinisatVecLit -> [Lit] -> IO ()
 addToVecLit veclit clause =
   case clause of
@@ -157,7 +158,7 @@ solve :: Solver -> Result
 solve s = solveWithAssumps s []
 
 -- | Have a solver solve with the clauses that have been added
--- along with given assumptions
+-- along with given assumptions.
 solveWithAssumps :: Solver -> [Lit] -> Result
 solveWithAssumps s assumps = unsafePerformIO res
   where
@@ -175,7 +176,7 @@ solveWithAssumps s assumps = unsafePerformIO res
                 res <- solveMinisatWithAssumps sol veclit >>= peek
                 return res)
 
--- | Convert from a minisat variable number to a positive literal of that variable
+-- | Convert from a minisat variable number to a positive literal of that variable.
 fromMinisatLit :: MinisatLit -> Lit
 fromMinisatLit mLit = unsafePerformIO (
   do
@@ -192,28 +193,34 @@ fromMinisatLit mLit = unsafePerformIO (
 -- Relevant Types --
 --------------------
 
+-- | Solver type including the Minisat solver and the number of variables in the
+-- solver.
 data Solver = Solver { solver  :: IO (ForeignPtr MinisatSolver)
                      , numVars :: Word }
 
+-- | The result returned by a call to a Minisat solve function.
+-- The satisfiable Bool is the boolean value returned by Minisat.
+-- The conflict list is the conflict vector returned by Minisat for an UNSAT result.
+-- The model list is the assignments returned by Minisat for a SAT result.
 data Result = Result { satisfiable :: Bool
                      , conflict    :: Maybe [Lit]
                      , model       :: Maybe [Lit] }
 
 instance Storable Result where
   alignment _ = 8
-{-# LINE 200 "Minisat.hsc" #-}
+{-# LINE 207 "Minisat.hsc" #-}
   sizeOf    _ = (32)
-{-# LINE 201 "Minisat.hsc" #-}
+{-# LINE 208 "Minisat.hsc" #-}
   peek ptr    = do
                 res <- (\hsc_ptr -> peekByteOff hsc_ptr 0) ptr
-{-# LINE 203 "Minisat.hsc" #-}
+{-# LINE 210 "Minisat.hsc" #-}
                 let solved = neqz res
                 modelSize <- mSize
                 conflictSize <- cSize
                 model <- if solved
                            then
                              do ptr <- (\hsc_ptr -> peekByteOff hsc_ptr 16) ptr
-{-# LINE 209 "Minisat.hsc" #-}
+{-# LINE 216 "Minisat.hsc" #-}
                                 lbools <- (peekArray (fromIntegral modelSize) ptr)
                                 return (Just (makeLits lbools modelSize))
                            else return Nothing
@@ -221,7 +228,7 @@ instance Storable Result where
                               then return Nothing
                               else
                                 do ptr <- (\hsc_ptr -> peekByteOff hsc_ptr 24) ptr
-{-# LINE 216 "Minisat.hsc" #-}
+{-# LINE 223 "Minisat.hsc" #-}
                                    c <- liftM (map fromMinisatLit) (peekArray (fromIntegral conflictSize) ptr)
                                    return (Just c)
                 return (Result solved conflict model)
@@ -230,10 +237,10 @@ instance Storable Result where
                   neqz res = res /= 0
                   mSize :: IO CUInt
                   mSize = (\hsc_ptr -> peekByteOff hsc_ptr 4) ptr
-{-# LINE 224 "Minisat.hsc" #-}
+{-# LINE 231 "Minisat.hsc" #-}
                   cSize :: IO CUInt
                   cSize = (\hsc_ptr -> peekByteOff hsc_ptr 8) ptr
-{-# LINE 226 "Minisat.hsc" #-}
+{-# LINE 233 "Minisat.hsc" #-}
                   makeLits :: [CUChar] -> CUInt -> [Lit]
                   makeLits lbools size =
                     let ts = filter (\x -> 0 == lbools !! fromIntegral x) [0..(fromIntegral size - 1)]
