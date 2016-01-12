@@ -3,7 +3,7 @@
 #include "CSolver.h"
 #include <iostream>
 
-extern "C" void printMinisatStats (Minisat::SimpSolver* solver){
+extern "C" void printMinisatStats (minisatSolver* solver){
   solver -> printStats();
 }
 
@@ -69,7 +69,6 @@ extern "C" int varMinisatLit (Minisat::Lit lit) {
 
 extern "C" int valueMinisatVar (Minisat::SimpSolver* solver, Minisat::vec<Minisat::Lit>* assumps, Minisat::Var var) {
   res.solved = solver -> solve(*assumps);
- // std::cout << "vMVSolved: " << res.solved << std::endl;
   Minisat::lbool value = (solver -> model)[var];
   return Minisat::toInt(value);
 }

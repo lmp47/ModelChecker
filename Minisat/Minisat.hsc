@@ -29,7 +29,7 @@ import Control.Monad
 import Foreign.Marshal.Array
 import Data.List
 
-#include "CSolver_hsc.h"
+#include "CSolver.h"
 #let alignment t = "%lu", (unsigned long)offsetof(struct {char x__; t (y__); }, y__)
 
 -----------------------
