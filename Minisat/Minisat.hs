@@ -64,12 +64,10 @@ addVars s n =
 
 -- | Get the value of a variable in the solver.
 getVarValue :: Solver -> [Lit] -> Word -> Int
-getVarValue s assumps n =
-  if (fromMinisatLit (fromIntegral n)) `elem` lits
-    then 0
-    else if (neg (fromMinisatLit (fromIntegral n))) `elem` lits
-           then 1
-           else 2
+getVarValue s assumps n
+  | fromMinisatLit (fromIntegral n) `elem` lits = 0
+  | neg (fromMinisatLit (fromIntegral n)) `elem` lits = 1
+  | otherwise = 2
   where
     lits = case model (solveWithAssumps s assumps) of
              Nothing -> []
@@ -86,7 +84,7 @@ getLiterals s assumps =
 getUnassigned :: Solver -> [Lit] -> Maybe [Lit]
 getUnassigned s assumps =
   case lits of
-    Just ls -> Just (vars \\ (map makePositive ls))
+    Just ls -> Just (vars \\ map makePositive ls)
     Nothing -> Nothing
   where
   makePositive (Neg v) = Var v
@@ -174,7 +172,7 @@ solveWithAssumps s assumps = unsafePerformIO res
               do
                 veclit <- newMinisatVecLit
                 addToVecLit veclit assumps
-                res <- (solveMinisatWithAssumps sol veclit >>= peek)
+                res <- solveMinisatWithAssumps sol veclit >>= peek
                 return res)
 
 -- | Convert from a minisat variable number to a positive literal of that variable
@@ -203,19 +201,19 @@ data Result = Result { satisfiable :: Bool
 
 instance Storable Result where
   alignment _ = 8
-{-# LINE 202 "Minisat.hsc" #-}
+{-# LINE 200 "Minisat.hsc" #-}
   sizeOf    _ = (32)
-{-# LINE 203 "Minisat.hsc" #-}
+{-# LINE 201 "Minisat.hsc" #-}
   peek ptr    = do
                 res <- (\hsc_ptr -> peekByteOff hsc_ptr 0) ptr
-{-# LINE 205 "Minisat.hsc" #-}
+{-# LINE 203 "Minisat.hsc" #-}
                 let solved = neqz res
                 modelSize <- mSize
                 conflictSize <- cSize
                 model <- if solved
                            then
                              do ptr <- (\hsc_ptr -> peekByteOff hsc_ptr 16) ptr
-{-# LINE 211 "Minisat.hsc" #-}
+{-# LINE 209 "Minisat.hsc" #-}
                                 lbools <- (peekArray (fromIntegral modelSize) ptr)
                                 return (Just (makeLits lbools modelSize))
                            else return Nothing
@@ -223,7 +221,7 @@ instance Storable Result where
                               then return Nothing
                               else
                                 do ptr <- (\hsc_ptr -> peekByteOff hsc_ptr 24) ptr
-{-# LINE 218 "Minisat.hsc" #-}
+{-# LINE 216 "Minisat.hsc" #-}
                                    c <- liftM (map fromMinisatLit) (peekArray (fromIntegral conflictSize) ptr)
                                    return (Just c)
                 return (Result solved conflict model)
@@ -232,21 +230,21 @@ instance Storable Result where
                   neqz res = res /= 0
                   mSize :: IO CUInt
                   mSize = (\hsc_ptr -> peekByteOff hsc_ptr 4) ptr
-{-# LINE 226 "Minisat.hsc" #-}
+{-# LINE 224 "Minisat.hsc" #-}
                   cSize :: IO CUInt
                   cSize = (\hsc_ptr -> peekByteOff hsc_ptr 8) ptr
-{-# LINE 228 "Minisat.hsc" #-}
+{-# LINE 226 "Minisat.hsc" #-}
                   makeLits :: [CUChar] -> CUInt -> [Lit]
                   makeLits lbools size =
-                    let ts = filter (\x -> 0 == lbools !! (fromIntegral x)) [0..((fromIntegral size) - 1)]
-                        fs = filter (\x -> 1 == lbools !! (fromIntegral x)) [0..((fromIntegral size) - 1)]
+                    let ts = filter (\x -> 0 == lbools !! fromIntegral x) [0..(fromIntegral size - 1)]
+                        fs = filter (\x -> 1 == lbools !! fromIntegral x) [0..(fromIntegral size - 1)]
                         negs  = filter (\x -> x `mod` 2 == 0) fs
                         negs' = filter (\x -> x `mod` 2 == 1) fs
                         vars  = filter (\x -> x `mod` 2 == 0) ts
                         vars' = filter (\x -> x `mod` 2 == 1) ts
                     in
-                      (map (Neg.(`div` 2)) negs) ++ (map (Var.(`div` 2)) vars) ++
-                      (map (Var'.(`div` 2)) vars') ++ (map (Neg'.(`div` 2)) negs')
+                      map (Neg.(`div` 2)) negs ++ map (Var.(`div` 2)) vars ++
+                      map (Var'.(`div` 2)) vars' ++ map (Neg'.(`div` 2)) negs'
   poke _ _    = return ()
 
 data MinisatSolver = MinisatSolver
