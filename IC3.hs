@@ -33,13 +33,18 @@ getFrameWith clauses model = addTransitionToFrame (getFrame (vars model) clauses
 -- | Given a model and a safety property, checks if the model satisfies the property
 prove :: Model -> Lit -> Bool
 prove model prop =
-  initiation f0 [prop] && consecution model prop (addClauseToFrame f0 [prop])
+  initiation f0 [prop] && prove' model prop (addClauseToFrame f0 [prop])
   where
     f0 = getFrameWith (initial model) model
 
 -- | Initiation query. Checks if I && (not P) is UNSAT.
 initiation :: Frame -> Clause -> Bool
-initiation f property = not (satisfiable (solveWithAssumps (solver f) (map neg property)))
+initiation f prop = not (satisfiable (solveWithAssumps (solver f) (map neg prop)))
+
+-- | Consecution query. Checks if F_k && T && (not P') is UNSAT, where P is a disjunction of literals.
+consecution :: Frame -> Clause -> Bool
+consecution f prop =
+  not (satisfiable (solveWithAssumps (solver f) (map (prime.neg) prop)))
 
 -- | Print the clauses per frame in the provided list of frames
 printFrames :: [Frame] -> IO ()
@@ -49,14 +54,14 @@ printFrames [] = print "No frames in list."
 
 -- | Consecution phase of the algorithm (calls subsequent consecution queries for
 -- other frames)
-consecution :: Model -> Lit -> Frame -> Bool
-consecution model prop frame =
+prove' :: Model -> Lit -> Frame -> Bool
+prove' model prop frame =
   consec frame [] 100
   where
     -- Limit n on the number of times consec can be invoked
     consec f acc 0 = error "Limit of consec invocations reached."
     consec f acc n =
-      if nextHas f [prop]
+      if consecution f [prop]
         then pushFrame f (getFrame (vars model) []) acc n
         else
           let cti = nextCTI f [prop] model in
@@ -77,14 +82,14 @@ consecution model prop frame =
                           Just fs -> Just (f:fs)
                           Nothing -> Nothing
     propagate frames = Just frames
-    -- Try to prove CTI unreachable at current depth, given the negated CTI
+    -- Try to prove CTI unreachable at current depth
     ctiFound f _ [] p = (False, f, [])
     ctiFound f cti acc p =
       if satisfiable (solveWithAssumps (solver (getFrameWith (map neg cti:clauses (head acc)) model)) (map prime cti))
         then (False, f, acc)
         else
           case pushCTI (map neg cti) acc f of
-            (Nothing, acc', f', []) -> if nextHas f' p
+            (Nothing, acc', f', []) -> if consecution f' p
                                          then (True, f', acc')
                                          else ctiFound f' (fst (currentNext (nextCTI f' p model))) acc' p
             (Just model, acc', f', fs) -> case ctiFound f' (fst (currentNext model)) acc' (map neg cti) of
@@ -99,7 +104,7 @@ consecution model prop frame =
                   (map (prime.neg) negCTI) in
         if not (satisfiable res)
           then let negCTI' = inductiveGeneralization negCTI (head acc) f in
-           (Nothing, map (`addClauseToFrame` negCTI') acc, addClauseToFrame f negCTI', [])
+            (Nothing, map (`addClauseToFrame` negCTI') acc, addClauseToFrame f negCTI', [])
           else
             case pushCTI negCTI (take (length acc - 1) acc) (acc !! (length acc - 1)) of
               (Just m, acc', f', leftover)  -> (Just m, acc', f', leftover ++ [f])
@@ -107,12 +112,12 @@ consecution model prop frame =
 
 -- | Find a minimal subclause of the provided clause that satisfies initiation and
 -- consecution.
-inductiveGeneralization clause f0 fk = generalize clause f0 fk []
+inductiveGeneralization clause f0 fk = clause --generalize clause f0 fk []
   where
     -- May want to limit number of attempts and find an approximate minimal subclause instead
     generalize [] _ _ needed = needed
     generalize (c:cs) f0 fk needed =
-      if initiation f0 cs && nextHas fk cs
+      if initiation f0 cs && consecution fk cs
         then generalize cs f0 fk needed
         else generalize cs f0 fk (c:needed)
 
@@ -131,14 +136,7 @@ push f model =
   pusher (clauses f) True
   where
     pusher (c:cs) b f' = 
-      if (c `notElem` clauses f') && nextHas f c
+      if (c `notElem` clauses f') && consecution f c
       then pusher cs b (addClauseToFrame f' c)
-      else pusher cs (b && nextHas f c) f'
+      else pusher cs (b && consecution f c) f'
     pusher _ b f' = (b, addTransitionToFrame f' model)
-
--- | Consecution query. Checks if F_k && T && (not P') is UNSAT, where P is a disjunction of literals.
-nextHas :: Frame -> Clause -> Bool
-nextHas f =
-  next (solver f)
-  where
-    next solver ls = not (satisfiable (solveWithAssumps solver (map (prime.neg) ls)))
