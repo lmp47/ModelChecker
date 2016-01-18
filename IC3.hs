@@ -9,6 +9,7 @@ import Model.Model
 import Minisat.Minisat
 import Data.Word
 import System.IO.Unsafe
+import Data.List
 
 data Frame = Frame { solver  :: Solver
                    , clauses :: [Clause] }
@@ -33,7 +34,7 @@ getFrameWith clauses model = addTransitionToFrame (getFrame (vars model) clauses
 -- | Given a model and a safety property, checks if the model satisfies the property
 prove :: Model -> Lit -> Bool
 prove model prop =
-  initiation f0 [prop] && prove' model prop (addClauseToFrame f0 [prop])
+  initiation f0 [prop] && prove' model prop (addClauseToFrame f0 [prop]) []
   where
     f0 = getFrameWith (initial model) model
 
@@ -48,70 +49,68 @@ consecution f prop =
 
 -- | Print the clauses per frame in the provided list of frames
 printFrames :: [Frame] -> IO ()
-printFrames [f] = print (show $ clauses f)
+printFrames [f] = print (clauses f)
 printFrames (f:fs) = print ("Frame " ++ show (length fs)) >> print (show $ clauses f) >> printFrames fs
 printFrames [] = print "No frames in list."
 
 -- | Consecution phase of the algorithm (calls subsequent consecution queries for
 -- other frames)
-prove' :: Model -> Lit -> Frame -> Bool
-prove' model prop frame =
-  consec frame [] 100
+prove' :: Model -> Lit -> Frame -> [Frame] -> Bool
+prove' m prop frame acc =
+  if consecution frame [prop]
+    then pushFrame frame (getFrame (vars m) []) acc
+      else
+        let cti = nextCTI frame [prop] m in
+          case proveNegCTI m frame (fst $ currentNext cti) acc [prop] of
+            (True, frame', acc') -> (clauses frame' /= clauses frame) &&
+                                (checkFix (acc' ++ [frame']) || prove' m prop frame' acc')
+            (False, frame', acc') -> False
   where
-    -- Limit n on the number of times consec can be invoked
-    consec f acc 0 = error "Limit of consec invocations reached."
-    consec f acc n =
-      if consecution f [prop]
-        then pushFrame f (getFrame (vars model) []) acc n
-        else
-          let cti = nextCTI f [prop] model in
-            case ctiFound f (fst $ currentNext cti) acc [prop] of
-              (True, f', acc') -> (clauses f' /= clauses f) &&
-                                    (case propagate (acc' ++ [f']) of
-                                       Just fs -> consec (fs !! (length fs - 1)) (take (length fs - 1) fs) (n - 1)
-                                       Nothing -> True)
-              (False, f', acc') -> False
-    pushFrame f f' acc n =
-      case push f model f' of
+    -- Push all possible clauses from frame f to frame f'
+    pushFrame f f' acc =
+      case push f m f' of
         (True, _) -> True
-        (False, f'') -> consec f'' (acc ++ [f]) (n - 1)
-    propagate (f:f':frames) =
-      case push f model f' of
-        (True, f'') -> Nothing
-        (False, f'') -> case propagate (f'':frames) of
-                          Just fs -> Just (f:fs)
-                          Nothing -> Nothing
-    propagate frames = Just frames
-    -- Try to prove CTI unreachable at current depth
-    ctiFound f _ [] p = (False, f, [])
-    ctiFound f cti acc p =
-      if satisfiable (solveWithAssumps (solver (getFrameWith (map neg cti:clauses (head acc)) model)) (map prime cti))
-        then (False, f, acc)
-        else
-          case pushCTI (map neg cti) acc f of
-            (Nothing, acc', f', []) -> if consecution f' p
-                                         then (True, f', acc')
-                                         else ctiFound f' (fst (currentNext (nextCTI f' p model))) acc' p
-            (Just model, acc', f', fs) -> case ctiFound f' (fst (currentNext model)) acc' (map neg cti) of
-                                            (True, f'', acc'') -> ctiFound f cti
-                                                                    (acc'' ++ f'':take (length fs - 1) fs) p
-                                            false              -> false
+        (False, f'') -> prove' m prop f'' (acc ++ [f])
+    -- See if fix point has been reached
+    checkFix (f:f':frames) =
+      let c  = clauses f
+          c' = clauses f' in
+      (sort c' == sort c) || checkFix (f':frames)
+    checkFix frames = False
+
+-- | Try to prove CTI unreachable at current depth given the current frame, CTI, previous frames and property
+proveNegCTI :: Model -> Frame -> [Lit] -> [Frame] -> Clause -> (Bool, Frame, [Frame])
+proveNegCTI m f _ [] p = (False, f, [])
+proveNegCTI m f cti acc p =
+    if satisfiable (solveWithAssumps (solver (getFrameWith (map neg cti:clauses (head acc)) m)) (map prime cti))
+      then (False, f, acc)
+      else
+        case pushCTI (map neg cti) acc f of
+          (Nothing, acc', f', []) -> if consecution f' p
+                                       then (True, f', acc')
+                                       else proveNegCTI m f' (fst (currentNext (nextCTI f' p m))) acc' p
+          (Just model, acc', f', fs) -> case proveNegCTI m f' (fst (currentNext model)) acc' (map neg cti) of
+                                          (True, f'', acc'') -> proveNegCTI m f cti
+                                                                  (acc'' ++ f'':take (length fs - 1) fs) p
+                                          false              -> false
+  where
     -- Find the deepest frame where the negated CTI holds
     pushCTI negCTI [] f = (Nothing, [], f, [])
     pushCTI negCTI acc f =
       let res = solveWithAssumps
-                  (solver (getFrameWith (negCTI:clauses (acc !! (length acc - 1))) model))
+                  (solver (getFrameWith (negCTI:clauses (acc !! (length acc - 1))) m))
                   (map (prime.neg) negCTI) in
         if not (satisfiable res)
           then let negCTI' = inductiveGeneralization negCTI (head acc) f in
             (Nothing, map (`addClauseToFrame` negCTI') acc, addClauseToFrame f negCTI', [])
           else
             case pushCTI negCTI (take (length acc - 1) acc) (acc !! (length acc - 1)) of
-              (Just m, acc', f', leftover)  -> (Just m, acc', f', leftover ++ [f])
-              (Nothing, acc', f', []) -> (Just (nextCTI (acc !! (length acc - 1)) negCTI model), acc', f', [f])
+              (Just model, acc', f', leftover)  -> (Just model, acc', f', leftover ++ [f])
+              (Nothing, acc', f', []) -> (Just (nextCTI (acc !! (length acc - 1)) negCTI m), acc', f', [f])
 
 -- | Find a minimal subclause of the provided clause that satisfies initiation and
 -- consecution.
+inductiveGeneralization :: Clause -> Frame -> Frame -> Clause
 inductiveGeneralization clause f0 fk = clause --generalize clause f0 fk []
   where
     -- May want to limit number of attempts and find an approximate minimal subclause instead

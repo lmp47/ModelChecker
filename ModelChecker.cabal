@@ -13,6 +13,8 @@ library
   c-sources: Parser/aiger/aiger.c
   include-dirs: ./Minisat, ./Test, ./Parser
   extra-libraries: stdc++
+  ghc-options: -rtsopts -with-rtsopts=-p
+  ghc-prof-options: -fprof-auto-top
 
 executable parseTest
   main-is: Test/ParseTester.hs
@@ -45,6 +47,7 @@ executable ic3Test
     Minisat/minisat/minisat/utils/System.cc,
     Minisat/minisat/minisat/utils/Options.cc
   extra-libraries: stdc++
+  ghc-options: -rtsopts "-with-rtsopts=-p" -auto-all -caf-all
 
 Test-Suite tests
   type: detailed-0.9

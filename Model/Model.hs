@@ -21,7 +21,7 @@ data Model = Model { vars :: Word
                    , initial :: [Clause]
                    , transition :: [Clause]
                    , safe :: Lit } deriving Show
-data Lit = Var Word | Neg Word | Var' Word | Neg' Word deriving (Show, Eq)
+data Lit = Var Word | Neg Word | Var' Word | Neg' Word deriving (Show, Eq, Ord)
 type Clause = [Lit]
 
 
