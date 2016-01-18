@@ -59,24 +59,30 @@ prove' :: Model -> Lit -> Frame -> [Frame] -> Bool
 prove' m prop frame acc =
   if consecution frame [prop]
     then pushFrame frame (getFrame (vars m) []) acc
-      else
-        let cti = nextCTI frame [prop] m in
-          case proveNegCTI m frame (fst $ currentNext cti) acc [prop] of
-            (True, frame', acc') -> (clauses frame' /= clauses frame) &&
-                                (checkFix (acc' ++ [frame']) || prove' m prop frame' acc')
-            (False, frame', acc') -> False
+    else
+      let cti = nextCTI frame [prop] m in
+        case proveNegCTI m frame (fst $ currentNext cti) acc [prop] of
+          (True, frame', acc') -> (clauses frame' /= clauses frame) &&
+                                  (case propagate (acc' ++ [frame']) of
+                                    Just fs ->
+                                      prove' m prop (fs !! (length fs - 1))
+                                        (take (length fs - 1) fs)
+                                    Nothing -> True)
+          (False, frame', acc') -> False
   where
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' acc =
       case push f m f' of
         (True, _) -> True
         (False, f'') -> prove' m prop f'' (acc ++ [f])
-    -- See if fix point has been reached
-    checkFix (f:f':frames) =
-      let c  = clauses f
-          c' = clauses f' in
-      (sort c' == sort c) || checkFix (f':frames)
-    checkFix frames = False
+    -- Push all clauses and see if fixed point has been reached (resulting in Nothing)
+    propagate (f:f':frames) =
+      case push f m f' of
+        (True, f'') -> Nothing
+        (False, f'') -> case propagate (f'':frames) of
+                          Just fs -> Just (f:fs)
+                          Nothing -> Nothing
+    propagate frames = Just frames
 
 -- | Try to prove CTI unreachable at current depth given the current frame, CTI, previous frames and property
 proveNegCTI :: Model -> Frame -> [Lit] -> [Frame] -> Clause -> (Bool, Frame, [Frame])
