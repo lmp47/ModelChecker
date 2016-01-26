@@ -8,11 +8,17 @@
 .names w1 w0 w1p
 01 1
 10 1
-.latch w2p w 0
-.names w w1 w0 w2p
+.latch w2p w2 0
+.names w2 w1 w0 w2p
 011 1
 10- 1
 110 1
+.latch w3p w 0
+.names w w2 w1 w0 w3p
+0111 1
+10-- 1
+110- 1
+1110 1
 .latch x0p x0 0
 .names x0 x0p
 0 1
@@ -30,7 +36,17 @@
 0001 1
 1-11 1
 11-1 1
-.names x2 x1 x0 o
-11- 1
-1-1 1
+.latch x3p x3 0
+.names x3 x2 x1 x0 w x3p
+01110 1
+10--0 1
+110-0 1
+11100 1
+11--1 1
+1-1-1 1
+1--11 1
+.names x3 x2 x1 x0 o
+11-- 1
+1-1- 1
+1--1 1
 .end
