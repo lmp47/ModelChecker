@@ -184,8 +184,8 @@ nextCTI frame prop m =
 
 -- | Push clauses to next frame
 push :: Frame -> Model -> Frame -> (Bool, Frame)
-push f model =
-  pusher (clauses f) True
+push f model f' =
+  pusher (clauses f \\ clauses f') True f'
   where
     pusher (c:cs) b f' = 
       if (c `notElem` clauses f') && consecution f c
