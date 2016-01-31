@@ -181,14 +181,14 @@ nextCTI frame prop m =
                                   then Var p:(getVarsFrom ps ls)
                                   else Neg p:(getVarsFrom ps ls)
     getVarsFrom (p:ps) ls = getVarsFrom ps ls
-
+   
 -- | Push clauses to next frame
 push :: Frame -> Model -> Frame -> (Bool, Frame)
 push f model f' =
   pusher (clauses f \\ clauses f') True f'
   where
     pusher (c:cs) b f' = 
-      if (c `notElem` clauses f') && consecution f c
+      if consecution f c
       then pusher cs b (addClauseToFrame f' c)
-      else pusher cs (b && consecution f c) f'
+      else pusher cs False f'
     pusher _ b f' = (b, addTransitionToFrame f' model)
