@@ -176,7 +176,7 @@ solveWithAssumps s assumps = unsafePerformIO res
                 res <- solveMinisatWithAssumps sol veclit >>= peek
                 return res)
 
--- | Convert from a minisat variable number to a positive literal of that variable.
+-- | Convert from a minisat variable number to a literal
 fromMinisatLit :: MinisatLit -> Lit
 fromMinisatLit mLit = unsafePerformIO (
   do
