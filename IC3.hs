@@ -16,6 +16,7 @@ import Debug.Trace
 import System.IO
 import System.Directory
 import Data.IORef
+import Data.Ord
 
 ctiCount :: IORef Int
 {-# NOINLINE ctiCount #-}
@@ -184,21 +185,16 @@ nextCTI frame prop m =
    
 removeSubsumed :: [Clause] -> [Clause]
 removeSubsumed cs =
-  removeSubsumed' cs []
+  removeSubsumed' (sortBy (comparing length) cs) []
   where
     removeSubsumed' (c:cs) acc =
-      case remove c cs acc [] [] of
-        (cs', acc') -> removeSubsumed' cs' (c:acc')
+      removeSubsumed' (reverse $ remove c cs []) (c:acc)
     removeSubsumed' _ acc = acc
-    remove cls (c:cs) cs' acc acc' =
+    remove cls (c:cs) acc =
       if (cls \\ c) == []
-        then remove cls cs cs' acc acc'
-        else remove cls cs cs' (c:acc) acc'
-    remove cls [] (c:cs) acc acc' =
-      if (cls \\ c) == []
-        then remove cls [] cs acc acc'
-        else remove cls [] cs acc (c:acc')
-    remove _ _ _ acc acc' = (acc, acc')
+        then remove cls cs acc
+        else remove cls cs (c:acc)
+    remove _ _ acc = acc
 
 -- | Push clauses to next frame
 push :: Frame -> Model -> Frame -> (Frame, Bool, Frame)
@@ -210,7 +206,7 @@ push f model f' =
              then f
              else getFrameWith cleaned model
     pusher (c:cs) b f' = 
-      if consecution f c
+      if consecution newF c
       then pusher cs b (addClauseToFrame f' c)
       else pusher cs False f'
     pusher _ b f' = (newF, b, addTransitionToFrame f' model)
