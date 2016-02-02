@@ -105,15 +105,15 @@ prove' m prop frame acc =
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' acc =
       case push f m f' of
-        (True, _) -> True
-        (False, f'') -> prove' m prop f'' (acc ++ [f])
+        (_, True, _) -> True
+        (f, False, f'') -> prove' m prop f'' (acc ++ [f])
     -- Push all clauses and see if fixed point has been reached (resulting in Nothing)
     propagate (f:f':frames) =
       case push f m f' of
-        (True, f'') -> Nothing
-        (False, f'') -> case propagate (f'':frames) of
-                          Just fs -> Just (f:fs)
-                          Nothing -> Nothing
+        (_, True, f'') -> Nothing
+        (f, False, f'') -> case propagate (f'':frames) of
+                            Just fs -> Just (f:fs)
+                            Nothing -> Nothing
     propagate frames = Just frames
 
 -- | Try to prove CTI unreachable at current depth given the current frame, CTI, previous frames and property
@@ -182,13 +182,35 @@ nextCTI frame prop m =
                                   else Neg p:(getVarsFrom ps ls)
     getVarsFrom (p:ps) ls = getVarsFrom ps ls
    
--- | Push clauses to next frame
-push :: Frame -> Model -> Frame -> (Bool, Frame)
-push f model f' =
-  pusher (clauses f \\ clauses f') True f'
+removeSubsumed :: [Clause] -> [Clause]
+removeSubsumed cs =
+  removeSubsumed' cs []
   where
+    removeSubsumed' (c:cs) acc =
+      case remove c cs acc [] [] of
+        (cs', acc') -> removeSubsumed' cs' (c:acc')
+    removeSubsumed' _ acc = acc
+    remove cls (c:cs) cs' acc acc' =
+      if (cls \\ c) == []
+        then remove cls cs cs' acc acc'
+        else remove cls cs cs' (c:acc) acc'
+    remove cls [] (c:cs) acc acc' =
+      if (cls \\ c) == []
+        then remove cls [] cs acc acc'
+        else remove cls [] cs acc (c:acc')
+    remove _ _ _ acc acc' = (acc, acc')
+
+-- | Push clauses to next frame
+push :: Frame -> Model -> Frame -> (Frame, Bool, Frame)
+push f model f' =
+  pusher (cleaned \\ clauses f') True f'
+  where
+    cleaned = removeSubsumed (clauses f)
+    newF = if (length (cleaned) == length (clauses f))
+             then f
+             else getFrameWith cleaned model
     pusher (c:cs) b f' = 
       if consecution f c
       then pusher cs b (addClauseToFrame f' c)
       else pusher cs False f'
-    pusher _ b f' = (b, addTransitionToFrame f' model)
+    pusher _ b f' = (newF, b, addTransitionToFrame f' model)
