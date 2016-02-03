@@ -10,6 +10,17 @@ import Minisat.Minisat
 import Data.Word
 import System.IO.Unsafe
 import Data.List
+import System.IO
+import Data.IORef
+import Debug.Trace
+
+ctiCount :: IORef Int 
+{-# NOINLINE ctiCount #-}
+ctiCount = unsafePerformIO (newIORef 0)
+
+queryCount :: IORef Int 
+{-# NOINLINE queryCount #-}
+queryCount = unsafePerformIO (newIORef 0)
 
 data Frame = Frame { solver  :: Solver
                    , clauses :: [Clause] }
@@ -40,18 +51,36 @@ prove model prop =
 
 -- | Initiation query. Checks if I && (not P) is UNSAT.
 initiation :: Frame -> Clause -> Bool
-initiation f prop = not (satisfiable (solveWithAssumps (solver f) (map neg prop)))
+initiation f prop = unsafePerformIO (modifyIORef' queryCount (+ 1) >> return (
+                      not (satisfiable (solveWithAssumps (solver f) (map neg prop))) ))
 
 -- | Consecution query. Checks if F_k && T && (not P') is UNSAT, where P is a disjunction of literals.
 consecution :: Frame -> Clause -> Bool
-consecution f prop =
-  not (satisfiable (solveWithAssumps (solver f) (map (prime.neg) prop)))
+consecution f prop = unsafePerformIO (modifyIORef' queryCount (+ 1) >> return (
+  not (satisfiable (solveWithAssumps (solver f) (map (prime.neg) prop))) ))
 
 -- | Print the clauses per frame in the provided list of frames
 printFrames :: [Frame] -> IO ()
 printFrames [f] = print (clauses f)
 printFrames (f:fs) = print ("Frame " ++ show (length fs)) >> print (show $ clauses f) >> printFrames fs
 printFrames [] = print "No frames in list."
+
+-- | Calculate the average number of literals per clause in each frame
+calcAvgLitsPerCls :: [Frame] -> Double
+calcAvgLitsPerCls frames =
+  (sum (map calcAvgPerFrame frames)) / (fromIntegral (length frames))
+  where
+  calcAvgPerFrame f =
+    let cls = clauses f in
+      (fromIntegral (sum (map length cls))) / (fromIntegral (length cls))
+
+-- | Trace stat output
+stats :: [Frame] -> a -> a
+stats frames = trace ("Number of frames: " ++ show (length frames) ++
+                      "\nAverage number of literals/clause (not counting transition relation): "
+                      ++ show(calcAvgLitsPerCls frames) ++
+                      "\nNumber of ctis: " ++ (show $ unsafePerformIO $ readIORef ctiCount) ++
+                      "\nNumber of queries: " ++ (show $ unsafePerformIO $ readIORef queryCount) )
 
 -- | Consecution phase of the algorithm (calls subsequent consecution queries for
 -- other frames)
@@ -67,8 +96,8 @@ prove' m prop frame acc =
                                     Just fs ->
                                       prove' m prop (fs !! (length fs - 1))
                                         (take (length fs - 1) fs)
-                                    Nothing -> True)
-          (False, frame', acc') -> False
+                                    Nothing -> stats (frame:acc) True)
+          (False, frame', acc') -> stats (frame:acc) False
   where
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' acc =
@@ -129,11 +158,12 @@ inductiveGeneralization clause f0 fk = clause --generalize clause f0 fk []
 -- | Finds a CTI given a safety property clause
 nextCTI :: Frame -> Clause -> Model -> [Lit]
 nextCTI frame prop m =
-  case res of
+  case unsafePerformIO (modifyIORef' ctiCount (+ 1) >> return res) of
     Just ls -> ls
     _       -> error "No CTI found."
   where
-    res = model $ solveWithAssumps (solver (getFrameWith (clauses frame) m)) (map (prime.neg) prop)
+    res = unsafePerformIO (modifyIORef' queryCount (+ 1) >> return (
+            model $ solveWithAssumps (solver (getFrameWith (clauses frame) m)) (map (prime.neg) prop)) )
 
 -- | Push clauses to next frame
 push :: Frame -> Model -> Frame -> (Bool, Frame)
