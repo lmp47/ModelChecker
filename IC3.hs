@@ -141,7 +141,7 @@ proveNegCTI m f cti acc p =
           else
             case pushCTI negCTI (take (length acc - 1) acc) (acc !! (length acc - 1)) of
               (Just model, acc', f', leftover)  -> (Just model, acc', f', leftover ++ [f])
-              (Nothing, acc', f', []) -> (Just (nextCTI (acc !! (length acc - 1)) negCTI m), acc', f', [f])
+              (Nothing, acc', f', []) -> (Just (nextCTI f' negCTI m), acc', f', [f])
 
 -- | Find a minimal subclause of the provided clause that satisfies initiation and
 -- consecution.
@@ -151,7 +151,7 @@ inductiveGeneralization clause f0 fk = clause --generalize clause f0 fk []
     -- May want to limit number of attempts and find an approximate minimal subclause instead
     generalize [] _ _ needed = needed
     generalize (c:cs) f0 fk needed =
-      if initiation f0 cs && consecution fk cs
+      if consecution fk cs && initiation f0 cs
         then generalize cs f0 fk needed
         else generalize cs f0 fk (c:needed)
 
@@ -167,11 +167,11 @@ nextCTI frame prop m =
 
 -- | Push clauses to next frame
 push :: Frame -> Model -> Frame -> (Bool, Frame)
-push f model =
-  pusher (clauses f) True
+push f model f' =
+  pusher (clauses f \\ clauses f') True f'
   where
     pusher (c:cs) b f' = 
-      if (c `notElem` clauses f') && consecution f c
+      if consecution f c
       then pusher cs b (addClauseToFrame f' c)
-      else pusher cs (b && consecution f c) f'
+      else pusher cs False f'
     pusher _ b f' = (b, addTransitionToFrame f' model)
