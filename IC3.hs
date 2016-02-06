@@ -145,7 +145,7 @@ proveNegCTI m f cti acc p =
           else
             case pushNegCTI negCTI (take (length acc - 1) acc) (acc !! (length acc - 1)) m of
               (Just model, acc', f', leftover)  -> (Just model, acc', f', leftover ++ [f])
-              (Nothing, acc', f', []) -> (Just (nextCTI (acc !! (length acc - 1)) negCTI m), acc', f', [f])
+              (Nothing, acc', f', []) -> (Just (nextCTI f' negCTI m), acc', f', [f])
 
 -- | Find a minimal subclause of the provided clause that satisfies initiation and
 -- consecution.
@@ -156,8 +156,8 @@ inductiveGeneralization clause f0 fk m = clause --generalize clause f0 fk [] 3
     generalize cs _ _ needed 0 = cs ++ needed
     generalize [] _ _ needed _ = needed
     generalize (c:cs) f0 fk needed k =
-      let res = solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs) in
-        if initiation f0 cs && not (satisfiable res) --consecution fk cs
+      let res = solveWithAssumps (solver (getFrameWith (removeSubsumed (cs:(clauses fk))) m)) (map (prime.neg) cs) in
+        if not (satisfiable res) && initiation f0 cs
           then generalize cs f0 fk needed k
           else generalize cs f0 fk (c:needed) ( k - 1 )
 
