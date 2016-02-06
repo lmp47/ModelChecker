@@ -124,27 +124,25 @@ proveNegCTI m f cti acc p =
       then (False, f, acc)
       else
         case pushNegCTI (map neg cti) acc f m of
-          (Nothing, acc', f', []) -> if consecution f' p
-                                       then (True, f', acc')
-                                       else proveNegCTI m f' (fst (currentNext (nextCTI f' p m))) acc' p
-          (Just model, acc', f', fs) -> case proveNegCTI m f' (fst (currentNext model)) acc' (map neg cti) of
-                                          (True, f'', acc'') -> proveNegCTI m f cti
-                                                                  (acc'' ++ f'':take (length fs - 1) fs) p
-                                          false              -> false
+          (Nothing, acc', f') -> if consecution f' p
+                                   then (True, f', acc')
+                                   else proveNegCTI m f' (fst (currentNext (nextCTI f' p m))) acc' p
+          (Just model, acc', f') -> case proveNegCTI m f' (fst (currentNext model)) acc' (map neg cti) of
+                                      (True, f'', acc'') -> proveNegCTI m f cti (acc'' ++ [f'']) p
+                                      false              -> false
   where
     -- Find the deepest frame where the negated CTI holds
-    pushNegCTI negCTI [] f _ = (Nothing, [], f, [])
+    pushNegCTI negCTI [] f _ = (Nothing, [], f)
     pushNegCTI negCTI acc f m =
-      let res = solveWithAssumps
+      let res = unsafePerformIO ( modifyIORef' queryCount (+ 1) >> return (
+                  solveWithAssumps
                   (solver (getFrameWith (negCTI:clauses (acc !! (length acc - 1))) m))
-                  (map (prime.neg) negCTI) in
+                  (map (prime.neg) negCTI) )) in
         if not (satisfiable res)
           then let negCTI' = inductiveGeneralization negCTI (head acc) f m in
-            (Nothing, map (`addClauseToFrame` negCTI') acc, addClauseToFrame f negCTI', [])
-          else
-            case pushNegCTI negCTI (take (length acc - 1) acc) (acc !! (length acc - 1)) m of
-              (Just model, acc', f', leftover)  -> (Just model, acc', f', leftover ++ [f])
-              (Nothing, acc', f', []) -> (Just (nextCTI f' negCTI m), acc', f', [f])
+            (Nothing, map (`addClauseToFrame` negCTI') acc, addClauseToFrame f negCTI')
+          else let f' = acc !! (length acc - 1) in
+            (Just (nextCTI f' negCTI m), take (length acc - 1) acc, f')
 
 -- | Find a minimal subclause of the provided clause that satisfies initiation and
 -- consecution.
@@ -156,7 +154,7 @@ inductiveGeneralization clause f0 fk m = clause --generalize clause f0 fk [] 3
     generalize [] _ _ needed _ = needed
     generalize (c:cs) f0 fk needed k =
       let res = solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs) in
-        if initiation f0 cs && not (satisfiable res) --consecution fk cs
+        if not (satisfiable res) && initiation f0 cs --consecution fk cs
           then generalize cs f0 fk needed k
           else generalize cs f0 fk (c:needed) ( k - 1 )
 
