@@ -135,22 +135,24 @@ proveNegCTI m f cti acc p =
                   (solver (getFrameWith (negCTI:clauses (acc !! (length acc - 1))) m))
                   (map (prime.neg) negCTI) in
         if not (satisfiable res)
-          then let negCTI' = inductiveGeneralization negCTI (head acc) f in
+          then let negCTI' = inductiveGeneralization negCTI (head acc) f m 3 in
             (Nothing, map (`addClauseToFrame` negCTI') acc, addClauseToFrame f negCTI')
           else let f' = acc !! (length acc - 1) in
             (Just (nextCTI f' negCTI m), take (length acc - 1) acc, f')
 
 -- | Find a minimal subclause of the provided clause that satisfies initiation and
 -- consecution.
-inductiveGeneralization :: Clause -> Frame -> Frame -> Clause
-inductiveGeneralization clause f0 fk = clause --generalize clause f0 fk []
+inductiveGeneralization :: Clause -> Frame -> Frame -> Model -> Word -> Clause
+inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
   where
     -- May want to limit number of attempts and find an approximate minimal subclause instead
-    generalize [] _ _ needed = needed
-    generalize (c:cs) f0 fk needed =
-      if consecution fk cs && initiation f0 cs
-        then generalize cs f0 fk needed
-        else generalize cs f0 fk (c:needed)
+    generalize cs _ _ needed 0 = cs ++ needed
+    generalize [] _ _ needed _ = needed
+    generalize (c:cs) f0 fk needed k =
+      let res = solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs) in
+        if not (satisfiable res) && initiation f0 cs
+          then generalize cs f0 fk needed k
+          else generalize cs f0 fk (c:needed) ( k - 1 )
 
 -- | Finds a CTI given a safety property clause
 nextCTI :: Frame -> Clause -> Model -> [Lit]
