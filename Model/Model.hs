@@ -72,14 +72,14 @@ toModel m =
         , safe = neg $ toLit prop}
   where
     vars = 2 * Aig.numVars m
-    ins' = makePrimeInputs $ Aig.numInputs m
+    -- Constant inputs: ins' = makePrimeInputs $ Aig.numInputs m
     (latches, latches') = makeLatches $ Aig.latches m
     gates  = makeAnds $ Aig.ands m
     gates' = map (map prime) gates
     initial m =
       latches ++ map (\x -> [toLit x]) (Aig.constraints m)
     transition m =
-      ins' ++ latches' ++ gates' ++ gates
+      latches' ++ gates' ++ gates
     badprops = Aig.bad m
     outprops = Aig.outputs m
     prop | not (null badprops) = head badprops
