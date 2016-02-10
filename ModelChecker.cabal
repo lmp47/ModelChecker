@@ -16,28 +16,8 @@ library
   ghc-options: -rtsopts -with-rtsopts=-p
   ghc-prof-options: -fprof-auto-top
 
-executable parseTest
-  main-is: Test/ParseTester.hs
-  other-modules: Parser.AigerParser, Parser.AigerTools, Parser.AigModel
-  build-depends: base, split, bytestring, directory
-  default-language: Haskell2010
-  includes: Parser/aiger/aiger.h
-  c-sources: Parser/aiger/aiger.c
-
-executable minisatTest
-  main-is: Test/MinisatTester.hs
-  other-modules: Minisat.Minisat, Model.Model
-  build-depends: base
-  default-language: Haskell2010
-  c-sources: Minisat/CSolver.cpp,
-    Minisat/minisat/minisat/core/Solver.cc,
-    Minisat/minisat/minisat/simp/SimpSolver.cc,
-    Minisat/minisat/minisat/utils/System.cc,
-    Minisat/minisat/minisat/utils/Options.cc
-  extra-libraries: stdc++
-
-executable ic3Test
-  main-is: Test/IC3Tester.hs
+executable checkDir
+  main-is: CheckDir.hs
   build-depends: base, split, bytestring, directory
   default-language: Haskell2010
   c-sources: Parser/aiger/aiger.c,
@@ -61,11 +41,6 @@ executable check
     Minisat/minisat/minisat/utils/Options.cc
   extra-libraries: stdc++
   ghc-options: -rtsopts "-with-rtsopts=-p" -auto-all -caf-all
-
-executable plot
-  main-is: Benchmark/Plot.hs
-  build-depends: base, split, bytestring, directory, Chart, Chart-diagrams
-  default-language: Haskell2010
 
 Test-Suite tests
   type: detailed-0.9
@@ -107,5 +82,5 @@ Benchmark benchmarks
     Minisat/minisat/minisat/utils/System.cc,
     Minisat/minisat/minisat/utils/Options.cc
   extra-libraries: stdc++
-  main-is: BenchMark/Benchmark.hs
+  main-is: Benchmark/Benchmark.hs
   ghc-options: -fno-full-laziness
