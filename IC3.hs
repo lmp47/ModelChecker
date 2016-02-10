@@ -102,7 +102,7 @@ prove' m prop frame acc =
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' acc =
       case push f m f' of
-        (_, True, _) -> True
+        (_, True, _) -> stats (f:acc) True
         (f, False, f'') -> prove' m prop f'' (acc ++ [f])
     -- Push all clauses and see if fixed point has been reached (resulting in Nothing)
     propagate (f:f':frames) =
