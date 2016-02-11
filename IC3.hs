@@ -97,7 +97,7 @@ stats frames cc qc = trace ("Number of frames: " ++ show (length frames) ++
                             "\nAverage number of literals/clause (not counting transition relation): "
                             ++ show(calcAvgLitsPerCls frames) ++
                             "\nNumber of ctis: " ++ (show $ unsafePerformIO $ readR cc) ++ 
-                            "\nNumber of queries: " ++ (show $ unsafePerformIO $ readR queryCount) )
+                            "\nNumber of queries: " ++ (show $ unsafePerformIO $ readR qc) )
 
 -- | Consecution phase of the algorithm (calls subsequent consecution queries for
 -- other frames)
