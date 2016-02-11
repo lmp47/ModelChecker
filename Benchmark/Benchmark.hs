@@ -10,7 +10,7 @@ import Control.Monad
 main :: IO ()
 main =
   do
-    let directories = ["examples"]
+    let directories = ["examples", "hwmcc10"]
     bgroups <- mapM makeBgroup directories
     defaultMain bgroups
 
