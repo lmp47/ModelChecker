@@ -21,6 +21,21 @@ queryCount :: IORef Int
 {-# NOINLINE queryCount #-}
 queryCount = unsafePerformIO (newIORef 0)
 
+increment :: IORef Int -> IO ()
+increment x = atomicModifyIORef' x increment'
+  where
+    increment' y = (y + 1, ()) 
+
+zero :: IORef Int -> IO ()
+zero x = atomicModifyIORef' x zero'
+  where
+    zero' y = (0, ()) 
+
+readR :: IORef Int -> IO (Int)
+readR x = atomicModifyIORef' x read'
+  where
+    read' x = (x, x)
+
 data Frame = Frame { solver  :: Solver
                    , clauses :: [Clause] }
 
@@ -74,12 +89,12 @@ calcAvgLitsPerCls frames =
       (fromIntegral (sum (map length cls))) / (fromIntegral (length cls))
 
 -- | Trace stat output
-stats :: [Frame] -> a -> a
-stats frames = trace ("Number of frames: " ++ show (length frames) ++
-                      "\nAverage number of literals/clause (not counting transition relation): "
-                      ++ show(calcAvgLitsPerCls frames) ++
-                      "\nNumber of ctis: " ++ (show $ unsafePerformIO $ readIORef ctiCount) ++
-                      "\nNumber of queries: " ++ (show $ unsafePerformIO $ readIORef queryCount) )
+stats :: [Frame] -> IORef Int -> IORef Int -> a -> a
+stats frames cc qc = trace ("Number of frames: " ++ show (length frames) ++
+                            "\nAverage number of literals/clause (not counting transition relation): "
+                            ++ show(calcAvgLitsPerCls frames) ++
+                            "\nNumber of ctis: " ++ (show $ unsafePerformIO $ readR cc) ++
+                            "\nNumber of queries: " ++ (show $ unsafePerformIO $ readR qc) )
 
 -- | Consecution phase of the algorithm (calls subsequent consecution queries for
 -- other frames)
@@ -95,13 +110,13 @@ prove' m prop frame acc =
                                     Just fs ->
                                       prove' m prop (fs !! (length fs - 1))
                                         (take (length fs - 1) fs)
-                                    Nothing -> stats (frame:acc) True)
-          (False, frame', acc') -> stats (frame:acc) False
+                                    Nothing -> stats (frame:acc) ctiCount queryCount True)
+          (False, frame', acc') -> stats (frame:acc) ctiCount queryCount False
   where
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' acc =
       case push f m f' of
-        (True, _) -> True
+        (True, _) -> stats (frame:acc) ctiCount queryCount True
         (False, f'') -> prove' m prop f'' (acc ++ [f])
     -- Push all clauses and see if fixed point has been reached (resulting in Nothing)
     propagate (f:f':frames) =
