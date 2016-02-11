@@ -34,9 +34,7 @@ getFrameWith clauses model = addTransitionToFrame (getFrame (vars model) clauses
 -- | Given a model and a safety property, checks if the model satisfies the property
 prove :: Model -> Lit -> Bool
 prove model prop =
-  unsafePerformIO (zero ctiCount >> zero queryCount >> return (
     initiation f0 [prop] && prove' model prop (addClauseToFrame f0 [prop]) []
-  ))
   where
     f0 = getFrameWith (initial model) model
 
