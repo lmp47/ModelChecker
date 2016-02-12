@@ -10,6 +10,31 @@ import Minisat.Minisat
 import Data.Word
 import System.IO.Unsafe
 import Data.List
+import Data.IORef
+import Debug.Trace
+
+ctiCount :: IORef Int
+{-# NOINLINE ctiCount #-}
+ctiCount = unsafePerformIO (newIORef 0)
+
+queryCount :: IORef Int
+{-# NOINLINE queryCount #-}
+queryCount = unsafePerformIO (newIORef 0)
+
+increment :: IORef Int -> IO ()
+increment x = atomicModifyIORef' x increment'
+  where
+    increment' y = (y + 1, ())
+
+zero :: IORef Int -> IO ()
+zero x = atomicModifyIORef' x zero'
+  where
+    zero' y = (0, ())
+
+readR :: IORef Int -> IO (Int)
+readR x = atomicModifyIORef' x read'
+  where
+    read' x = (x, x)
 
 data Frame = Frame { solver  :: Solver
                    , clauses :: [Clause] }
@@ -34,17 +59,44 @@ getFrameWith clauses model = addTransitionToFrame (getFrame (vars model) clauses
 -- | Given a model and a safety property, checks if the model satisfies the property
 prove :: Model -> Lit -> Bool
 prove model prop =
+  unsafePerformIO (zero ctiCount >> zero queryCount >> return (
     initiation f0 [prop] && prove' model prop (addClauseToFrame f0 [prop]) []
+  ))
   where
     f0 = getFrameWith (initial model) model
 
 -- | Initiation query. Checks if I && (not P) is UNSAT.
 initiation :: Frame -> Clause -> Bool
-initiation f prop = not (satisfiable (solveWithAssumps (solver f) (map neg prop)))
+initiation f prop = unsafePerformIO (increment queryCount >> return (
+                      not (satisfiable (solveWithAssumps (solver f) (map neg prop))) ))
 
 -- | Consecution query. Checks if F_k && T && (not P') is UNSAT, where P is a disjunction of literals.
 consecution :: Frame -> Clause -> Bool
-consecution f prop = not (satisfiable (solveWithAssumps (solver f) (map (prime.neg) prop)))
+consecution f prop = unsafePerformIO (increment queryCount >> return (
+  not (satisfiable (solveWithAssumps (solver f) (map (prime.neg) prop))) ))
+
+-- | Print the clauses per frame in the provided list of frames
+printFrames :: [Frame] -> IO ()
+printFrames [f] = print (clauses f)
+printFrames (f:fs) = print ("Frame " ++ show (length fs)) >> print (show $ clauses f) >> printFrames fs
+printFrames [] = print "No frames in list."
+
+-- | Calculate the average number of literals per clause in each frame
+calcAvgLitsPerCls :: [Frame] -> Double
+calcAvgLitsPerCls frames =
+  (sum (map calcAvgPerFrame frames)) / (fromIntegral (length frames))
+  where
+  calcAvgPerFrame f =
+    let cls = clauses f in
+      (fromIntegral (sum (map length cls))) / (fromIntegral (length cls))
+
+-- | Trace stat output
+stats :: [Frame] -> IORef Int -> IORef Int -> a -> a
+stats frames cc qc = trace ("Number of frames: " ++ show (length frames) ++
+                            "\nAverage number of literals/clause (not counting transition relation): "
+                            ++ show(calcAvgLitsPerCls frames) ++
+                            "\nNumber of ctis: " ++ (show $ unsafePerformIO $ readR cc) ++ 
+                            "\nNumber of queries: " ++ (show $ unsafePerformIO $ readR qc) )
 
 -- | Consecution phase of the algorithm (calls subsequent consecution queries for
 -- other frames)
@@ -60,13 +112,13 @@ prove' m prop frame acc =
                                     Just fs ->
                                       prove' m prop (fs !! (length fs - 1))
                                         (take (length fs - 1) fs)
-                                    Nothing -> True)
-          (False, frame', acc') -> False
+                                    Nothing -> stats (frame:acc) ctiCount queryCount True)
+          (False, frame', acc') -> stats (frame:acc) ctiCount queryCount False
   where
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' acc =
       case push f m f' of
-        (True, _) -> True
+        (True, _) -> stats (f:acc) ctiCount queryCount True
         (False, f'') -> prove' m prop f'' (acc ++ [f])
     -- Push all clauses and see if fixed point has been reached (resulting in Nothing)
     propagate (f:f':frames) =
@@ -81,7 +133,9 @@ prove' m prop frame acc =
 proveNegCTI :: Model -> Frame -> [Lit] -> [Frame] -> Clause -> (Bool, Frame, [Frame])
 proveNegCTI m f _ [] p = (False, f, [])
 proveNegCTI m f cti acc p =
-    if satisfiable (solveWithAssumps (solver (getFrameWith (map neg cti:clauses (head acc)) m)) (map prime cti))
+    if unsafePerformIO (increment queryCount >> return (
+         satisfiable (solveWithAssumps (solver (getFrameWith (map neg cti:clauses (head acc)) m)) (map prime cti))
+       ))
       then (False, f, acc)
       else
         case pushNegCTI (map neg cti) acc f of
@@ -94,9 +148,10 @@ proveNegCTI m f cti acc p =
   where
     pushNegCTI negCTI [] f = (Nothing, [], f)
     pushNegCTI negCTI acc f =
-      let res = solveWithAssumps
+      let res = unsafePerformIO ( increment queryCount >> return (
+                  solveWithAssumps
                   (solver (getFrameWith (negCTI:clauses (acc !! (length acc - 1))) m))
-                  (map (prime.neg) negCTI) in
+                  (map (prime.neg) negCTI) )) in
         if not (satisfiable res)
           then let negCTI' = inductiveGeneralization negCTI (head acc) f m 3 in
             (Nothing, map (`addClauseToFrame` negCTI') acc, addClauseToFrame f negCTI')
@@ -111,7 +166,9 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
     generalize cs _ _ needed 0 = cs ++ needed
     generalize [] _ _ needed _ = needed
     generalize (c:cs) f0 fk needed k =
-      let res = solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs) in
+      let res = unsafePerformIO (increment queryCount >> return (
+                  solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs)
+                )) in
         if not (satisfiable res) && initiation f0 cs
           then generalize cs f0 fk needed k
           else generalize cs f0 fk (c:needed) ( k - 1 )
@@ -119,14 +176,16 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
 -- | Finds a CTI given a safety property clause
 nextCTI :: Frame -> Clause -> Model -> [Lit]
 nextCTI frame prop m =
-  case res of
+  case unsafePerformIO (increment ctiCount >> return res) of
     Just ls -> case pred ls of
                  Just ps -> getVarsFrom ps ls
                  _       -> error "Should be UNSAT."
     _       -> error "No CTI found."
   where
-    res = model $ solveWithAssumps (solver frame) (map (prime.neg) prop)
-    pred psc = conflict $ solveWithAssumps (solver (getFrameWith [map prime prop] m)) psc
+    res = unsafePerformIO (increment queryCount >> return (
+            model $ solveWithAssumps (solver frame) (map (prime.neg) prop) ))
+    pred psc = unsafePerformIO (increment queryCount >> return (
+                 conflict $ solveWithAssumps (solver (getFrameWith [map prime prop] m)) (psc) ))
     getVarsFrom [] _ = []
     getVarsFrom (Var p:ps) ls = if Var p `elem` ls
                                   then Var p:(getVarsFrom ps ls)
