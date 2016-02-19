@@ -3,8 +3,8 @@ Module : Model
 Description : Model for representing transition system and safety property
 -}
 
-module Model.Model ( Model (vars, initial, transition, safe)
-                   , Lit(Var, Neg, Var', Neg')
+module Model.Model ( Model (Model, vars, initial, transition, safe)
+                   , Lit (Var, Neg, Var', Neg')
                    , Clause
                    , toModel
                    , prime

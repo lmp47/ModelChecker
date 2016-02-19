@@ -3,7 +3,13 @@ Module : IC3
 Description : Model checking algorithm
 -}
 
-module IC3 ( prove ) where
+module IC3 ( prove
+           , getFrame
+           , addClauseToFrame
+           , initiation
+           , consecution
+           , nextCTI
+           , push ) where
 
 import Model.Model
 import Minisat.Minisat

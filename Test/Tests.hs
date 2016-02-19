@@ -17,9 +17,13 @@ tests :: IO [C.Test]
 tests = do
         pTest <- parseTests
         return $ map (uncurry HUnit.test) [ ("IC3 Algorithm Tests", ic3Test)
+                                          , ("IC3 Initiation Tests", initiationTest)
+                                          , ("IC3 Consecution Tests", consecutionTest)
+                                          , ("IC3 nextCTI Tests", nextCTITest)
                                           , ("Parser Test", pTest)
                                           , ("Minisat Test", minisatTest) ]
 
+-- IC3 Tests
 ic3Test :: Test
 ic3Test = TestList ( map checkTest
   [ ("simple1.aag", False), ("simple2.aag", True), ("simple3.aag", True)
@@ -36,6 +40,53 @@ checkTest (name, bool) =
              let model = toModel aigModel
              assertEqual name bool (prove model (safe model)) )
 
+-- IC3 Initiation Tests
+initiationTest :: Test
+initiationTest = TestList (map (TestCase.(uncurry assertBool))
+                   [ ("initiation1", initiation1), ("initiation2", initiation2)
+                   , ("initiation3", initiation3), ("initiation4", initiation4) ])
+  where
+  initiation1 = not $ initiation (getFrame 2 [[Neg 0, Neg' 0], [Var 0, Var' 0]]) [Var 0]
+  initiation2 = initiation (getFrame 2 [[Neg 0, Neg' 0], [Var 0, Var' 0]]) [Var 0, Neg 0]
+  initiation3 = not $ initiation (getFrame 6 [[Neg 0, Var 1], [Neg 0, Var 2], [Neg 1, Neg 2, Var 0], [Var 1]]) [Neg 0]
+  initiation4 = initiation (getFrame 6 [[Neg 0, Var 1], [Neg 0, Var 2], [Neg 1, Neg 2, Var 0], [Var 0]]) [Var 1]
+
+-- IC3 Consecution Tests
+consecutionTest :: Test
+consecutionTest = TestList (map (TestCase.(uncurry assertBool))
+                    [ ("consecution1", consecution1), ("consecution2", consecution2)
+                    , ("consecution3", consecution3), ("consecution4", consecution4) ])
+  where
+  consecution1 = not $ consecution (getFrame 2 [[Neg 0, Neg' 0], [Var 0, Var' 0], [Var 0]]) [Var 0]
+  consecution2 = not $ consecution (getFrame 2 [[Neg 0, Neg' 0], [Var 0, Var' 0]]) [Var 0]
+  consecution3 = consecution (getFrame 2 [[Neg 0, Neg' 0], [Var 0, Var' 0]]) [Var 0, Neg 0]
+  consecution4 = consecution (getFrame 6 [ [Neg 0, Var 1], [Neg 0, Var 2], [Neg 1, Neg 2, Var 0]
+                                         , [Neg' 0, Var' 1], [Neg' 0, Var' 2], [Neg' 1, Neg' 2, Var' 0]
+                                         , [Var 0, Neg' 0], [Neg 0, Var' 0], [Var 1], [Var 2] ]) [Var 1]
+
+-- IC3 NextCTI Tests
+nextCTITest :: Test
+nextCTITest = TestList (map (TestCase.(uncurry assertBool))
+                [ ("nextCTI1", nextCTI1), ("nextCTI2", nextCTI2)
+                , ("nextCTI3", nextCTI3), ("nextCTI4", nextCTI4) ])
+  where
+  model1 = Model { vars = 2
+                 , initial = []
+                 , transition = [[Neg 0, Neg' 0], [Var 0, Var' 0]]
+                 , safe = Neg 0 }
+  model2 = Model { vars = 6
+                 , initial = []
+                 , transition = [ [Neg 0, Var 1], [Neg 0, Var 2], [Neg 1, Neg 2, Var 0]
+                                , [Neg' 0, Var' 1], [Neg' 0, Var' 2], [Neg' 1, Neg' 2, Var' 0]
+                                , [Neg 0, Neg' 0], [Var 0, Var' 0] ]
+                 , safe = Neg 0 }
+  nextCTI1 = (Neg 0) `elem` (nextCTI (getFrame 2 []) [Neg 0] model1)
+  nextCTI2 = (Var 0) `elem` (nextCTI (getFrame 2 []) [Var 0] model1)
+  nextCTI3 = (Var 1) `elem` (nextCTI (getFrame 6 []) [Var 0] model2)
+  nextCTI4 = (Var 0) `elem` (nextCTI (getFrame 6 []) [Var 0] model2)
+  
+
+-- Parse tests
 parseTests :: IO (Test)
 parseTests = (liftM TestList)
                ( foldl1 (liftM2 (++))
@@ -57,6 +108,7 @@ parseTest name =
              , assertEqual (name ++ " outputs") (sort (outputs aigModel)) (sort (outputs aigModel'))
              , assertEqual (name ++ " ands") (sort (ands aigModel)) (sort (ands aigModel')) ])
 
+-- Minisat tests
 minisatTest :: Test
 minisatTest = TestList (map TestCase 
                 [ assertEqual "solver1" 0 (getVarValue solver1 [Neg 0] 1)
