@@ -5,6 +5,7 @@ Description : Model checking algorithm
 
 module IC3 ( prove
            , getFrame
+           , getFrameWith
            , addClauseToFrame
            , initiation
            , consecution

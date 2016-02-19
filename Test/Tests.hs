@@ -12,16 +12,18 @@ import Control.Monad
 import IC3
 import qualified Distribution.TestSuite as C
 import qualified Distribution.TestSuite.HUnit as HUnit
+import Debug.Trace
 
 tests :: IO [C.Test]
 tests = do
         pTest <- parseTests
-        return $ map (uncurry HUnit.test) [ ("IC3 Algorithm Tests", ic3Test)
-                                          , ("IC3 Initiation Tests", initiationTest)
-                                          , ("IC3 Consecution Tests", consecutionTest)
-                                          , ("IC3 nextCTI Tests", nextCTITest)
-                                          , ("Parser Test", pTest)
-                                          , ("Minisat Test", minisatTest) ]
+        return $ map (uncurry HUnit.test) [ ("IC3 algorithm tests", ic3Test)
+                                          , ("IC3 initiation tests", initiationTest)
+                                          , ("IC3 consecution tests", consecutionTest)
+                                          , ("IC3 nextCTI tests", nextCTITest)
+                                          , ("IC3 push tests", pushTest)
+                                          , ("Parser test", pTest)
+                                          , ("Minisat test", minisatTest) ]
 
 -- IC3 Tests
 ic3Test :: Test
@@ -55,14 +57,24 @@ initiationTest = TestList (map (TestCase.(uncurry assertBool))
 consecutionTest :: Test
 consecutionTest = TestList (map (TestCase.(uncurry assertBool))
                     [ ("consecution1", consecution1), ("consecution2", consecution2)
-                    , ("consecution3", consecution3), ("consecution4", consecution4) ])
+                    , ("consecution3", consecution3), ("consecution4", consecution4)
+                    , ("consecution5", consecution5) ])
   where
   consecution1 = not $ consecution (getFrame 2 [[Neg 0, Neg' 0], [Var 0, Var' 0], [Var 0]]) [Var 0]
   consecution2 = not $ consecution (getFrame 2 [[Neg 0, Neg' 0], [Var 0, Var' 0]]) [Var 0]
   consecution3 = consecution (getFrame 2 [[Neg 0, Neg' 0], [Var 0, Var' 0]]) [Var 0, Neg 0]
-  consecution4 = consecution (getFrame 6 [ [Neg 0, Var 1], [Neg 0, Var 2], [Neg 1, Neg 2, Var 0]
-                                         , [Neg' 0, Var' 1], [Neg' 0, Var' 2], [Neg' 1, Neg' 2, Var' 0]
-                                         , [Var 0, Neg' 0], [Neg 0, Var' 0], [Var 1], [Var 2] ]) [Var 1]
+  consecution4 = consecution (getFrame 6 [ [Neg 0, Var 1], [Neg 0, Var 2]
+                                         , [Neg 1, Neg 2, Var 0]
+                                         , [Neg' 0, Var' 1], [Neg' 0, Var' 2]
+                                         , [Neg' 1, Neg' 2, Var' 0]
+                                         , [Var 0, Neg' 0], [Neg 0, Var' 0]
+                                         , [Var 1], [Var 2] ]) [Var 1]
+  consecution5 = consecution (getFrame 6 [ [Neg 0, Var 1], [Neg 0, Var 2]
+                                         , [Neg 1, Neg 2, Var 0]
+                                         , [Neg' 0, Var' 1], [Neg' 0, Var' 2]
+                                         , [Neg' 1, Neg' 2, Var' 0]
+                                         , [Var 0, Neg' 0], [Neg 0, Var' 0]
+                                         , [Var 0] ]) [Var 1]
 
 -- IC3 NextCTI Tests
 nextCTITest :: Test
@@ -76,8 +88,10 @@ nextCTITest = TestList (map (TestCase.(uncurry assertBool))
                  , safe = Neg 0 }
   model2 = Model { vars = 6
                  , initial = []
-                 , transition = [ [Neg 0, Var 1], [Neg 0, Var 2], [Neg 1, Neg 2, Var 0]
-                                , [Neg' 0, Var' 1], [Neg' 0, Var' 2], [Neg' 1, Neg' 2, Var' 0]
+                 , transition = [ [Neg 0, Var 1], [Neg 0, Var 2]
+                                , [Neg 1, Neg 2, Var 0]
+                                , [Neg' 0, Var' 1], [Neg' 0, Var' 2]
+                                , [Neg' 1, Neg' 2, Var' 0]
                                 , [Neg 0, Neg' 0], [Var 0, Var' 0] ]
                  , safe = Neg 0 }
   nextCTI1 = (Neg 0) `elem` (nextCTI (getFrame 2 []) [Neg 0] model1)
@@ -85,6 +99,28 @@ nextCTITest = TestList (map (TestCase.(uncurry assertBool))
   nextCTI3 = (Var 1) `elem` (nextCTI (getFrame 6 []) [Var 0] model2)
   nextCTI4 = (Var 0) `elem` (nextCTI (getFrame 6 []) [Var 0] model2)
   
+-- IC3 Push Tests
+pushTest :: Test
+pushTest = TestList (map (TestCase.(uncurry assertBool))
+             [ ("pushTest1", pushTest1), ("pushTest2", pushTest2)
+             , ("pushTest3", pushTest3), ("pushTest4", pushTest4) ])
+  where
+  model1 = Model { vars = 2
+                 , initial = []
+                 , transition = [[Neg 0, Neg' 0], [Var 0, Var' 0]]
+                 , safe = Neg 0 }
+  model2 = Model { vars = 6
+                 , initial = []
+                 , transition = [ [Neg 0, Var 1], [Neg 0, Var 2]
+                                , [Neg 1, Neg 2, Var 0]
+                                , [Neg' 0, Var' 1], [Neg' 0, Var' 2]
+                                , [Neg' 1, Neg' 2, Var' 0]
+                                , [Neg 0, Var' 0], [Var 0, Neg' 0] ]
+                 , safe = Neg 0 }
+  pushTest1 = not $ fst $ push (getFrameWith [[Neg 0]] model1) model1 (getFrame 2 [])
+  pushTest2 = fst $ push (getFrameWith [[Neg 0, Var 0]] model1) model1 (getFrame 2 [])
+  pushTest3 = fst $ push (getFrameWith [[Var 0]] model2)  model2 (getFrame 6 [])
+  pushTest4 = fst $ push (getFrameWith [[Neg 0], [Neg 1, Neg 2]] model2) model2 (getFrame 6 [])
 
 -- Parse tests
 parseTests :: IO (Test)
