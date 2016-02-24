@@ -116,7 +116,9 @@ proveObligations m queue frames =
     else
       let negCTI = (map neg $ fst $ currentNext $ nextCTI frame prop m) in
         case initiation (head frames) negCTI of
-          True -> proveObligations m (insert (1, negCTI) queue) (addClauseToFrame (head frames) negCTI:(tail frames))
+          True -> case propagate (addClauseToFrame (head frames) negCTI:tail frames) 1 of
+                    Just (frames', d) -> proveObligations m (insert (d, negCTI) queue) frames'
+                    Nothing -> (True, frames, queue)
           _ -> (False, frames, queue)
   where
     ((depth, prop), queue') = deleteFindMin queue
@@ -129,14 +131,17 @@ proveObligations m queue frames =
       case push f m f' of
         (_, True, _) -> (True, frames, queue)
         (f, False, f'') -> proveObligations m (insert (depth + 1, prop) queue') (pre ++ f:f'':post)
-    -- Push all clauses and see if fixed point has been reached (resulting in Nothing)
-    propagate (f:f':frames) =
-      case push f m f' of
-        (_, True, f'') -> Nothing
-        (f, False, f'') -> case propagate (f'':frames) of
-                            Just fs -> Just (f:fs)
-                            Nothing -> Nothing
-    propagate frames = Just frames
+    -- Push all clauses as far as possible until the current obligation depth
+    -- and see if fixed point has been reached (resulting in Nothing)
+    propagate (f:f':frames) d
+      | d < depth - 1 =
+        case push f m f' of
+          (_, True, f'') -> Nothing
+          (f, False, f'') -> case propagate (f'':frames) (d + 1) of
+                              Just (fs, d) -> Just ((f:fs), d)
+                              Nothing -> Nothing
+      | otherwise = Just ((f:f':frames), d)
+    propagate frames d = Just (frames, d)
 
 -- | Find an approximate minimal subclause of the provided clause that satisfies initiation
 -- and consecution.
