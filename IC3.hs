@@ -9,10 +9,13 @@ import Model.Model
 import Minisat.Minisat
 import Data.Word
 import System.IO.Unsafe
-import Data.List
+import Data.List hiding (insert)
 import Data.IORef
 import Debug.Trace
 import Data.Ord
+import Data.PQueue.Min hiding (map, drop, take, (!!))
+
+-- Debug output / stats
 
 ctiCount :: IORef Int
 {-# NOINLINE ctiCount #-}
@@ -36,6 +39,8 @@ readR :: IORef Int -> IO (Int)
 readR x = atomicModifyIORef' x read'
   where
     read' x = (x, x)
+
+type Obligation = (Int, Clause)
 
 data Frame = Frame { solver  :: Solver
                    , clauses :: [Clause] }
@@ -61,7 +66,7 @@ getFrameWith clauses model = addTransitionToFrame (getFrame (vars model) clauses
 prove :: Model -> Lit -> Bool
 prove model prop =
   unsafePerformIO (zero ctiCount >> zero queryCount >> return (
-    initiation f0 [prop] && prove' model prop (addClauseToFrame f0 [prop]) []
+    initiation f0 [prop] && prove' model (singleton (1, [prop])) (addClauseToFrame f0 [prop])
   ))
   where
     f0 = getFrameWith (initial model) model
@@ -99,28 +104,31 @@ stats frames cc qc = trace ("Number of frames: " ++ show (length frames) ++
                             "\nNumber of ctis: " ++ (show $ unsafePerformIO $ readR cc) ++ 
                             "\nNumber of queries: " ++ (show $ unsafePerformIO $ readR qc) )
 
--- | Consecution phase of the algorithm (calls subsequent consecution queries for
--- other frames)
-prove' :: Model -> Lit -> Frame -> [Frame] -> Bool
-prove' m prop frame acc =
-  if consecution frame [prop]
-    then pushFrame frame (getFrame (vars m) []) acc
+prove' :: Model -> MinQueue Obligation -> Frame -> Bool
+prove' m queue frame =
+  case proveObligations m queue [frame] of
+  (res, frames, _) -> stats frames ctiCount queryCount res
+
+proveObligations :: Model -> MinQueue Obligation -> [Frame] -> (Bool, [Frame], MinQueue Obligation)
+proveObligations m queue frames =
+  if consecution frame prop
+    then pushFrame frame nextFrame
     else
-      let cti = nextCTI frame [prop] m in
-        case proveNegCTI m frame (fst $ currentNext cti) acc [prop] of
-          (True, frame', acc') -> (clauses frame' /= clauses frame) &&
-                                  (case propagate (acc' ++ [frame']) of
-                                    Just fs ->
-                                      prove' m prop (fs !! (length fs - 1))
-                                        (take (length fs - 1) fs)
-                                    Nothing -> stats (frame:acc) ctiCount queryCount True)
-          (False, frame', acc') -> stats (frame:acc) ctiCount queryCount False
+      let negCTI = (map neg $ fst $ currentNext $ nextCTI frame prop m) in
+        case initiation (head frames) negCTI of
+          True -> proveObligations m (insert (1, negCTI) queue) (addClauseToFrame (head frames) negCTI:(tail frames))
+          _ -> (False, frames, queue)
   where
+    ((depth, prop), queue') = deleteFindMin queue
+    pre = take (depth - 1) frames
+    frame = frames !! (depth - 1)
+    nextFrame = if depth == length frames then getFrameWith [] m else frames !! depth
+    post = if depth < length frames then drop (depth + 1) frames else []
     -- Push all possible clauses from frame f to frame f'
-    pushFrame f f' acc =
+    pushFrame f f' =
       case push f m f' of
-        (_, True, _) -> stats (f:acc) ctiCount queryCount True
-        (f, False, f'') -> prove' m prop f'' (acc ++ [f])
+        (_, True, _) -> (True, frames, queue)
+        (f, False, f'') -> proveObligations m (insert (depth + 1, prop) queue') (pre ++ f:f'':post)
     -- Push all clauses and see if fixed point has been reached (resulting in Nothing)
     propagate (f:f':frames) =
       case push f m f' of
@@ -129,35 +137,6 @@ prove' m prop frame acc =
                             Just fs -> Just (f:fs)
                             Nothing -> Nothing
     propagate frames = Just frames
-
--- | Try to prove CTI unreachable at current depth given the current frame, CTI, previous frames and property
-proveNegCTI :: Model -> Frame -> [Lit] -> [Frame] -> Clause -> (Bool, Frame, [Frame])
-proveNegCTI m f _ [] p = (False, f, [])
-proveNegCTI m f cti acc p =
-    if unsafePerformIO (increment queryCount >> return (
-         satisfiable (solveWithAssumps (solver (getFrameWith (map neg cti:clauses (head acc)) m)) (map prime cti))
-       ))
-      then (False, f, acc)
-      else
-        case pushNegCTI (map neg cti) acc f of
-          (Nothing, acc', f') -> if consecution f' p
-                                   then (True, f', acc')
-                                   else proveNegCTI m f' (fst (currentNext (nextCTI f' p m))) acc' p
-          (Just model, acc', f') -> case proveNegCTI m f' (fst (currentNext model)) acc' (map neg cti) of
-                                      (True, f'', acc'') -> proveNegCTI m f cti (acc'' ++ [f'']) p
-                                      false              -> false
-  where
-    pushNegCTI negCTI [] f = (Nothing, [], f)
-    pushNegCTI negCTI acc f =
-      let res = unsafePerformIO ( increment queryCount >> return (
-                  solveWithAssumps
-                  (solver (getFrameWith (negCTI:clauses (acc !! (length acc - 1))) m))
-                  (map (prime.neg) negCTI) )) in
-        if not (satisfiable res)
-          then let negCTI' = inductiveGeneralization negCTI (head acc) f m 3 in
-            (Nothing, map (`addClauseToFrame` negCTI') acc, addClauseToFrame f negCTI')
-          else let f' = acc !! (length acc - 1) in
-            (Just (nextCTI f' negCTI m), take (length acc - 1) acc, f')
 
 -- | Find an approximate minimal subclause of the provided clause that satisfies initiation
 -- and consecution.
