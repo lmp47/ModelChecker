@@ -1,0 +1,253 @@
+% A project proposal.
+% The format draws heavily on the example project proposal
+% and the Model Project Proposals (and their LaTeX sources) available
+% http://www.cl.cam.ac.uk/teaching/projects/
+
+\documentclass[12pt,a4paper,twoside]{article}
+\usepackage[pdfborder={0 0 0}]{hyperref}
+\usepackage[margin=25mm]{geometry}
+\usepackage{graphicx}
+\begin{document}
+
+\vfil
+
+\centerline{\Large Part II Project Proposal}
+\vspace{0.4in}
+\centerline{\Large \bf A Model Checker Using IC3}
+\vspace{0.4in}
+\centerline{\large Lauren Pick, Homerton College}
+\vspace{0.4in}
+\centerline{\large 23 October 2015}
+\vspace{0.4in}
+
+\noindent
+{\bf Project Originator:} Lauren Pick
+\vspace{0.2in}
+
+\noindent
+{\bf Project Supervisors:} Dr Dominic Mulligan, Dr Ali Sezgin
+\vspace{0.2in}
+
+\noindent
+{\bf Supporting Supervisor:} Dr Alan Mycroft
+\vspace{0.2in}
+
+\noindent
+{\bf Director of Studies:} Dr Bogdan Roman
+\vspace{0.2in}
+ 
+\noindent
+{\bf Project Overseers:} Dr Richard Gibbens, Dr Larry Paulson
+
+
+\section*{Introduction and Description of the Work}
+Model checking is one way of assessing whether or not a hardware or
+software system has certain properties. For example, model checkers can be
+used to check systems for safety properties by finding examples of states
+that violate the properties or by proving that all states have the
+properties.
+
+Explicit-state model checking can be infeasible for systems with a large
+number of states, but symbolic model checking, which represents
+states and the transition relation between them as boolean expressions,
+can handle more states. Symbolic model checking initially relied on the
+efficient representation of boolean expressions through binary decision
+diagrams (BDDs), but BDDs can still consume a large amount of space, and
+finding an ordering for BDD variables that keeps the BDDs small can become
+costly \cite{biere99}.
+
+Symbolic model checking techniques that rely on SAT solvers provide an
+alternative to BDD-based approaches. SAT-based approaches include
+bounded model checking \cite{biere99} and $k$-induction \cite{demoura03},
+but both of these approaches involve unrolling the transition relation,
+which can lead to long SAT solver queries.
+
+IC3 \cite{bradley11} is a more recently developed SAT-based algorithm for
+the symbolic model checking of safety properties. Instead of unrolling the
+transition relation and considering entire paths, IC3 maintains a set of
+frames $F_0,...,F_k$, where each frame $F_i$ is an overapproximation of
+the set of states reachable in at most $i$ steps, and considers at most one
+step of the transition relation from a particular frame at a time.
+As a result, IC3 can find inductive strengthenings that tend
+to be smaller and more convenient than those found by BMC-based
+techniques such as $k$-induction, which finds strengthenings that are the
+negations of spurious counterexample paths \cite{demoura03}, and the SAT
+queries that IC3 makes tend to be simpler \cite{bradley12}.
+
+This project focuses on implementing a symbolic model checker for verifying
+safety properties of hardware. The model checker will include a new
+implementation of the IC3 algorithm in Haskell, which will make use of an
+existing SAT solver.
+
+\section*{Starting Point}
+
+I begin the project with some experience programming in Haskell
+from a summer internship and no experience with model checking or using
+a SAT solver. I have informally acquired some knowledge about model checking
+to formulate this project idea.
+
+\section*{Substance and Structure of the Project}
+
+The project aims to implement a hardware model checker that takes its
+inputs in AIGER format and queries the MiniSat SAT solver.
+
+\noindent The structure of the project can be broken down into the following
+components:
+
+\begin{enumerate}
+
+\item {\bf Parsing AIGER format} The model checker takes its inputs in AIGER
+format and will, as a result, require an AIGER parser. The AIGER format
+is fairly simple and hand-coding a parser for it should be suitable.
+
+\item {\bf Interfacing with MiniSat} The model checker
+will be using the MiniSat SAT solver, so an API that allows the
+model checker to query MiniSat will be required.
+
+\item {\bf Implementing the IC3 algorithm} 
+The main aspect of the project is the implementation of the IC3 algorithm.
+The implementation will largely be based on the algorithm as described in
+\cite{bradley11,bradley12}. 
+
+\item {\bf Evaluating the model checker}
+The model checker will be evaluated by measuring its performance on
+checking examples. Though the project does not focus greatly on the
+efficiency of the implementation, it may still be interesting to
+see how the performance of this IC3 implementation in Haskell compares with
+other implementations. As a result, benchmarks taken for the
+model checker will be compared with further benchmarks taken for
+Aaron Bradley's reference IC3 implementation, which is
+implemented in C++.
+Given that the reference implementation takes its inputs in AIGER format
+and also uses MiniSat, the benchmarks should provide a means to compare
+the IC3 implementations specifically.
+
+\item {\bf Writing the dissertation}
+
+\end{enumerate}
+
+\subsection*{Possible Extensions}
+If the aforementioned aspects of the project are completed, carrying out
+the following extensions could be possible:
+\begin{itemize}
+\item Interfacing with other SAT solvers, and possibly performing additional
+benchmarking; comparing the performance of the model checker when used with
+different SAT solvers may be of interest since the performance
+of IC3 implementations tend to vary considerably depending on the
+characteristics of the underlying SAT solver.
+\item Model checking properties of real hardware as a case study.
+\item Implementing abstraction-refinement as described in \cite{vizel12}.
+\end{itemize}
+
+
+\section*{Success Criteria}
+
+The project will be a success if the following have been completed:
+\begin{itemize}
+\item The AIGER parser has been implemented.
+\item The MiniSat interface has been implemented.
+\item The IC3 algorithm has been implemented.
+\item The model checker should be able to solve some small examples.
+\end{itemize}
+
+
+\section*{Timetable: Workplan and Milestones}
+
+\begin{enumerate}
+
+\item {\bf 16 October 2015 -- 28 October 2015}
+
+Preliminary reading. Get familiar with the AIGER format, MiniSat and
+relevant Haskell libraries and tools for implementing the components
+of the project.
+
+\item {\bf 29 October 2015 -- 4 November 2015}
+
+Write an AIGER format parser.
+\\
+Milestone: Parser completed. Relevant information from
+AIGER files can be extracted.
+
+\item {\bf 5 November 2015 -- 18 November 2015}
+
+Implement a MiniSat interface.
+\\
+Milestone: MiniSat interface completed, enabling the model checker to use
+MiniSat to solve SAT problems.
+
+\item {\bf 19 November 2015}
+
+Begin implementing the IC3 algorithm.
+
+\item {\bf Michaelmas vacation}
+
+Continue implementing the IC3 algorithm.
+
+\item {\bf 14 January 2016 -- 27 January 2016}
+
+Write progress report. Finish implementation of the IC3 algorithm.
+\\
+Milestones: Progress report completed.
+Working implementation of the model checker completed.
+
+\item {\bf 28 January 2016 -- 10 February 2016}
+
+Measure and compare this IC3 implementation's performance and the reference
+implementation's performance.
+\\
+Milestone: Evaluation completed.
+
+\item {\bf 11 February 2016 -- 11 March 2016}
+
+Write the main parts of the dissertation.
+\\
+Milestone:
+Finished writing main parts of dissertation: introduction, preparation,
+implementation and evaluation chapters.
+
+\item {\bf Easter vacation}
+
+If necessary, use this time for catching up.
+Otherwise, work on extensions, starting with interfacing with other
+SAT solvers.
+Finish writing dissertation.
+\\
+Milestones: All implementation and evaluation completed.
+Draft dissertation completed.
+
+\item {\bf 21 April 2016 -- 4 May 2016}
+
+Proofread and edit dissertation as necessary.
+\\
+Milestone: Dissertation ready for submission.
+
+\item {\bf 5 May 2016 -- 13 May 2016}
+
+Time left for catching up in case any delays have occurred in the
+completion of any milestones.
+\\
+Milestone: Dissertation submitted.
+
+\end{enumerate}
+
+\section*{Resources Required}
+
+For the project I will mostly make use of my laptop, which runs OS X 10.8.
+I accept full responsibility for this machine and I have made contingency
+plans to protect myself against hardware and/or software failure. 
+If my main computer fails, I will use MCS computers.
+I will use GitHub for backup and git for revision control.
+
+\noindent I will also be using:
+\begin{itemize}
+\item AIGER utilities, available \url{http://fmv.jku.at/aiger/}
+\item MiniSat, available \url{https://github.com/niklasso/minisat}
+\item Models from the Hardware Model Checking Competition, such as those
+available \url{http://fmv.jku.at/hwmcc10/}
+\item Aaron Bradley's Reference IC3 implementation, available
+\url{https://github.com/arbrad/IC3ref}
+\end{itemize}
+
+\bibliographystyle{plain}
+\bibliography{refs}
+\end{document}

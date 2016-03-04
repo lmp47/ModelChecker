@@ -1,0 +1,500 @@
+% Template for a Computer Science Tripos Part II project dissertation
+\documentclass[12pt,a4paper,twoside,openright]{report}
+\usepackage[pdfborder={0 0 0}]{hyperref}    % turns references into hyperlinks
+\usepackage[margin=25mm]{geometry}  % adjusts page layout
+\usepackage{graphicx}  % allows inclusion of PDF, PNG and JPG images
+\usepackage{verbatim}
+\usepackage{amssymb}
+\usepackage{docmute}   % only needed to allow inclusion of proposal.tex
+
+\raggedbottom                           % try to avoid widows and orphans
+\sloppy
+\clubpenalty1000%
+\widowpenalty1000%
+
+\renewcommand{\baselinestretch}{1.1}    % adjust line spacing to make
+                                        % more readable
+
+\begin{document}
+
+\bibliographystyle{plain}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title
+
+
+\pagestyle{empty}
+
+\rightline{\LARGE \textbf{Lauren Pick}}
+
+\vspace*{60mm}
+\begin{center}
+\Huge
+\textbf{A Model Checker Using IC3} \\[5mm]
+Computer Science Tripos -- Part II \\[5mm]
+Homerton College \\[5mm]
+\today  % today's date
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Proforma, table of contents and list of figures
+
+\pagestyle{plain}
+
+\chapter*{Proforma}
+
+{\large
+\begin{tabular}{ll}
+Name:                  & \bf Lauren Pick                           \\
+College:               & \bf Homerton College                      \\
+Project Title:         & \bf A Model Checker Using IC3             \\
+Examination:        & \bf Computer Science Tripos -- Part II, 2016 \\
+Word Count:            & \bf                                       \\
+Project Originator:    & Lauren Pick                               \\
+Supervisors:           & Dr Dominic Mulligan, Dr Ali Sezgin        \\ 
+Supporting Supervisor: & Prof Alan Mycroft
+\end{tabular}
+}
+
+
+\section*{Original Aims of the Project}
+
+Describe the original aims of the project, i.e. summarize information from
+the ``Substance and Structure'' and ``Success Criteria'' sections of the
+project proposal.
+
+\section*{Work Completed}
+
+Describe the work completed as part of project, including extensions.
+
+\section*{Special Difficulties}
+
+None.
+ 
+\newpage
+\section*{Declaration}
+
+I, Lauren Pick of Homerton College, being a candidate for Part II of the Computer
+Science Tripos, hereby declare
+that this dissertation and the work described in it are my own work,
+unaided except as may be specified below, and that the dissertation
+does not contain material that has already been used to any substantial
+extent for a comparable purpose.
+
+\bigskip
+\leftline{Signed [signature]}
+
+\medskip
+\leftline{Date [date]}
+
+\tableofcontents
+
+%\listoffigures
+
+%\newpage
+%\section*{Acknowledgements}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% now for the chapters
+
+\pagestyle{headings}
+
+\chapter{Introduction}
+
+%Provide a brief description of model checking in general.
+
+Model checking attempts to verify that a hardware or
+software system has certain properties. Given a model of the system
+and a specified property, a model checker will automatically check
+whether all states in the system satisfy this property.
+
+The initial approach to the model checking problem was explicit-state
+model checking, which involves considering all reachable states in the
+model. All model-checking approaches suffer from limitations on the size
+of the systems they can model check in practice as a result of
+the state explosion problem: the number of
+states in a system can be (and often is) exponential in the
+number of state variables \cite{Clarke2012}. 
+%\cite{McMillan1992, Clarke2012}.
+
+Symbolic model checking arose as a method of mitigating the effects of
+the state explosion problem to some extent. Symbolic model checking
+represents states and the transition relation between them as boolean
+expression, allowing sets of states to be represented efficiently
+as boolean expressions involving state variables as opposed to an
+explicit list of each individual state in the set. 
+%\cite{McMillan1992, Clarke2012}.
+
+A brief description symbolic model-checking and SAT-based model-checking
+follows to provide further context for this project, which focuses on implementing
+the IC3 algorithm, a SAT-based model-checking algorithm.
+
+
+\section{Symbolic Model Checking}
+
+%Discuss BDD-based and SAT-based model checking techniques.
+
+Symbolic model checking was originally invented for use with ordered
+binary decision diagrams (BDDs), which provide an efficient representation
+of boolean formulas using canonical forms for the formulas.
+The efficiency of BDDs in storing boolean formulas allowed for the model
+checking of systems with larger numbers of states than could be handled
+by explicit-state model checking. % See McMillan 1992
+% Transition into talking about SAT-based model checking
+The efficiency of BDD representations relies on choosing an appropriate
+ordering, which can be computationally expensive, and in some cases,
+there is no such ordering that results in a space-efficient BDD.
+% See Biere, Cimatti, Clarke, Zhu 1999
+
+An alternative to BDD-based symbolic model-checking techniques are SAT-based
+techniques, which do not use the canonical representations of boolean formulas as
+BDDs and make use of SAT procedures. Such techniques include bounded
+model checking (BMC), which proves properties by finding counterexamples of certain
+lengths; $k$-induction, which proves properties inductively; and the IC3 algorithm
+that is the focus of this project. A brief description and comparison of these techniques
+follows.
+% See Biere, Cimatti, Clarke, Zhu 1999
+% k-induction: Sheeran, Singh, Stalmarck 2000
+% Mention FSIS?
+% Mention ITP?
+
+Many modern SAT-based model checkers are based on BMC, which begins at the
+initial state of the transition system and searches for paths of length
+$k$ from the initial state that violate the negated property. If no path of length $k$
+is found, BMC increments $k$ and searches again. BMC is effective at finding
+counterexamples, but for some large systems, BMC is incomplete unless it is allowed
+to reach the point at which $k$ is maximal path length.
+
+The $k$-induction algorithm is similar to BMC in its unrolling of the transition relation
+to consider paths of length $k$, but it also incorporates induction. At each depth
+$k$, the algorithm asserts that the desired property holds at each state before the
+final state. % Understanding IC3
+
+\section{The IC3 Algorithm}
+
+%Give context for the IC3/PDR algorithm, e.g. history and comparisons
+%with other SAT-based model checking algorithms such as BMC and $k$-induction.
+
+The IC3 algorithm (also called PDR) is a SAT-based model-checking algorithm
+for proving the safety properties (i.e. properties which must hold in all reachable states)
+of hardware. The first implementation of the algorithm \verb,ic3, placed third in HWMCC'10,
+and since then, several variants of the algorithm have been developed.
+%PDR paper, 2015 paper
+
+As in $k$-induction, properties are proved through induction: the algorithm considers
+reachable sets of states $k$ steps away from the initial state until reaching a fixed point.
+% Note: find when k-induction started using counterexamples
+As with later variants of $k$-induction, the IC3 algorithm also discovers new invariants
+if the initial assumptions are not strong enough to prove the desired property, but unlike
+$k$-induction, the safety property guides the discovery of the invariants. As a result,
+the discovered invariants are more relevant for proving the safety property.
+
+Furthermore, IC3 does not unroll the transition relation as $k$-induction or other
+BMC-based methods, but instead leading to smaller, simpler SAT queries. As
+a result, IC3 requires less memory than such methods.
+
+% See Understanding IC3
+
+\section{Further Work}
+
+
+%Mention other applications of the IC3 algorithm, e.g. to checking
+%LTL properties and to software model checking.
+
+%Mention IIV?
+
+While IC3 algorithm is for model checking safety properties of hardware, there are
+applications of the algorithm in model checking LTL and CTL properties and
+model checking software.
+
+The FAIR model-checking algorithm, which model-checks $\omega$-regular properties,
+makes use of a safety model checker such as IC3, and IICTL, which model-checks
+CTL formulas, makes use of both a safety model checker such as IC3 as well as a fair cycle
+finder such as FAIR.
+% See Understanding IC3, IICTL, 
+
+Other work generalizes IC3 to deal with infinite-state systems. This generalization of IC3
+uses an underlying SMT solver rather than a SAT solver and has been used to check
+control-flow graphs of programs. More recently, Johannes Birgmeier, Aaron Bradley,
+and Georg Weissenbacher have introduced CTIGAR, a method of abstraction-refinement
+based on IC3's counterexamples to induction rather than the counterexamples in CEGAR,
+which experiments suggest is competitive with CEGAR-based techniques for software
+verification.
+%Software Model Checking via IC3, CTIGAR, etc.
+
+\section{This Project}
+
+This project's aim was to implement a basic form of the IC3 algorithm in Haskell that can
+model check several small examples.
+
+In addition to the single basic form of the algorithm, I also developed several
+variants of the algorithm.
+
+\chapter{Preparation}
+
+\section{Requirements Analysis}
+
+\subsection{Project-specific Requirements}
+%Describe the requirements for the project: AIGER parser, Minisat interface,
+%transition system representation, algorithm implementation.
+
+A SAT-based model checker requires a way of taking input models and also requires a
+way to solve SAT queries. I chose the AIGER format for representing the hardware models
+and the MiniSat SAT solver for answering SAT queries, resulting in a need for an AIGER
+parser and an interface to MiniSat in Haskell.
+
+Given that the model checking algorithm deals with transition systems (discussed later),
+the implementation also requires a representation of transition systems, which should
+correspond to the input hardware model. A further requirement is the implementation of the
+IC3 algorithm itself.
+
+In summary, the project-specific requirements are as follows:
+\begin{itemize}
+\item AIGER parser
+\item MiniSat interface
+\item Transition system representation
+\item IC3 algorithm implementation
+\end{itemize}
+
+\subsection{General Requirements}
+%Also, version control and testing.
+
+\section{Tools Used}
+Mention the tools used (and what they were used for), including Cabal,
+HUnit, {\tt hsc2hs}, Minisat, {\tt bliftoaig}, Criterion.
+Not too sure about subsections.
+
+While developing the project, Git was used for version control.
+Cabal was used for package/dependency management.
+HUnit was used for testing.
+Criterion was used for benchmarking.
+
+\section{Model Specification}
+%Describe the AIGER (old and new version) and BLIF formats and
+%{\tt bliftoaig} from the AIGER utilities.
+
+Both the AIGER format and Berkeley Logic Interchange Format (BLIF) were used to specify
+hardware models.
+Hardware models that the model checker accepts as input
+are specified using the AIGER format, which is the format used to specify
+hardware models in the Hardware Model Checking Competitions; however using the
+AIGER format to specify larger models was cumbersome, so such models were specified
+using BLIF and converted to AIGER format using the AIGER library's \verb,bliftoaig, tool.
+
+\subsection{AIGER}
+
+The AIGER format has both an ASCII and binary version, where the ASCII format is more flexible and human readable,
+and the binary version is more compact. The Hardware Model Checking Competition's examples
+are in the latter of the two.
+
+A new version of the AIGER format is currently under development, with examples from HWMCC'14
+using the new version.
+
+\subsubsection{Old version}
+
+All AIGER files begin with a header of the form
+\begin{verbatim}
+V M I L O A
+\end{verbatim}
+where:
+\begin{itemize}
+\item \verb,V, can take on values \verb,aag,, specifying that the file is in the ASCII format or \verb,aig,,
+specifying that the file is in the binary format.
+\item \verb,M, gives the maximum index of a variable
+\item \verb,L, gives the number of latches
+\item \verb,O, gives the number of outputs
+\item \verb,A, gives the number of AND gates
+\end{itemize}
+
+Variables are represented in AIGER with indices greater than 1, with 0 indexing the constant
+value {\it False} and 1 indexing {\it True}.
+
+In the ASCII version of the format,
+
+\subsection{Berkeley Logic Interchange Format}
+
+\section{The IC3 Algorithm}
+%Describe how the IC3 algorithm works when trying to prove a model has a property
+%$P$.
+Given a hardware model (i.e. a finite-state transition system) and a safety property $P$, IC3
+aims either to prove inductively that $P$ holds at all reachable states from the initial state or
+to find a $\neg P$ state that can be reached.
+
+\subsection{Transition Systems}
+A transition system is a tuple $(i,x,I,T)$ consisting of a set of input variables $i$, state variables $x$,
+next-state variables $x'$, an initial set of states represented by the boolean expression $I(x)$ and
+a transition relation represented by the boolean expression $T(i,x,x')$.
+
+A single state of the system (or a singleton set containing that state) is specified through the assignment
+of all state variables in $x$.
+
+\subsection{Frames}
+As with other inductive approaches to model checking,
+the IC3 algorithm maintains a set of $k$ frames $F_0,\ldots,F_k$, where
+each frame $F_i$ is a set of clauses that represent an overapproximation of the
+set of states that reachable by the transition system in $i$ steps
+(so $F_0$ is just the initial state set $I$).
+
+If $F_i = F_{i + 1}$ holds for any $i$ at any point, then a fixed point has
+been found, and the algorithm terminates.
+
+\subsection{Algorithm}
+%Initiation query
+The initiation query $I \Rightarrow P$ is used to check that the property
+holds in the initial state $I$.
+
+%Consecution query
+The consecution query for a frame $F_k$ is used to check whether the property $P$
+necessarily holds in the next frame.
+$$F_k \wedge T \Rightarrow P'$$
+
+%Recursive part of algorithm
+The algorithm extends its set of frames $F_0,\ldots,F_k$ with a new frame $F_{k + 1}$
+by running the consecution query.
+If the consecution query is successful, then the new frame $F_{k + 1}$ with clause
+$\{P\}$ can be added.
+All clauses in frame $F_k$ are then propagated to $F_{k + 1}$:
+For each clause $C \in F_k$, if $F_k \wedge T \Rightarrow C'$ holds, then $C'$
+is added to $F_{k + 1}$.
+
+%Describe what happens when a consecution query fails
+If a consecution query $F_k \wedge T \Rightarrow P'$ fails, then that means that
+there is an $F_k$ state that is a predecessor of the $\neg P'$ state,
+i.e. there is an $F_k$ state $s$ and a $\neg P'$ state v with $T(i,s,v')$. The state
+$s$ is a \emph{counterexample to induction} state.
+
+Because $F_k$ is an overapproximation, the algorithm aims to refine $F_k$
+by finding a clause $c$ that holds at depth $k$ such that
+$F_k \wedge c \wedge T \Rightarrow P'$ holds:
+
+Such a $c$ must be such that for the counterexample to induction $s$,
+$$c \Rightarrow \neg s,$$
+with an obvious choice being $c = \neg s$, which can be found easily using
+a SAT solver. In practice, it is better to choose a smaller $c$, which can allow
+for a set of several states to be eliminated in $F_k$ rather than just eliminating
+$s$.
+
+\chapter{Implementation}
+Briefly mention sections in the chapter and the example models
+written in AIGER and BLIF formats.
+
+\section{AIGER Parser}
+Discuss the implementation of the AIGER parser. In particular, mention
+the handling of both the older and newer AIGER format versions for both
+the ASCII and binary versions of the format and the representation
+of AIG models.
+
+\section{Minisat Interface}
+%Describe the process of implementing the Haskell bindings for Minisat
+%functions, including the wrapper functions for Minisat written in C.
+
+MiniSat serves as the SAT solver for this implementation of the IC3 algorithm.
+Because the Haskell Foreign Function Interface cannot interface with C++ directly,
+the interface to the MiniSat SAT solver is composed of a C wrapper for the relevant
+MiniSat functions and classes and a Haskell interface to the C wrapper.
+
+\subsection{Relevant MiniSat Functions}
+
+To solve a SAT query, MiniSat creates an instance of a \verb,Solver, object,
+which contains a set of variables, sets of clauses represented by \verb,VecLit, instances
+that must be satisfied each SAT query, a model and a conflict vector.
+The \verb,solveWithAssumps, function makes a SAT query that must satisfy all of the clauses
+in the \verb,Solver, as well as all the literals supplied in the assumption \verb,VecLit,.
+
+If there has been at least one query made of the \verb,Solver, object, and the query was
+satisfiable, the \verb,Solver,'s \verb,model, variable points to a set of variable assignments
+for that SAT query.
+If there has been at least one query made of the \verb,Solver, object, and the query was
+unsatisfiable, the \verb,Solver,'s \verb,conflict, variable points to a set of literals that
+contains the assumed literals that caused the query to be unsatisfiable.
+
+This model checker uses instances of \verb,SimpSolver,, a subclass of the \verb,Solver, class
+that does simplification and returns full assignments.
+
+\subsection{C Wrapper}
+
+Much of the C wrapper is straightforward: every MiniSat class is replaced with a C type,
+and every MiniSat function is replaced with a function with an \verb,extern C, function that
+calls the MiniSat C++ function.
+I also added an additional \verb,result, struct to allow for the results of a SAT query to
+be returned from a single function call. The struct contains not only the result of the SAT
+query, but also pointers to the model and conflict vector (if any) of the \verb,Solver,.
+The wrapper function for \verb,solveWithAssumps, returns a pointer to a \verb,result, struct
+rather than just whether or not the query was satisfiable.
+
+\subsection{Haskell Interface}
+
+The Haskell interface makes use of the Haskell FFI as well as the \verb,hsc2hs, preprocessor
+for handling the \verb,result, struct.
+
+Using just the Haskell FFI for calling the C functions is typical, does not provide a sufficient
+abstraction for use by the rest of the model checker. I wrote further functions to allow for a more 
+natural interface to MiniSat, making use of \verb,unsafePerformIO, to have the functions return
+values outside the \verb,IO, monad.
+
+Many of the functions and datatypes in the interface are analogous to functions and structs in
+the C wrapper and C++ implementation of MiniSat. For example, the \verb,Solver, datatype is an
+analogue to the MiniSat \verb,Solver, object, and itself contains a pointer to an instance of
+a MiniSat \verb,Solver, object. Similarly, functions such as \verb,solveWithAssumps, work
+analogously to the C wrapper's \verb,solveWithAssumps,, returning a \verb,Result, that contains
+whether or not the query was satisfiable and the model or conflict vector (if any).
+
+The information kept in a \verb,Result, is taken directly from the \verb,result, returned by
+the C Wrapper functions. I used the \verb,hsc2hs, preprocessor to help handle pointer offsets
+when unmarshalling from the C struct. Beyond straightforward unmarshalling, some additional work
+to convert from the MiniSat representation of literals to the model checker’s representation of
+literals was necessary.
+
+\section{Transition Systems}
+\subsection{Representation}
+Describe how transition systems and their components are represented.
+\subsection{Construction}
+Describe how transition systems are constructed given AIG models.
+
+\section{Model Checking}
+\subsection{Initiation}
+Describe how the step involving the initiation query is implemented.
+\subsection{Consecution}
+Describe how the step involving the consecution query is implemented.
+\subsection{Counterexamples to Induction}
+Describe how the implementation discovers counterexamples
+to induction and proves them unreachable.
+\subsection{Improvements}
+Describe improvements on simple implementation of algorithm.
+
+\chapter{Evaluation}
+\section{Performance Impact of Improvements}
+Discuss performance comparison of the naive implementation of the
+model checker and the final implementation of the model checker.
+
+\section{Performance Comparison}
+Discuss performance comparison of final implementation with
+IC3 reference implementation, taking into account differences between
+the implementations.
+
+\chapter{Conclusion}
+
+\section{Summary}
+Summarize the project and accomplishments
+
+\section{Further extensions}
+Mention further extensions that could be implemented.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% the bibliography
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliography{refs}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% the appendices
+\appendix
+
+\chapter{Project Proposal}
+
+\input{proposal_noheader}
+
+\end{document}
+
