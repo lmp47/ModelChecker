@@ -10,8 +10,6 @@ import Minisat.Minisat
 import Data.Word
 import System.IO.Unsafe
 import Data.List hiding (insert)
-import Data.IORef
-import Debug.Trace
 import Data.Ord
 import Data.PQueue.Min hiding (map, drop, take, (!!))
 
@@ -114,7 +112,7 @@ nextCTI :: Frame -> Clause -> Model -> [Lit]
 nextCTI frame prop m =
   case res of
     Just ls -> case pred ls of
-                 Just ps -> trace (show $ getVarsFrom ps ls) (getVarsFrom ps ls)
+                 Just ps -> getVarsFrom ps ls
                  _       -> error "Should be UNSAT."
     _       -> error "No CTI found."
   where
