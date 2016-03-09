@@ -168,17 +168,37 @@ proveNegCTI m f cti acc p =
 -- | Find an approximate minimal subclause of the provided clause that satisfies initiation
 -- and consecution.
 inductiveGeneralization :: Clause -> Frame -> Frame -> Model -> Word -> Clause
-inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
+inductiveGeneralization clause f0 fk m w = generalize clause f0 fk []
   where
     generalize cs _ _ needed 0 = cs ++ needed
     generalize [] _ _ needed _ = needed
     generalize (c:cs) f0 fk needed k =
+      case down cs f0 fk of
+        Just cs' -> generalize cs' f0 fk needed k
+        Nothing -> generalize cs f0 fk (c:needed) ( k - 1 )
+{--
       let res = unsafePerformIO (increment queryCount >> return (
                   solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs)
                 )) in
         if not (satisfiable res) && initiation f0 cs
           then generalize cs f0 fk needed k
           else generalize cs f0 fk (c:needed) ( k - 1 )
+--}
+    down cs f0 fk =
+      let init = initiation f0 cs
+          consec = unsafePerformIO (increment queryCount >> return (
+                     solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs)
+                   )) in
+      if not(init)
+        then Nothing
+        else
+          if not (satisfiable consec)
+            then Just cs
+            else
+              case model consec of
+                Just s -> down (cs `intersect` (map neg s)) f0 fk
+                _ -> error "Could not find predecessor when finding MIC"
+                   
 
 -- | Finds a CTI given a safety property clause
 nextCTI :: Frame -> Clause -> Model -> [Lit]
