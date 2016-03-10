@@ -179,7 +179,7 @@ pushNegCTG negCTG acc (f:fs) m =
 -- | Find an approximate minimal subclause of the provided clause that satisfies initiation
 -- and consecution and adds to the last frame
 inductiveGeneralization :: Clause -> [Frame] -> Frame -> Model -> Word -> Word -> (Clause, [Frame])
-inductiveGeneralization clause fs fk m w w' = generalize clause fs fk [] w w'
+inductiveGeneralization clause fs fk m w w' = trace "gen" (generalize clause fs fk [] w w')
   where
     generalize cs fs fk needed 0 _ = (cs ++ needed, fs ++ [fk])
     generalize [] fs fk needed _ _ = (needed, fs ++ [fk])
@@ -187,14 +187,6 @@ inductiveGeneralization clause fs fk m w w' = generalize clause fs fk [] w w'
       case down ls fs [fk] r of
         Just (fs', [fk'], ls') -> generalize ls' fs' fk' needed k r
         Nothing -> generalize ls fs fk (l:needed) ( k - 1 ) r
-{--
-      let res = unsafePerformIO (increment queryCount >> return (
-                  solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs)
-                )) in
-        if not (satisfiable res) && initiation f0 cs
-          then generalize cs f0 fk needed k
-          else generalize cs f0 fk (c:needed) ( k - 1 )
---}
     down ls (f0:fs) (fk:fl) r =
       let init = initiation f0 ls
           consec = unsafePerformIO (increment queryCount >> return (
@@ -203,18 +195,18 @@ inductiveGeneralization clause fs fk m w w' = generalize clause fs fk [] w w'
       if not(init)
         then Nothing
         else
-          if not (satisfiable consec) -- should check r first
+          if r == 0 || not (satisfiable consec)
             then Just (f0:fs, fk:fl, ls)
             else
               case model consec of
                 Just s -> -- check init & consec ctg -> both ok, then try to push ctg as far as possible (checking consec)
-                  let negCTG = map neg s in
+                  let negCTG = map neg (fst (currentNext s)) in
                     if not(null fs) && initiation f0 negCTG && consecution (last fs) negCTG
                       then
                         let rest = take (length fl) (fk:fl)
                             lastf = last (fk:fl)
                             (ctgs, nctgs) = pushNegCTG negCTG [] rest m
-                            ctgs' = f0:fs ++ ctgs'
+                            ctgs' = f0:fs ++ ctgs
                             (fdps, fd) = (take (length ctgs' - 1) ctgs', last ctgs') -- fd is deepest frame with negCTI inductive
                             (c, fs') = generalize negCTG fdps fd [] w ( r - 1 ) in
                               down ls fs' (map (`addClauseToFrame` c) (nctgs ++ [lastf]) ++ tail (nctgs ++ [lastf])) r
