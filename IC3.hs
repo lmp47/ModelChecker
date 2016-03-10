@@ -165,17 +165,28 @@ proveNegCTI m f cti acc p =
           else let f' = acc !! (length acc - 1) in
             (Just (nextCTI f' negCTI m), take (length acc - 1) acc, f')
 
+pushNegCTG :: Clause -> [Frame] -> Frame ->
+pushNegCTG negCTG acc [] = (acc, [])
+pushNegCTG negCTG acc (f:fs) =
+  let res = unsafePerformIO ( increment queryCount >> return (
+              solveWithAssumps
+              (solver (getFrameWith (negCTG:clauses f m))
+              (map (prime.neg) negCTG) )) in
+    if not (satisfiable res)
+      then pushNegCTG (acc ++ [f]) fs
+      else (acc, f:fs)
+
 -- | Find an approximate minimal subclause of the provided clause that satisfies initiation
--- and consecution.
-inductiveGeneralization :: Clause -> Frame -> Frame -> Model -> Word -> Clause
-inductiveGeneralization clause f0 fk m w = generalize clause f0 fk []
+-- and consecution and adds to the last frame
+inductiveGeneralization :: Clause -> Frame -> [Frame] -> Model -> Word -> (Clause, [Frame])
+inductiveGeneralization clause (f0:fs) fk m w = generalize clause f0 fk []
   where
-    generalize cs _ _ needed 0 = cs ++ needed
-    generalize [] _ _ needed _ = needed
-    generalize (c:cs) f0 fk needed k =
-      case down cs f0 fk of
-        Just cs' -> generalize cs' f0 fk needed k
-        Nothing -> generalize cs f0 fk (c:needed) ( k - 1 )
+    generalize cs _ _ needed 0 _ = cs ++ needed
+    generalize [] _ _ needed _ _ = needed
+    generalize (l:ls) (f0:fs) fk needed k r =
+      case down ls (f0:fs) fk r of
+        Just ls' -> generalize ls' f0 fk needed k r
+        Nothing -> generalize ls f0 fk (l:needed) ( k - 1 ) r
 {--
       let res = unsafePerformIO (increment queryCount >> return (
                   solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs)
@@ -184,7 +195,7 @@ inductiveGeneralization clause f0 fk m w = generalize clause f0 fk []
           then generalize cs f0 fk needed k
           else generalize cs f0 fk (c:needed) ( k - 1 )
 --}
-    down cs f0 fk =
+    down cs (f0:fs) (fk:fl) r =
       let init = initiation f0 cs
           consec = unsafePerformIO (increment queryCount >> return (
                      solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs)
@@ -192,11 +203,22 @@ inductiveGeneralization clause f0 fk m w = generalize clause f0 fk []
       if not(init)
         then Nothing
         else
-          if not (satisfiable consec)
+          if not (satisfiable consec) -- should check r first
             then Just cs
             else
               case model consec of
-                Just s -> down (cs `intersect` (map neg s)) f0 fk
+                Just s -> -- check init & consec ctg -> both ok, then try to push ctg as far as possible (checking consec)
+                  let negCTG = map neg s in
+                    if fs /= [] && initiation f0 negCTG && consecution (last fs) negCTI
+                      then
+                        let rest = take (length fl (fk:fl))
+                            lastf = last (fk:fl)
+                            (ctgs, nctgs) = pushNegCTG negCTG [] rest
+                            ctgs' = f0:fs ++ ctgs'
+                            (fdps, fd) = (take (length ctgs' - 1) ctgs', last ctgs') -- fd is deepest frame with negCTI inductive
+                            (c, fs') = generalize negCTI fdps fd [] ( r - 1 ) in
+                              down cs fs' ((addClauseToFrame c (fst (nctgs ++ [lastf])) : tail (nctgs ++ [lastf]))) r
+                      else down (cs `intersect` (map neg s)) f0 fk
                 _ -> error "Could not find predecessor when finding MIC"
                    
 
