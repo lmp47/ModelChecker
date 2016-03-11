@@ -146,13 +146,15 @@ inductiveGeneralization clause fs fk m w w' = generalize clause fs fk [] w w'
                   let negCTG = map neg (fst (currentNext s)) in
                     if not(null fs) && initiation f0 negCTG && consecution (last fs) negCTG
                       then
-                        let rest = take (length fl) (fk:fl)
-                            lastf = last (fk:fl)
+                        let rest = take (length fl) (fk:fl) -- all but frontier frame
+                            lastf = last (fk:fl) -- frontier frame
                             (ctgs, nctgs) = pushNegCTG negCTG [] rest m
                             ctgs' = f0:fs ++ ctgs
                             (fdps, fd) = (take (length ctgs' - 1) ctgs', last ctgs') -- fd is deepest frame with negCTI inductive
-                            (c, fs') = generalize negCTG fdps fd [] w ( r - 1 ) in
-                              down ls fs' (map (`addClauseToFrame` c) (nctgs ++ [lastf]) ++ tail (nctgs ++ [lastf])) r
+                            (c, fs') = generalize negCTG fdps fd [] w ( r - 1 ) 
+                            fk':fl' = nctgs ++ [lastf] in
+                              down ls (map (`addClauseToFrame` c) fs') (addClauseToFrame fk' c:fl') r
+
                       else down (ls `intersect` (map neg s)) (f0:fs) (fk:fl) ( r - 1 )
                 _ -> error "Could not find predecessor when finding MIC"
                    
