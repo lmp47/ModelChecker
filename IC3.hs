@@ -189,8 +189,8 @@ inductiveGeneralization clause fs fk m w w' = generalize clause fs fk [] w w'
     generalize cs fs fk needed 0 _ = (cs ++ needed, fs ++ [fk])
     generalize [] fs fk needed _ _ = (needed, fs ++ [fk])
     generalize (l:ls) fs fk needed k r =
-      case down ls fs [fk] r of
-        Just (fs', [fk'], ls') -> generalize ls' fs' fk' needed k r
+      case down (ls ++ needed) fs [fk] r of
+        Just (fs', [fk'], ls') -> generalize (ls' \\ needed) fs' fk' needed k r
         Nothing -> generalize ls fs fk (l:needed) ( k - 1 ) r
     down ls (f0:fs) (fk:fl) r =
       -- Check initiation and consecution for the potential generalization
@@ -216,7 +216,7 @@ inductiveGeneralization clause fs fk m w w' = generalize clause fs fk [] w w'
                             (fdps, fd) = (take (length ctgs' - 1) ctgs', last ctgs') -- fd is deepest frame with negCTI inductive
                             (c, fs') = generalize negCTG fdps fd [] w ( r - 1 )
                             fk':fl' = nctgs ++ [lastf] in
-                              down ls (map (`addClauseToFrame` c) fs') (addClauseToFrame fk' c:fl') r ))
+                              down ls fs' (addClauseToFrame fk' c:fl') r ))
                       else down (ls `intersect` (map neg s)) (f0:fs) (fk:fl) ( r - 1 )
                 _ -> error "Could not find predecessor when finding MIC"
                    
