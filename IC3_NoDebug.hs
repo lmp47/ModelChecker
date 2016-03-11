@@ -41,9 +41,7 @@ getFrameWith clauses model = addTransitionToFrame (getFrame (vars model) clauses
 -- | Given a model and a safety property, checks if the model satisfies the property
 prove :: Model -> Lit -> Bool
 prove model prop =
-  unsafePerformIO (zero ctiCount >> zero queryCount >> return (
     initiation f0 [prop] && prove' model prop (addClauseToFrame f0 [prop]) []
-  ))
   where
     f0 = getFrameWith (initial model) model
 
@@ -69,13 +67,13 @@ prove' m prop frame acc =
                                     Just fs ->
                                       prove' m prop (fs !! (length fs - 1))
                                         (take (length fs - 1) fs)
-                                    Nothing -> stats (frame:acc) ctiCount queryCount True)
-          (False, frame', acc') -> stats (frame:acc) ctiCount queryCount False
+                                    Nothing -> True)
+          (False, frame', acc') -> False
   where
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' acc =
       case push f m f' of
-        (True, _) -> stats (frame:acc) ctiCount queryCount True
+        (True, _) -> True
         (False, f'') -> prove' m prop f'' (acc ++ [f])
     -- Push all clauses and see if fixed point has been reached (resulting in Nothing)
     propagate (f:f':frames) =
@@ -103,10 +101,9 @@ proveNegCTI m f cti acc p =
   where
     pushNegCTI negCTI [] f = (Nothing, [], f)
     pushNegCTI negCTI acc f =
-      let res = unsafePerformIO ( increment queryCount >> return (
-                  solveWithAssumps
+      let res = solveWithAssumps
                   (solver (getFrameWith (negCTI:clauses (acc !! (length acc - 1))) m))
-                  (map (prime.neg) negCTI) )) in
+                  (map (prime.neg) negCTI) in
         if not (satisfiable res)
           then let (negCTI', fs) = inductiveGeneralization negCTI acc f m 3 3 in
             (Nothing, map (`addClauseToFrame` negCTI') (take (length fs - 1) fs), addClauseToFrame (last fs) negCTI')
@@ -163,12 +160,11 @@ inductiveGeneralization clause fs fk m w w' = generalize clause fs fk [] w w'
 -- | Finds a CTI given a safety property clause
 nextCTI :: Frame -> Clause -> Model -> [Lit]
 nextCTI frame prop m =
-  case unsafePerformIO (increment ctiCount >> return res) of
+  case res of
     Just ls -> ls
     _       -> error "No CTI found."
   where
-    res = unsafePerformIO (increment queryCount >> return (
-            model $ solveWithAssumps (solver (getFrameWith (clauses frame) m)) (map (prime.neg) prop)) )
+    res = model $ solveWithAssumps (solver (getFrameWith (clauses frame) m)) (map (prime.neg) prop)
 
 -- | Push clauses to next frame
 push :: Frame -> Model -> Frame -> (Bool, Frame)
