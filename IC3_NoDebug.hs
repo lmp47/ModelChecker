@@ -3,7 +3,14 @@ Module : IC3
 Description : Model checking algorithm
 -}
 
-module IC3 ( prove ) where
+module IC3 ( prove
+           , getFrame
+           , getFrameWith
+           , addClauseToFrame
+           , initiation
+           , consecution
+           , nextCTI
+           , push ) where
 
 import Model.Model
 import Minisat.Minisat
@@ -34,7 +41,9 @@ getFrameWith clauses model = addTransitionToFrame (getFrame (vars model) clauses
 -- | Given a model and a safety property, checks if the model satisfies the property
 prove :: Model -> Lit -> Bool
 prove model prop =
+  unsafePerformIO (zero ctiCount >> zero queryCount >> return (
     initiation f0 [prop] && prove' model prop (addClauseToFrame f0 [prop]) []
+  ))
   where
     f0 = getFrameWith (initial model) model
 
@@ -60,13 +69,13 @@ prove' m prop frame acc =
                                     Just fs ->
                                       prove' m prop (fs !! (length fs - 1))
                                         (take (length fs - 1) fs)
-                                    Nothing -> True)
-          (False, frame', acc') -> False
+                                    Nothing -> stats (frame:acc) ctiCount queryCount True)
+          (False, frame', acc') -> stats (frame:acc) ctiCount queryCount False
   where
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' acc =
       case push f m f' of
-        (True, _) -> True
+        (True, _) -> stats (frame:acc) ctiCount queryCount True
         (False, f'') -> prove' m prop f'' (acc ++ [f])
     -- Push all clauses and see if fixed point has been reached (resulting in Nothing)
     propagate (f:f':frames) =
@@ -94,36 +103,72 @@ proveNegCTI m f cti acc p =
   where
     pushNegCTI negCTI [] f = (Nothing, [], f)
     pushNegCTI negCTI acc f =
-      let res = solveWithAssumps
+      let res = unsafePerformIO ( increment queryCount >> return (
+                  solveWithAssumps
                   (solver (getFrameWith (negCTI:clauses (acc !! (length acc - 1))) m))
-                  (map (prime.neg) negCTI) in
+                  (map (prime.neg) negCTI) )) in
         if not (satisfiable res)
-          then let negCTI' = inductiveGeneralization negCTI (head acc) f m 3 in
-            (Nothing, map (`addClauseToFrame` negCTI') acc, addClauseToFrame f negCTI')
+          then let (negCTI', fs) = inductiveGeneralization negCTI acc f m 3 3 in
+            (Nothing, map (`addClauseToFrame` negCTI') (take (length fs - 1) fs), addClauseToFrame (last fs) negCTI')
           else let f' = acc !! (length acc - 1) in
             (Just (nextCTI f' negCTI m), take (length acc - 1) acc, f')
 
+pushNegCTG :: Clause -> [Frame] -> [Frame] -> Model -> ([Frame], [Frame])
+pushNegCTG negCTG acc [] _ = (acc, [])
+pushNegCTG negCTG acc (f:fs) m =
+  let res = solveWithAssumps
+              (solver (getFrameWith (negCTG:clauses f) m))
+              (map (prime.neg) negCTG) in
+    if not (satisfiable res)
+      then pushNegCTG negCTG (acc ++ [f]) fs m
+      else (acc, f:fs)
+
 -- | Find an approximate minimal subclause of the provided clause that satisfies initiation
--- and consecution.
-inductiveGeneralization :: Clause -> Frame -> Frame -> Model -> Word -> Clause
-inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
+-- and consecution and adds to the last frame
+inductiveGeneralization :: Clause -> [Frame] -> Frame -> Model -> Word -> Word -> (Clause, [Frame])
+inductiveGeneralization clause fs fk m w w' = generalize clause fs fk [] w w'
   where
-    generalize cs _ _ needed 0 = cs ++ needed
-    generalize [] _ _ needed _ = needed
-    generalize (c:cs) f0 fk needed k =
-      let res = solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs) in
-        if not (satisfiable res) && initiation f0 cs
-          then generalize cs f0 fk needed k
-          else generalize cs f0 fk (c:needed) ( k - 1 )
+    generalize cs fs fk needed 0 _ = (cs ++ needed, fs ++ [fk])
+    generalize [] fs fk needed _ _ = (needed, fs ++ [fk])
+    generalize (l:ls) fs fk needed k r =
+      case down ls fs [fk] r of
+        Just (fs', [fk'], ls') -> generalize ls' fs' fk' needed k r
+        Nothing -> generalize ls fs fk (l:needed) ( k - 1 ) r
+    down ls (f0:fs) (fk:fl) r =
+      -- Check initiation and consecution for the potential generalization
+      let init = initiation f0 ls
+          consec = solveWithAssumps (solver (getFrameWith (ls:(clauses fk)) m)) (map (prime.neg) ls) in
+      if not(init) || r == 0
+        then Nothing
+        else
+          if not (satisfiable consec)
+            then Just (f0:fs, fk:fl, ls) -- Generalization succeeded
+            else
+              case model consec of
+                Just s ->  -- Try to push negCTG as far as possible
+                  let negCTG = map neg (fst (currentNext s)) in
+                    if not(null fs) && initiation f0 negCTG && consecution (last fs) negCTG
+                      then
+                        let rest = take (length fl) (fk:fl)
+                            lastf = last (fk:fl)
+                            (ctgs, nctgs) = pushNegCTG negCTG [] rest m
+                            ctgs' = f0:fs ++ ctgs
+                            (fdps, fd) = (take (length ctgs' - 1) ctgs', last ctgs') -- fd is deepest frame with negCTI inductive
+                            (c, fs') = generalize negCTG fdps fd [] w ( r - 1 ) in
+                              down ls fs' (map (`addClauseToFrame` c) (nctgs ++ [lastf]) ++ tail (nctgs ++ [lastf])) r
+                      else down (ls `intersect` (map neg s)) (f0:fs) (fk:fl) ( r - 1 )
+                _ -> error "Could not find predecessor when finding MIC"
+                   
 
 -- | Finds a CTI given a safety property clause
 nextCTI :: Frame -> Clause -> Model -> [Lit]
 nextCTI frame prop m =
-  case res of
+  case unsafePerformIO (increment ctiCount >> return res) of
     Just ls -> ls
     _       -> error "No CTI found."
   where
-    res = model $ solveWithAssumps (solver (getFrameWith (clauses frame) m)) (map (prime.neg) prop)
+    res = unsafePerformIO (increment queryCount >> return (
+            model $ solveWithAssumps (solver (getFrameWith (clauses frame) m)) (map (prime.neg) prop)) )
 
 -- | Push clauses to next frame
 push :: Frame -> Model -> Frame -> (Bool, Frame)

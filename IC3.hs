@@ -179,7 +179,7 @@ pushNegCTG negCTG acc (f:fs) m =
 -- | Find an approximate minimal subclause of the provided clause that satisfies initiation
 -- and consecution and adds to the last frame
 inductiveGeneralization :: Clause -> [Frame] -> Frame -> Model -> Word -> Word -> (Clause, [Frame])
-inductiveGeneralization clause fs fk m w w' = trace "gen" (generalize clause fs fk [] w w')
+inductiveGeneralization clause fs fk m w w' = generalize clause fs fk [] w w'
   where
     generalize cs fs fk needed 0 _ = (cs ++ needed, fs ++ [fk])
     generalize [] fs fk needed _ _ = (needed, fs ++ [fk])
@@ -188,18 +188,19 @@ inductiveGeneralization clause fs fk m w w' = trace "gen" (generalize clause fs 
         Just (fs', [fk'], ls') -> generalize ls' fs' fk' needed k r
         Nothing -> generalize ls fs fk (l:needed) ( k - 1 ) r
     down ls (f0:fs) (fk:fl) r =
+      -- Check initiation and consecution for the potential generalization
       let init = initiation f0 ls
           consec = unsafePerformIO (increment queryCount >> return (
                      solveWithAssumps (solver (getFrameWith (ls:(clauses fk)) m)) (map (prime.neg) ls)
                    )) in
-      if not(init)
+      if not(init) || r == 0
         then Nothing
         else
-          if r == 0 || not (satisfiable consec)
-            then Just (f0:fs, fk:fl, ls)
+          if not (satisfiable consec)
+            then Just (f0:fs, fk:fl, ls) -- Generalization succeeded
             else
               case model consec of
-                Just s -> -- check init & consec ctg -> both ok, then try to push ctg as far as possible (checking consec)
+                Just s ->  -- Try to push negCTG as far as possible
                   let negCTG = map neg (fst (currentNext s)) in
                     if not(null fs) && initiation f0 negCTG && consecution (last fs) negCTG
                       then
