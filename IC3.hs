@@ -24,6 +24,10 @@ ctiCount :: IORef Int
 {-# NOINLINE ctiCount #-}
 ctiCount = unsafePerformIO (newIORef 0)
 
+ctgCount :: IORef Int
+{-# NOINLINE ctgCount #-}
+ctgCount = unsafePerformIO (newIORef 0)
+
 queryCount :: IORef Int
 {-# NOINLINE queryCount #-}
 queryCount = unsafePerformIO (newIORef 0)
@@ -66,7 +70,7 @@ getFrameWith clauses model = addTransitionToFrame (getFrame (vars model) clauses
 -- | Given a model and a safety property, checks if the model satisfies the property
 prove :: Model -> Lit -> Bool
 prove model prop =
-  unsafePerformIO (zero ctiCount >> zero queryCount >> return (
+  unsafePerformIO (zero ctiCount >> zero ctgCount >> zero queryCount >> return (
     initiation f0 [prop] && prove' model prop (addClauseToFrame f0 [prop]) []
   ))
   where
@@ -98,11 +102,12 @@ calcAvgLitsPerCls frames =
       (fromIntegral (sum (map length cls))) / (fromIntegral (length cls))
 
 -- | Trace stat output
-stats :: [Frame] -> IORef Int -> IORef Int -> a -> a
-stats frames cc qc = trace ("Number of frames: " ++ show (length frames) ++
+stats :: [Frame] -> IORef Int -> IORef Int -> IORef Int -> a -> a
+stats frames cc gc qc = trace ("Number of frames: " ++ show (length frames) ++
                             "\nAverage number of literals/clause (not counting transition relation): "
                             ++ show(calcAvgLitsPerCls frames) ++
                             "\nNumber of ctis: " ++ (show $ unsafePerformIO $ readR cc) ++ 
+                            "\nNumber of ctgs: " ++ (show $ unsafePerformIO $ readR gc) ++ 
                             "\nNumber of queries: " ++ (show $ unsafePerformIO $ readR qc) )
 
 -- | Consecution phase of the algorithm (calls subsequent consecution queries for
@@ -119,13 +124,13 @@ prove' m prop frame acc =
                                     Just fs ->
                                       prove' m prop (fs !! (length fs - 1))
                                         (take (length fs - 1) fs)
-                                    Nothing -> stats (frame:acc) ctiCount queryCount True)
-          (False, frame', acc') -> stats (frame:acc) ctiCount queryCount False
+                                    Nothing -> stats (frame:acc) ctiCount ctgCount queryCount True)
+          (False, frame', acc') -> stats (frame:acc) ctiCount ctgCount queryCount False
   where
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' acc =
       case push f m f' of
-        (True, _) -> stats (frame:acc) ctiCount queryCount True
+        (True, _) -> stats (frame:acc) ctiCount ctgCount queryCount True
         (False, f'') -> prove' m prop f'' (acc ++ [f])
     -- Push all clauses and see if fixed point has been reached (resulting in Nothing)
     propagate (f:f':frames) =
@@ -203,14 +208,14 @@ inductiveGeneralization clause fs fk m w w' = generalize clause fs fk [] w w'
                 Just s ->  -- Try to push negCTG as far as possible
                   let negCTG = map neg (fst (currentNext s)) in
                     if not(null fs) && initiation f0 negCTG && consecution (last fs) negCTG
-                      then
+                      then unsafePerformIO (increment ctgCount >> return (
                         let rest = take (length fl) (fk:fl)
                             lastf = last (fk:fl)
                             (ctgs, nctgs) = pushNegCTG negCTG [] rest m
                             ctgs' = f0:fs ++ ctgs
                             (fdps, fd) = (take (length ctgs' - 1) ctgs', last ctgs') -- fd is deepest frame with negCTI inductive
                             (c, fs') = generalize negCTG fdps fd [] w ( r - 1 ) in
-                              down ls fs' (map (`addClauseToFrame` c) (nctgs ++ [lastf]) ++ tail (nctgs ++ [lastf])) r
+                              down ls fs' (map (`addClauseToFrame` c) (nctgs ++ [lastf]) ++ tail (nctgs ++ [lastf])) r ))
                       else down (ls `intersect` (map neg s)) (f0:fs) (fk:fl) ( r - 1 )
                 _ -> error "Could not find predecessor when finding MIC"
                    
