@@ -7,6 +7,9 @@
 \usepackage{amssymb}
 \usepackage{docmute}   % only needed to allow inclusion of proposal.tex
 \usepackage{listings}  % for formatting code
+\usepackage{float}
+\floatstyle{boxed} 
+\restylefloat{figure}
 
 \raggedbottom                           % try to avoid widows and orphans
 \sloppy
@@ -109,7 +112,7 @@ extent for a comparable purpose.
 Model checking attempts to verify that a hardware or
 software system has certain properties. Given a model of the system
 and a specified property, a model checker will automatically check
-whether all states in the system satisfy this property.
+whether all reachable states in the system satisfy this property.
 
 All model-checking approaches suffer from limitations on the size
 of the systems they can model check in practice as a result of
@@ -323,7 +326,7 @@ All AIGER files begin with a header of the form
 \begin{verbatim}
 V M I L O A
 \end{verbatim}
-where:
+where
 \begin{itemize}
 \item \verb,V, can take on values \verb,aag,, specifying that the file is in the ASCII format or \verb,aig,,
 specifying that the file is in the binary format.
@@ -333,25 +336,28 @@ specifying that the file is in the binary format.
 \item \verb,A, gives the number of two-input AND gates
 \end{itemize}
 
-Variables are represented in AIGER with even indices greater than 1, with 0
-indexing the constant value {\it False} and 1 indexing {\it True}. An odd
-index $i + 1$ represents the negated value of the variable represented by
-$i$.
+Variables are represented in AIGER with even integers greater than
+1, with 0 representing the constant value {\it False} and 1
+representing {\it True}.
+An odd integer value $i + 1$ represents the negated value of the literal
+represented by $i$.
 
-The different components are specified
+The different components are specified after the header
 in the order that their counts are given in the header.
 
 In the ASCII version of the format, inputs are specified by giving the
-index (greater than 2) that represents its corresponding variable name
+index (greater than 2) that represents its corresponding variable name,
 and outputs are specified similarly as single indices.
 Latches initially begin with value 0 and are specified by giving the
 index representing
-their corresponding variable name followed by the index that gives their
-next-state value.
-AND gates are specified by giving their indices and their two inputs'
-indices.
+their corresponding variable name followed by the integer that represents
+the literal giving their next-state value.
+AND gates are specified by giving their indices and their two inputs
+literals' integer representations.
 
 %Make a figure
+\begin{figure}[h]
+\centering
 \begin{verbatim}
 aag 3 0 2 1 1
 2 3
@@ -359,25 +365,71 @@ aag 3 0 2 1 1
 6
 6 2 4
 \end{verbatim}
-%Make a figure desc.
-A circuit specified in the old ASCII AIGER format with
+\caption{
+A circuit specified in the old ASCII AIGER format
+}
+\label{aagCircuit}
+\end{figure}
+
+For example, figure \ref{aagCircuit} specifies a circuit with
 no inputs, two latches with indices $2$ and $4$ and one AND gate
 $6$ that takes the outputs of the two latches as inputs and whose
 output is the single output of the circuit.
-%%
 
-In the binary version of the format, inputs are not explicitly listed
-as in the ASCII format, and if the first non-input specified has index
-$n$, then there are assumed to be $n - 2$ inputs with indices
-$2$ to $n - 1$.
-Additionally, AND-gates ...
+In the binary version of the format, variable indices are assumed to
+occur in increasing order. Since each literal must be defined, this allows
+for the omission of the variable indices when defining inputs or latches.
+
+Inputs are not explicitly listed: the input variables are inferred based on
+the value of \verb,I,.
+Similarly, latches are specified by only listing their next-state literals'
+representations.
+
+The binary format also assumes that AND gates occur in order of their
+variable indices and additionally assumes that inputs to an AND gate will
+have already been defined before that AND gate.
+These assumptions allow AND gates to be represented by two differences
+that tend to be small in practice:
+
+For an AND gate specified in the old format by \verb,lhs rhs0 rhs1,,
+where inputs \verb,rhs0, and \verb,rhs1, have been ordered such that
+$\verb,rhs0, \geq \verb,rhs1,$, define
+$$\delta_0 = \verb,lhs, - \verb,rhs0,$$
+and
+$$\delta_1 = \verb,lhs, - \verb,rhs1,$$
+
+The values $\delta_i$ are then represented with the following binary
+encoding, giving a more compact representation for AND gates than
+the ASCII version of the format:
+
+For 7-bit words $w_0, \ldots w_n$ with
+$$\delta_i = w_0 + 2^7 \times w_1 + \ldots + 2^{7n} \times w_n,$$
+$\delta_i$ is represented as the sequence of $n + 1$ bytes
+$b_0, \ldots, b_n$, where
+\begin{itemize}
+\item for $0 \geq k < n$, $b_k$ is the byte obtained by setting the most
+significant bit to 1 and the rest of the bits to $w_k$, and
+\item $b_n$ is the byte obtained by setting the most
+significant bit to 0 and the rest of the bits to $w_n$
+\end{itemize}
+
 
 \subsubsection{New version}
 
 The new AIGER format begins with a header of the form
 \begin{verbatim}
-V M I L O A B - - -
+V M I L O A B C J F
 \end{verbatim}
+where \verb,V,, \verb,M,, \verb,I,, \verb,L,, \verb,O,, \verb,A, are as
+in the old format, and
+\begin{itemize}
+\item \verb,B, gives the number of ``bad state'' properties
+\item \verb,C, gives the number of invariant constraints
+\item \verb,J, gives the number of justice properties
+\item \verb,F, gives the number of fairness constraints
+\end{itemize}
+
+Variables are represented in the same manner as the old format.
 
 
 
