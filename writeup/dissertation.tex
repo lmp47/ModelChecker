@@ -293,6 +293,8 @@ formats to the binary AIG format
 %Describe the AIGER (old and new version) and BLIF formats and
 %{\tt bliftoaig} from the AIGER utilities.
 
+%Comments?
+
 I used both the AIGER format and Berkeley Logic Interchange Format (BLIF)
 to specify some of the example hardware models.
 Hardware models that the model checker accepts as input
@@ -303,7 +305,7 @@ so such models were specified using BLIF and converted to AIGER format
 using the AIGER library's \verb,bliftoaig, tool.
 
 The model checker takes as input models formatted using either the ASCII or
-binary AIGER formats.
+binary AIGER formats described below.
 
 \subsection{AIGER}
 
@@ -341,6 +343,9 @@ Variables are represented in AIGER with even integers greater than
 representing {\it True}.
 An odd integer value $i + 1$ represents the negated value of the literal
 represented by $i$.
+In other words, a variable named $x$ is represented by $x \times 2$,
+which gives the positive literal $x$, and $x \times 2 + 1$ gives the
+negative literal $\neg x$.
 
 The different components are specified after the header
 in the order that their counts are given in the header.
@@ -403,11 +408,11 @@ encoding, giving a more compact representation for AND gates than
 the ASCII version of the format:
 
 For 7-bit words $w_0, \ldots w_n$ with
-$$\delta_i = w_0 + 2^7 \times w_1 + \ldots + 2^{7n} \times w_n,$$
+$$\delta_i = w_0 + 2^7w_1 + \ldots + 2^{7n}w_n,$$
 $\delta_i$ is represented as the sequence of $n + 1$ bytes
 $b_0, \ldots, b_n$, where
 \begin{itemize}
-\item for $0 \geq k < n$, $b_k$ is the byte obtained by setting the most
+\item for $0 \leq k < n$, $b_k$ is the byte obtained by setting the most
 significant bit to 1 and the rest of the bits to $w_k$, and
 \item $b_n$ is the byte obtained by setting the most
 significant bit to 0 and the rest of the bits to $w_n$
@@ -429,14 +434,21 @@ in the old format, and
 \item \verb,F, gives the number of fairness constraints
 \end{itemize}
 
-Variables are represented in the same manner as the old format.
+Variables are represented in the same manner as the old format
+and are specified after the header in the same order that the counts
+are given in the header with the exception of AND gates, which
+occur at the end of the file. Latches' initial values can also be specified
+now with an additional \verb,0, or \verb,1, after the next-state literal's
+index. If the initial value is omitted, the initial value is assumed to be
+0 as in the old version of the format. The header can also be truncated
+after giving the number of AND-gates if the remaining counts are all
+zero, allowing any parser for the new AIGER format to be
+backwards-compatible.
 
+The new version of the format is otherwise
+the same as the old format.
 
-
-
-\subsection{Berkeley Logic Interchange Format}
-
-BLIF
+%Can header be truncated?
 
 \section{The IC3 Algorithm}
 %Describe how the IC3 algorithm works when trying to prove a model has a property
@@ -494,7 +506,7 @@ is added to $F_{k + 1}$.
 %Describe what happens when a consecution query fails
 If a consecution query $F_k \wedge T \Rightarrow P'$ fails, then that means that
 there is an $F_k$ state that is a predecessor of the $\neg P'$ state,
-i.e. there is an $F_k$ state $s$ and a $\neg P'$ state v with $T(i,s,v')$.
+i.e. there is an $F_k$ state $s$ and a $\neg P'$ state $v$ with $T(i,s,v')$.
 The state
 $s$ is a \emph{counterexample to induction} (CTI) state.
 
@@ -571,11 +583,44 @@ frame $F_k$ allows $s$ to be generalized to $c$.
 Briefly mention sections in the chapter and the example models
 written in AIGER and BLIF formats.
 
-\section{AIGER Parser}
-Discuss the implementation of the AIGER parser. In particular, mention
-the handling of both the older and newer AIGER format versions for both
-the ASCII and binary versions of the format and the representation
-of AIG models.
+\section{Parser}
+%Discuss the implementation of the AIGER parser. In particular, mention
+%the handling of both the older and newer AIGER format versions for both
+%the ASCII and binary versions of the format and the representation
+%of AIG models.
+
+The parser component parses both ASCII or binary-formatted AIGER files,
+assuming the new format is used (because all old format AIGER files are also
+new instances of the new format). The justice properties and fairness constraints
+are ignored by the parser, as they are not used by the model checker.
+
+Both the \verb,Parser.AigerParser, module that implements the parser in Haskell and
+the \verb,Parser.AigerTools, module that calls the Aiger Utilities' parser's functions
+parse the AIGER file into the \verb,Model, data structure in \verb,Parser.AigModel,,
+which stores the components specified in the AIGER file.
+
+\subsection{Model}
+
+More specifically, the \verb,Model, data structure stores the number of variables and
+the number of inputs. It also stores as a list of literals the outputs, bad states,
+and invariant constraints. The data structure also stores latches and AND gates as
+lists of lists of literals. I discuss the representation of literals, latches, and
+AND gates below.
+
+Literals are represented by a \verb,Lit, data structure in \verb,Parser.AigModel,,
+which instead of representing a positive literal $x$ as $2 \times x$ and negative
+literal $\neg x$ as $2 \times x + 1$, represents positive literal $x$ as
+\verb,Lit ,$x - 1$ and negative literal $\neg x$ as \verb,Neg ,$x - 1$. The subtraction
+by 1 allows variable indices to start at 0 rather than 1, since starting at 1 is
+unnecessary because the \verb,Lit, data struture also contains the separate
+\verb,Bool, constructor for representing the values \verb,True, and \verb,False,.
+
+Latches and AND gates are represented by three-element literal lists.
+For latches, the first element gives the variable name of the latch (as a positive literal),
+the second gives the next-state literal, and the final element gives the initial state
+of the latch. For AND gates, the first element gives the variable name of the AND gate
+(as a positive literal), and the next two elements give the literals whose values are taken
+as inputs to the AND gate.
 
 \section{Minisat Interface}
 %Describe the process of implementing the Haskell bindings for Minisat
@@ -639,20 +684,91 @@ when unmarshalling from the C struct. Beyond straightforward unmarshalling, some
 to convert from the MiniSat representation of literals to the model checker’s representation of
 literals was necessary.
 
-\section{Transition Systems}
+\section{Hardware Models}
 \subsection{Representation}
-Describe how transition systems and their components are represented.
+\subsubsection{Literals}
+The \verb,Lit, data structure in \verb,Model.Model, gives the representation for literals in
+the model checker.
+The \verb,Var, constructor gives positive current-state (unprimed) literals, the \verb,Neg,
+constructor gives negative current-state literals, and the \verb,Var', and \verb,Neg', constructors
+respectively give positive and negative next-state (primed) literals.
+
+\subsubsection{Transition Systems and Safety Properties}
+% Describe how transition systems and safety properties are represented.
+The representation of transition systems and the safety property for the model checker to check
+are both encompassed in the \verb,Model, data structure in \verb,Model.Model,.
+The inputs $i$ and state variables $x$ in the transition system $T(i,x,I,T)$
+are not distinguished, and the total count of variables is kept in \verb,vars,.
+Clauses that specify the initial state $I$ are kept in \verb,initial,.
+The transition relation $T$ is captured by \verb,transition,, a list of both clauses that specify
+latches and clauses that specify AND gates.
+The literal that gives the safety property is given by \verb,safe,.
+
 \subsection{Construction}
-Describe how transition systems are constructed given AIG models.
+% Describe how transition systems are constructed given AIG models.
+
+The \verb,Model.Model, module contains functions to convert the \verb,Model, data
+structure in \verb,Parser.AigModel, into the hardware model representation used by
+the model checker.
 
 \section{Model Checking}
+
+%\subsection{Overall structure}
+
+\subsection{Frames}
+The data structure \verb,Frame, represents frames in the IC3 algorithm.
+Along with the set of clauses (represented by a list of literals), a \verb,Frame, also includes
+a \verb,Solver,, which contains at least all the clauses in the frame's set of clauses. The
+\verb,Solver, may also contain the \verb,transition, clauses for the hardware model.
+
 \subsection{Initiation}
-Describe how the step involving the initiation query is implemented.
+%Describe how the step involving the initiation query is implemented.
+
+The initiation query $I \Rightarrow P$ is an implication, but a MiniSat \verb,Solver, can only
+solve queries given in conjunctive normal form (CNF), where each disjunct is one of the clauses passed
+to the solver (assumptions passed to the solver can be taken as a set of single-literal clauses
+that are also part of the conjunction). As a result, the representation for the query
+$I \Rightarrow P$ for a frame $I$ and a clause $P$ makes use of the logical equivalence between
+$I \Rightarrow P$ and $\neg (\neg P \wedge I)$.
+
+Using the fact that the formula $\neg (\neg P \wedge I)$ is true iff $\neg P \wedge I$ is unsatisfiable,
+and deMorgan's laws gives the following implementation of the initiation query:
+
+\begin{lstlisting}[language=Haskell]
+initiation :: Frame -> Clause -> Bool
+initiation = not (satisfiable (solveWithAssumps (solver f) (map neg prop)))
+\end{lstlisting}
+
 \subsection{Consecution}
-Describe how the step involving the consecution query is implemented.
+%Describe how the step involving the consecution query is implemented.
+
+Similarly to how the implication in the initiation query is converted to an equivalent logical
+expression that renders a CNF query to a MiniSat \verb,Solver, to determine the satisfiability
+of the query, the consecution query's implementation uses the logical equivalence of
+$F_k \wedge T \Rightarrow P'$ and $\neg (\neg P' \wedge F_k \wedge T)$. Again, along with deMorgan's
+laws, this yields the implementation of the consecution query (where it is assumed that the
+\verb,Frame,'s \verb,Solver, contains the \verb,transition, clauses of the \verb,Model,.
+
+\begin{lstlisting}
+\end{lstlisting}
+
 \subsection{Counterexamples to Induction}
-Describe how the implementation discovers counterexamples
-to induction and proves them unreachable.
+%Describe how the implementation discovers counterexamples
+%to induction and proves them unreachable.
+
+When the consecution query $F_k \wedge T \Rightarrow P$
+in \verb,prove', fails, then a call to the function \verb,nextCTI,
+gives a cube (a conjunction of literals) whose current-state literals
+give relevant CTI for the query.
+
+\subsubsection{Basic}
+In the most basic implementation of the IC3 algorithm, \verb,negCTI, asks for a model
+(i.e. the set of true literals) for the satisfiable query $\neg P \wedge F_k \wedge T$.
+The current-state literals are then extracted from the model in \verb,prove',
+and passed as one of the parameters to \verb,proveNegCTI,.
+
+The function \verb,proveNegCTI, begins with a query
+
 \subsection{Propagation}
 \subsubsection{Basic}
 \subsubsection{Subsumed clauses}
