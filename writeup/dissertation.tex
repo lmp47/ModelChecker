@@ -713,7 +713,17 @@ the model checker.
 
 \section{Model Checking}
 
+I have implemented several versions of the recursive IC3 algorithm:
+the most basic version, a version that
+improves upon the most basic version by discovering smaller CTIs,
+and a version that improves upon the version with improved CTIs by considering subsumed clauses.
+
+I have also implemented a variation of IC3 that uses priority queues and a variation that
+uses CTGs to improve generalization.
+
 %\subsection{Overall structure}
+%\subsubsection{Recursive}
+%\subsubsection{Priority queues}
 
 \subsection{Frames}
 The data structure \verb,Frame, represents frames in the IC3 algorithm.
@@ -759,7 +769,8 @@ laws, this yields the implementation of the consecution query (where it is assum
 When the consecution query $F_k \wedge T \Rightarrow P$
 in \verb,prove', fails, then a call to the function \verb,nextCTI,
 gives a cube (a conjunction of literals) whose current-state literals
-give relevant CTI for the query.
+give relevant CTI for the query. After, \verb,proveNegCTI, attempts to prove
+that the CTI cannot be reached.
 
 \subsubsection{Basic}
 In the most basic implementation of the IC3 algorithm, \verb,negCTI, asks for a model
@@ -767,13 +778,80 @@ In the most basic implementation of the IC3 algorithm, \verb,negCTI, asks for a 
 The current-state literals are then extracted from the model in \verb,prove',
 and passed as one of the parameters to \verb,proveNegCTI,.
 
-The function \verb,proveNegCTI, begins with a query
+\subsubsection{Proving the Counterexample is Unreachable}
+The function \verb,proveNegCTI, attempts to show that the CTI $s$ is unreachable at the
+current depth by showing that $\neg s$ holds in the current frame.
+The function checks first that $I \wedge \neg s \wedge s'$ is unsatisfiable
+(i.e. to check that $I \wedge \neg s \Rightarrow \neg s'$ and therefore that $\neg s$ is
+inductive relative to $I$). Then \verb,pushNegCTI, finds the deepest frame (the frame
+$F_k$ with the largest $k$) that comes before the frame that contains the counterexample to
+induction state relative to which $\neg s$ is inductive and adds the clause
+$\neg s$ to all frames up to that depth.
+
+If this deepest frame $F_{k - 1}$ is the frame just before the frame that contains the
+CTI, then since $\neg s$ is inductive relative to $F_{k - 1}$, $\neg s$ can also be added
+to $F_k$, establishing that $\neg s$ is not reachable in $k$ steps. The \verb,pushNegCTI,
+function in this case yields a triple \verb:(Nothing, acc', f'):, where \verb,acc', gives
+a list containing the representation of frames $F_0, \ldots, F_{k - 1}$ after having $\neg s$
+conjoined to them, and \verb,f', contains the representation of frame $F_k$ after having
+$\neg s$ conjoined to it. The function \verb,proveNegCTI, then checks again if the safety
+property is inductive relative to the updated $F_k$. If so, then \verb,proveNegCTI, has
+successfully proven enough CTIs are unreachable at depth $k$. Otherwise, \verb,proveNegCTI,
+calls \verb,nextCTI, to extract the next CTI to prove unreachable at depth $k$ and calls
+itself recursively with this newly-discovered CTI.
+
+If the deepest frame $F_{k - 1}$ to which $\neg s$ is relatively inductive is not the frame just before
+the CTI-containing frame, then \verb,proveNegCTI, uses \verb,nextCTI, to find a new CTI $z$
+that is a counterexample for the property $\neg s$ being relatively inductive to $F_k$. It then
+calls itself recursively with this new CTI to prove, and the frames up to $F_{k - 1}$ rather than
+$F_k$. After updating frames $F_0, \dlots F_{k - 1}$ to prove that $\neg z$ holds at $F_{k - 1}$,
+the call to \verb,negCTI, to prove $\neg s$ is repeated using the updated frames $F_0, \ldots, F_{k - 1}$.
+
+If any call to \verb,proveNegCTI, ever reaches the point where the only frame it is called with is
+$F_0$, then \verb,proveNegCTI, has failed to prove a property necessary to show that the error
+state is unreachable, and the model checker can then give the result that the safety property
+does not hold.
 
 \subsection{Propagation}
+
 \subsubsection{Basic}
+The most basic implementation's \verb,push, function, when invoked as \verb,push f model f', tries
+to push all clauses in \verb,Frame, \verb,f, that are not in \verb,Frame, \verb,f', to \verb,f', and
+results in a pair containing a \verb,Bool, indicating whether a fixed point has been reached
+(i.e., all clauses could be pushed) and a \verb,Frame, with all the clauses in \verb,f', and all
+the clauses in \verb,f, that could be pushed to \verb,f',.
+For each clause in \verb,f, that is not in \verb,f', the \verb,consecution, function is called to
+see if the clause is inductive relative to the frame represented by \verb,f,. If it is, then
+the clause can be conjoined to the frame represented by \verb,f',, and if it is not, then the
+function must have \verb,False, as the first element in the pair it returns.
+
 \subsubsection{Subsumed clauses}
+The basic implementation's \verb,push, function avoids unnecessary consecution queries by only
+considering clauses in \verb,f, that are not in \verb,f',. Further consecution queries may be
+eliminated by considering the clauses in \verb,f, that are subsumed by other clauses.
+
+The verions of \verb,push, that considers subsumed clauses includes a call to the function
+\verb,removeSubsumed, when acquiring the list of clauses to attempt to push.
+
+% Expand
+
 \subsection{Generalization}
+While the algorithm describes generalization as involving finding the minimal inductive subclause (MIC),
+finding the MIC for a clause is in practice inefficient, and all implemented versions of generalization
+\verb,inductiveGeneralization, involve approximating the MIC.
+
 \subsubsection{Simple}
+The simplest approximation for MIC involves attempting to drop each literal in turn and checking
+that the resulting clause $c$ results in satisfiable results for the queries $I \Rightarrow c$ and
+$F_k \wedge c \wedge T \Rightarrow c'$ that the original clause did. If the resulting clause
+does result in satisfiable results for the queries, then the literal can be successfully dropped,
+but if not, the literal is added to a list \verb,needed, of necessary literals.
+After a parameterizable number of failed attempts at dropping a literal from the clause or after
+having attempted dropping all the literals, the
+\verb,inductiveGeneralization, function returns the clause resulting from appending the remaining
+literals in the clause (i.e. the literals that \verb,inductiveGeneralization, has not tried to drop)
+with the literals in \verb,needed,.
+
 \subsubsection{Minimal Inductive Subclauses}
 \subsubsection{Counterexamples to Generalization}
 
