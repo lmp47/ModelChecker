@@ -8,6 +8,7 @@
 \usepackage{docmute}   % only needed to allow inclusion of proposal.tex
 \usepackage{listings}  % for formatting code
 \usepackage{float}
+\usepackage[]{algorithm2e}
 \floatstyle{boxed} 
 \restylefloat{figure}
 
@@ -109,11 +110,31 @@ extent for a comparable purpose.
 
 %Provide a brief description of model checking in general.
 
-Model checking attempts to verify that a hardware or
-software system has certain properties. Given a model of the system
+Formal verification uses mathematics and logic to prove properties of
+hardware and software systems. Formal verification techniques are
+employed in several domains where the correctness of a system is
+crucial. Guaranteeing that there are no errors in hardware designs before
+manufacturing begins can help avoid the high costs associated with needing to
+remanufacture the hardware if the design needs to be corrected.
+Additionally, the ability to prove that certain kinds of errors do not
+occur are important for ensuring safety in safety-critical systems such
+as those in airplanes and medical devices.
+
+% Talk about different formal verification techniques
+
+One formal verification technique is model checking.
+Given a model of the system
 and a specified property, a model checker will automatically check
 whether all reachable states in the system satisfy this property.
 
+A brief description of symbolic model-checking and SAT-based model-checking
+follows to provide further context for this project, which focuses on
+implementing the IC3 algorithm, a SAT-based model-checking algorithm.
+
+
+\section{Symbolic Model Checking}
+
+%Discuss BDD-based and SAT-based model checking techniques.
 All model-checking approaches suffer from limitations on the size
 of the systems they can model check in practice as a result of
 the state explosion problem: the number of
@@ -130,18 +151,12 @@ represented efficiently as boolean expressions involving state variables
 as opposed to an explicit list of each individual state in the set
 \cite{mcmillan92}. 
 
-A brief description symbolic model-checking and SAT-based model-checking
-follows to provide further context for this project, which focuses on
-implementing the IC3 algorithm, a SAT-based model-checking algorithm.
-
-
-\section{Symbolic Model Checking}
-
-%Discuss BDD-based and SAT-based model checking techniques.
-
 Symbolic model checking was originally invented for use with ordered
-binary decision diagrams (BDDs), which provide an efficient representation
-of boolean formulas using canonical forms for the formulas.
+binary decision diagrams (BDDs), data structures that provide an efficient
+representation of boolean formulas. A unique BDD represents each logical
+formula given a particular variable ordering, and an implementation that
+only stores each BDD once and uses pointers appropriately can result in
+less space being used.
 The efficiency of BDDs in storing boolean formulas allowed for the model
 checking of systems with larger numbers of states than could be handled
 by explicit-state model checking \cite{mcmillan92}.
@@ -184,12 +199,14 @@ desired property holds at each state before the final state.
 %Give context for the IC3/PDR algorithm, e.g. history and comparisons
 %with other SAT-based model checking algorithms such as BMC and $k$-induction.
 
-The IC3 algorithm (also called PDR \cite{een11}) is a SAT-based model-checking algorithm
-for proving the safety properties (i.e. properties that must hold in all
-reachable states) of hardware.
+The IC3 algorithm (also called PDR \cite{een11}) is a SAT-based model-checking
+algorithm for proving the safety properties (i.e. properties that must hold
+in all reachable states) of hardware.
 The first implementation of the algorithm \verb,ic3, placed third in
-HWMCC'10, and since then, several variants of the algorithm have been
-developed.
+the 2010 Hardware Model Checking Competition (HWMCC'10), a competitive event
+that receives model checker and benchmark submissions from industry and
+academia. Its performance at HWMCC'10 generated interest in the algorithm, and
+since then, several variants of the algorithm have been developed.
 %2015 paper
 
 As in $k$-induction, properties are proved through induction:
@@ -237,9 +254,11 @@ software verification \cite{birgmeier14}.
 
 \section{Project Aims}
 
-This project aims to implement a basic form of the IC3 algorithm in
-Haskell. The model checker should be able to correctly check several
-small examples.
+This project's main aim is to implement a basic form of the IC3 algorithm in
+Haskell that should be able to correctly check several
+small examples. Additionally, the project is meant to give me an opportunity
+to learn and use Haskell, to understand formal methods and especially model
+checking more deeply, and to put into practice software engineering techniques.
 
 \chapter{Preparation}
 
@@ -539,14 +558,19 @@ in $s$ in turn and checking if the resulting clause is inductive
 relative to $F_k$:
 
 % format differently
-\begin{lstlisting}
-mic (s, k):
-  for literal l in s:
-    c := s \ {l}
-    if c is inductive relative to frame at depth k
-      s := c
-  return s
-\end{lstlisting}
+\SetKwProg{Fn}{Function}{:}{end}
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\Fn{mic(s,k)}{
+  \ForEach{literal l in s}{
+    c := s $\setminus$ \{l\} \;
+    \If{c is inductive relative to frame at depth k}{
+      s := c \;
+    }
+  }
+  \Return s \;
+}
+\end{algorithm}
 
 Finding the minimal inductive subclause can be computationally
 expensive, so it is often approximated in practice.
@@ -804,7 +828,7 @@ If the deepest frame $F_{k - 1}$ to which $\neg s$ is relatively inductive is no
 the CTI-containing frame, then \verb,proveNegCTI, uses \verb,nextCTI, to find a new CTI $z$
 that is a counterexample for the property $\neg s$ being relatively inductive to $F_k$. It then
 calls itself recursively with this new CTI to prove, and the frames up to $F_{k - 1}$ rather than
-$F_k$. After updating frames $F_0, \dlots F_{k - 1}$ to prove that $\neg z$ holds at $F_{k - 1}$,
+$F_k$. After updating frames $F_0, \ldots F_{k - 1}$ to prove that $\neg z$ holds at $F_{k - 1}$,
 the call to \verb,negCTI, to prove $\neg s$ is repeated using the updated frames $F_0, \ldots, F_{k - 1}$.
 
 If any call to \verb,proveNegCTI, ever reaches the point where the only frame it is called with is
