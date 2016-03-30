@@ -604,8 +604,10 @@ frame $F_k$ allows $s$ to be generalized to $c$.
 
 
 \chapter{Implementation}
-Briefly mention sections in the chapter and the example models
-written in AIGER and BLIF formats.
+
+The implementation can be broken up into four main components: the AIGER parser, the
+MiniSat interface, the hardware model representation, and the model checker.
+
 
 \section{Parser}
 %Discuss the implementation of the AIGER parser. In particular, mention
@@ -745,12 +747,36 @@ and a version that improves upon the version with improved CTIs by considering s
 I have also implemented a variation of IC3 that uses priority queues and a variation that
 uses CTGs to improve generalization.
 
-%\subsection{Overall structure}
-%\subsubsection{Recursive}
-%\subsubsection{Priority queues}
+\subsection{Overall structure}
+
+All versions of the model checker begin with a call to the \verb,prove, function,
+passing a \verb,Model, and the \verb,Lit, that is the safety property. The
+\verb,prove, function first creates the frame for the initial state and makes an
+initiation query. If the query is unsuccessful and returns \verb,False,,
+then \verb,prove, can just return \verb,False,, since the safety property
+does not hold in the initial state. Then \verb,prove, calls \verb,prove',, which
+has different implementations based on whether the version is recursive or not.
+
+\subsubsection{Recursive}
+In the general structure for the recursive implementations of the model checker,
+\verb,prove', takes as arguments the \verb,Model, for the hardware, the
+\verb,Lit, that gives the safety property, the frontier \verb,Frame, 
+(i.e. the \verb,Frame, that approximates the reachable set at the greatest
+depth considered so far), and the rest of the \verb,Frame,s in a list ordered by
+increasing depth.
+
+The \verb,prove', function makes a consecution query for the safety property and frontier
+frame \verb,frame,. If the consecution query returns \verb,True,, then \verb,prove',
+creates a new frame and calls \verb,pushFrame, which uses the \verb,push, function to
+push as many clauses as possible from \verb,frame, to the new frame. If \verb,push,
+indicates that a fixed point has been reached, then \verb,pushFrame, returns \verb,True,,
+but otherwise \verb,pushFrame, calls \verb,prove', recursively with the new frontier
+frame added to the list of frames.
+
+\subsubsection{Priority queues}
 
 \subsection{Frames}
-The data structure \verb,Frame, represents frames in the IC3 algorithm.
+The \verb,Frame, data structure represents frames in the IC3 algorithm.
 Along with the set of clauses (represented by a list of literals), a \verb,Frame, also includes
 a \verb,Solver,, which contains at least all the clauses in the frame's set of clauses. The
 \verb,Solver, may also contain the \verb,transition, clauses for the hardware model.
@@ -768,10 +794,10 @@ $I \Rightarrow P$ and $\neg (\neg P \wedge I)$.
 Using the fact that the formula $\neg (\neg P \wedge I)$ is true iff $\neg P \wedge I$ is unsatisfiable,
 and deMorgan's laws gives the following implementation of the initiation query:
 
-\begin{lstlisting}[language=Haskell]
+\begin{verbatim}
 initiation :: Frame -> Clause -> Bool
 initiation = not (satisfiable (solveWithAssumps (solver f) (map neg prop)))
-\end{lstlisting}
+\end{verbatim}
 
 \subsection{Consecution}
 %Describe how the step involving the consecution query is implemented.
@@ -865,7 +891,7 @@ finding the MIC for a clause is in practice inefficient, and all implemented ver
 \verb,inductiveGeneralization, involve approximating the MIC.
 
 \subsubsection{Simple}
-The simplest approximation for MIC involves attempting to drop each literal in turn and checking
+The simplest approximation for a  MIC involves attempting to drop each literal in turn and checking
 that the resulting clause $c$ results in satisfiable results for the queries $I \Rightarrow c$ and
 $F_k \wedge c \wedge T \Rightarrow c'$ that the original clause did. If the resulting clause
 does result in satisfiable results for the queries, then the literal can be successfully dropped,
@@ -877,7 +903,12 @@ literals in the clause (i.e. the literals that \verb,inductiveGeneralization, ha
 with the literals in \verb,needed,.
 
 \subsubsection{Minimal Inductive Subclauses}
+Another approximation for a MIC involves implementing the full algorithm for finding the MIC but again
+limiting the number of failed attempts at dropping a literal.
+
 \subsubsection{Counterexamples to Generalization}
+The most elaborate implementation of generalization adds to the full (but limited in number of attempts)
+MIC algorithm implementation the ability to deal with CTGs.
 
 \chapter{Evaluation}
 \section{Performance Impact of Improvements}
