@@ -267,7 +267,7 @@ checking more deeply, and to put into practice software engineering techniques.
 %Describe the requirements for the project: AIGER parser, Minisat interface,
 %transition system representation, algorithm implementation.
 
-A SAT-based model checker requires a way of taking input models and also
+The model checker requires a way of taking input models and also
 requires a way to solve SAT queries.
 I chose the AIGER format for representing the hardware models and the
 MiniSat SAT solver for answering SAT queries, resulting in a need for an
@@ -316,7 +316,7 @@ formats to the binary AIG format
 
 I used both the AIGER format and Berkeley Logic Interchange Format (BLIF)
 to specify some of the example hardware models.
-Hardware models that the model checker accepts as input
+The hardware models that the model checker accepts as input
 are specified using the AIGER format, which is the format used to specify
 hardware models in the Hardware Model Checking Competitions;
 however using the AIGER format to specify larger models was cumbersome,
@@ -379,7 +379,6 @@ the literal giving their next-state value.
 AND gates are specified by giving their indices and their two inputs
 literals' integer representations.
 
-%Make a figure
 \begin{figure}[h]
 \centering
 \begin{verbatim}
@@ -466,8 +465,6 @@ backwards-compatible.
 
 The new version of the format is otherwise
 the same as the old format.
-
-%Can header be truncated?
 
 \section{The IC3 Algorithm}
 %Describe how the IC3 algorithm works when trying to prove a model has a property
@@ -596,7 +593,7 @@ query at $F_k$ might fail. As with consecution queries, discovering a
 new clause that can be conjoined to $F_k$ may allow the queries that
 check for relative induction to succeed, and the discovery of this
 clause can be directed by a counterexample extracted from the
-SAT-solver after querying $F_k \wedge T \wedge c \Rightarrow c'$.
+SAT-solver after the query for $F_k \wedge T \wedge c \Rightarrow c'$.
 
 The counterexample state in this case is called a \emph{counterexample
 to generalization} (CTG), and proving the negated CTG to be true at
@@ -740,12 +737,23 @@ the model checker.
 \section{Model Checking}
 
 I have implemented several versions of the recursive IC3 algorithm:
-the most basic version, a version that
-improves upon the most basic version by discovering smaller CTIs,
-and a version that improves upon the version with improved CTIs by considering subsumed clauses.
+the most basic version (\emph{Basic}), a version that
+improves upon the most basic version by discovering smaller CTIs (\emph{BetterCTI}),
+and a version that improves upon the version with improved CTIs by considering subsumed clauses
+(\emph{BetterPropagation}).
 
-I have also implemented a variation of IC3 that uses priority queues and a variation that
-uses CTGs to improve generalization.
+I have also implemented a variation of IC3 that uses priority queues (\emph{PriorityQueue}) and a
+variation that uses CTGs to improve generalization (\emph{CTG}).
+
+\begin{tabular}{l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em}}
+& Priority Queue & Smaller CTIs & Subsumed Clauses & Basic Generalization & Generalization with CTGs\\
+\hline
+\emph{Basic} & & & \checkmark & \\
+\emph{BetterCTI} & & \checkmark & & \checkmark & \\
+\emph{BetterPropagation} & & \checkmark & \checkmark & \checkmark &\\
+\emph{PriorityQueue} & \checkmark & \checkmark & \checkmark & & \\
+\emph{CTG} & & \checkmark & \checkmark & & \checkmark
+\end{tabular}
 
 \subsection{Overall structure}
 
@@ -773,7 +781,97 @@ indicates that a fixed point has been reached, then \verb,pushFrame, returns \ve
 but otherwise \verb,pushFrame, calls \verb,prove', recursively with the new frontier
 frame added to the list of frames.
 
+If the consecution query returns \verb,False,, then \verb,prove', calls \verb,nextCTI,
+to find a (possibly incomplete) assignment whose current-state literals give a CTI cube.
+The CTI is extracted from the result of \verb,nextCTI, and passed along to \verb,proveNegCTI,
+along with the frontier frame, the rest of the frames, and the safety property.
+
+The function \verb,proveNegCTI, attempts to show that the CTI
+$s$ is unreachable at the current depth by showing that $\neg s$ holds in the current frame.
+The function checks first that $I \wedge \neg s \wedge s'$ is unsatisfiable
+(i.e. to check that $I \wedge \neg s \Rightarrow \neg s'$ and therefore that $\neg s$ is
+inductive relative to $I$). Then \verb,pushNegCTI, finds the deepest frame (the frame
+$F_k$ with the largest $k$) that comes before the frame that contains the counterexample to
+induction state relative to which $\neg s$ is inductive and adds the clause
+$\neg s$ to all frames up to that depth.
+
+If this deepest frame $F_{k - 1}$ is the frame just before the frame that contains the
+CTI, then since $\neg s$ is inductive relative to $F_{k - 1}$, $\neg s$ can also be added
+to $F_k$, establishing that $\neg s$ is not reachable in $k$ steps. The \verb,pushNegCTI,
+function in this case yields a triple \verb:(Nothing, acc', f'):, where \verb,acc', gives
+a list containing the representation of frames $F_0, \ldots, F_{k - 1}$ after having $\neg s$
+conjoined to them, and \verb,f', contains the representation of frame $F_k$ after having
+$\neg s$ conjoined to it. The function \verb,proveNegCTI, then checks again if the safety
+property is inductive relative to the updated $F_k$. If so, then \verb,proveNegCTI, has
+successfully proven enough CTIs are unreachable at depth $k$. Otherwise, \verb,proveNegCTI,
+calls \verb,nextCTI, to extract the next CTI to prove unreachable at depth $k$ and calls
+itself recursively with this newly-discovered CTI.
+
+If the deepest frame $F_{k - 1}$ to which $\neg s$ is relatively inductive is not the frame just before
+the CTI-containing frame, then \verb,proveNegCTI, uses \verb,nextCTI, to find a new CTI $z$
+that is a counterexample for the property $\neg s$ being relatively inductive to $F_k$. It then
+calls itself recursively with this new CTI to prove, and the frames up to $F_{k - 1}$ rather than
+$F_k$. After updating frames $F_0, \ldots F_{k - 1}$ to prove that $\neg z$ holds at $F_{k - 1}$,
+the call to \verb,negCTI, to prove $\neg s$ is repeated using the updated frames $F_0, \ldots, F_{k - 1}$.
+
+If any call to \verb,proveNegCTI, ever reaches the point where the only frame it is called with is
+$F_0$, then \verb,proveNegCTI, has failed to prove a property necessary to show that the error
+state is unreachable, and the model checker can then give the result that the safety property
+does not hold.
+
+When \verb,proveNegCTI, successfully proves a negated CTI unreachable, \verb,prove', then propagates
+clauses through all frames from the inital frame $F_0$ to the frontier frame and checks for a fixed
+point. If a fixed point has been found, then the safety property holds at all reachable states and the
+model checker can return \verb,True,. Otherwise, \verb,prove', calls itself recursively to prove
+the safety property at the same depth, but with the updated frames (with negated CTIs conjoined
+to them).
+
 \subsubsection{Priority queues}
+
+The priority queue implementation keeps track of what to prove next by using a priority queue of proof
+obligations instead of through recursive calls that explicitly specify which property to prove at
+which depth. A proof obligation is a pair $(s,i)$ of a state $s$ that is either a set of bad states
+or a counterexample to induction and a depth $i$. When the model checker encounters a proof obligation
+$(s,i)$ as the highest-priority element of the queue, it must prove $\neg s$ at depth $i$ to fulfill
+$(s, i)$.
+The presence of proof obligation $(s,i)$ on the priority queue also indicates that for all values $j$
+with $0 \geq j < i$, $(s, j)$ has already been fulfilled.
+
+The implementation represents proof obligations $(s,i)$ using the \verb,Obligation, type, which
+is a triple \verb.(Int, Int, Clause). of the depth $i$, a rank for deciding the ordering of
+proof obligations at the same depth within the priority queue, and the clause $\neg s$.
+
+In the \emph{PriorityQueue} implementation, \verb,prove', also takes a \verb,Model, as a parameter
+but otherwise takes a \verb,MinQueue, (the minimal element has the highest
+priority) of \verb,Obligation,s containing the priority queue with only \verb,Obligation,
+\verb.(1, 0, [prop]). in it, and the initial frame. \verb,prove', then invokes \verb,proveObligations,,
+the main function for the \emph{PriorityQueue} implementation.
+
+The \verb,proveObligations, function removes the minimum (i.e. highest-priority) \verb,Obligation, 
+representing $(s,i)$ from the priority queue and makes the consecution query
+$F_{i - 1} \wedge T \Rightarrow \neg s$. If the consecution query returns \verb,True,,
+then \verb,proveObligations, invokes \verb,pushFrame,, which works the same as in the recursive version,
+except that the recursive call to \verb,prove', is replaced with a recursive call to \verb,proveObligations,
+with an updated priority queue that has proof obligation $(s, i + 1)$.
+
+If the consecution query instead returns \verb,False,, then the negated CTI $\neg s$ is found by
+negating the extracted current-state literals taken from the value given by an invocation of \verb,nextCTI,.
+The \verb,proveObligations, function checks that $\neg s$ does not hold in the initial state, adds $\neg s$
+to frame $F_0$, and then invokes the \verb,propagate, function to propagate clauses until one of the following
+occurs:
+\begin{itemize}
+\item The depth $i$ in the proof obligation has been reached
+\item The clause $\neg s$ can no longer be pushed
+\item A fixed point has been reached.
+\end{itemize}
+In the first case, \verb,proveObligations, enqueues obligation $(s,i)$ with a rank that gives it a priority
+such that it occurs after all other proof obligations at depth $i$ and calls itself recursively.
+In the second case, \verb,propagate, gives the greatest $j$ such that $\neg s$ has been shown to hold at
+$j$-steps from the initial state (i.e. $\neg s$ is inductive relative to $F_{j - 1}$. Then \verb,proveObligations,
+enqueues obligation $(s,j)$ with a rank that gives it a priority such tht it occurs after all other
+proof obligations at depth $j$ and calls itself recursively.
+In the third case, \verb,proveObligations, returns a value containing \verb,True,, since the safety property
+has been proven to hold at all reachable states.
 
 \subsection{Frames}
 The \verb,Frame, data structure represents frames in the IC3 algorithm.
@@ -819,48 +917,29 @@ laws, this yields the implementation of the consecution query (where it is assum
 When the consecution query $F_k \wedge T \Rightarrow P$
 in \verb,prove', fails, then a call to the function \verb,nextCTI,
 gives a cube (a conjunction of literals) whose current-state literals
-give relevant CTI for the query. After, \verb,proveNegCTI, attempts to prove
-that the CTI cannot be reached.
+give relevant CTI for the query. After, in the recursive version,
+\verb,proveNegCTI, attempts to prove that the CTI cannot be reached
+(which may involve further calls to \verb,nextCTI,), and in
+the \emph{PriorityQueue} version, \verb,proveObligations, enqueues
+a proof obligation for proving the negated CTI a
 
 \subsubsection{Basic}
-In the most basic implementation of the IC3 algorithm, \verb,negCTI, asks for a model
-(i.e. the set of true literals) for the satisfiable query $\neg P \wedge F_k \wedge T$.
-The current-state literals are then extracted from the model in \verb,prove',
-and passed as one of the parameters to \verb,proveNegCTI,.
+In the \emph{Basic} implementation of the IC3 algorithm, \verb,negCTI, asks for a model
+(i.e. the set of true literals) for the satisfiable query $\neg P' \wedge F_k \wedge T$.
+The current-state literals are then extracted from the model in the function that
+called \verb,negCTI,.
 
-\subsubsection{Proving the Counterexample is Unreachable}
-The function \verb,proveNegCTI, attempts to show that the CTI $s$ is unreachable at the
-current depth by showing that $\neg s$ holds in the current frame.
-The function checks first that $I \wedge \neg s \wedge s'$ is unsatisfiable
-(i.e. to check that $I \wedge \neg s \Rightarrow \neg s'$ and therefore that $\neg s$ is
-inductive relative to $I$). Then \verb,pushNegCTI, finds the deepest frame (the frame
-$F_k$ with the largest $k$) that comes before the frame that contains the counterexample to
-induction state relative to which $\neg s$ is inductive and adds the clause
-$\neg s$ to all frames up to that depth.
+\subsubsection{Smaller Counterexamples to Induction}
+In the other implementations of the algorithm, \verb,negCTI, again asks for a model $m$
+for the satisfiable query $\neg P' \wedge F_k \wedge T$. The only literals in $m$ that
+must necessarily be included in the CTI are those current-state literals that result in
+the unsatisfiability of $m \wedge P' \wedge T$. That is, the current-state literals of any
+subcube $q$ of $m$ for which $q \wedge P' \wedge T$ holds is also a valid CTI.
+The conflict vector resulting from querying the SAT solver with $P' \wedge T$ and assumption
+cube $m$ contains such a $q$ that has only literals relevant to the conflict. This $q$ is
+then returned to the calling function, which, as in the \emph{Basic} implementation, extracts
+the current-state literals from $q$.
 
-If this deepest frame $F_{k - 1}$ is the frame just before the frame that contains the
-CTI, then since $\neg s$ is inductive relative to $F_{k - 1}$, $\neg s$ can also be added
-to $F_k$, establishing that $\neg s$ is not reachable in $k$ steps. The \verb,pushNegCTI,
-function in this case yields a triple \verb:(Nothing, acc', f'):, where \verb,acc', gives
-a list containing the representation of frames $F_0, \ldots, F_{k - 1}$ after having $\neg s$
-conjoined to them, and \verb,f', contains the representation of frame $F_k$ after having
-$\neg s$ conjoined to it. The function \verb,proveNegCTI, then checks again if the safety
-property is inductive relative to the updated $F_k$. If so, then \verb,proveNegCTI, has
-successfully proven enough CTIs are unreachable at depth $k$. Otherwise, \verb,proveNegCTI,
-calls \verb,nextCTI, to extract the next CTI to prove unreachable at depth $k$ and calls
-itself recursively with this newly-discovered CTI.
-
-If the deepest frame $F_{k - 1}$ to which $\neg s$ is relatively inductive is not the frame just before
-the CTI-containing frame, then \verb,proveNegCTI, uses \verb,nextCTI, to find a new CTI $z$
-that is a counterexample for the property $\neg s$ being relatively inductive to $F_k$. It then
-calls itself recursively with this new CTI to prove, and the frames up to $F_{k - 1}$ rather than
-$F_k$. After updating frames $F_0, \ldots F_{k - 1}$ to prove that $\neg z$ holds at $F_{k - 1}$,
-the call to \verb,negCTI, to prove $\neg s$ is repeated using the updated frames $F_0, \ldots, F_{k - 1}$.
-
-If any call to \verb,proveNegCTI, ever reaches the point where the only frame it is called with is
-$F_0$, then \verb,proveNegCTI, has failed to prove a property necessary to show that the error
-state is unreachable, and the model checker can then give the result that the safety property
-does not hold.
 
 \subsection{Propagation}
 
@@ -880,10 +959,19 @@ The basic implementation's \verb,push, function avoids unnecessary consecution q
 considering clauses in \verb,f, that are not in \verb,f',. Further consecution queries may be
 eliminated by considering the clauses in \verb,f, that are subsumed by other clauses.
 
-The verions of \verb,push, that considers subsumed clauses includes a call to the function
-\verb,removeSubsumed, when acquiring the list of clauses to attempt to push.
+A clause $c$ subsumes a clause $c'$ if the literals in $c$ are a subset of the literals in $c'$.
+In this case, $c \Rightarrow c'$ holds, so $c'$ can be removed from the set of clauses. By
+removing all subsumed clauses $c'$ from a frame before trying to push clauses, the model
+checker can avoid making the consecution queries that arise from attempts to push those clauses.
 
-% Expand
+The versions of \verb,push, that consider subsumed clauses include a call to the function
+\verb,removeSubsumed, when acquiring the list of clauses to attempt to push.
+The \verb,removeSubsumed, function takes a list of clauses and removes all clauses in the list
+that are subsumed by other clauses in the list. The \verb,push, function replaces the frame
+\verb,f, with a version of \verb,f, with all the subsumed clauses in the frame removed for
+the rest of the function and proceeds as the basic implementation's \verb,push, function does,
+returning a triple containing the updated \verb,f, along with the fixed-point \verb,Bool,
+and updates \verb,Frame, \verb,f',.
 
 \subsection{Generalization}
 While the algorithm describes generalization as involving finding the minimal inductive subclause (MIC),
@@ -891,10 +979,10 @@ finding the MIC for a clause is in practice inefficient, and all implemented ver
 \verb,inductiveGeneralization, involve approximating the MIC.
 
 \subsubsection{Simple}
-The simplest approximation for a  MIC involves attempting to drop each literal in turn and checking
-that the resulting clause $c$ results in satisfiable results for the queries $I \Rightarrow c$ and
+The simplest approximation for a MIC involves attempting to drop each literal in turn and checking
+that the resulting clause $c$ results in the truth of formulas $I \Rightarrow c$ and
 $F_k \wedge c \wedge T \Rightarrow c'$ that the original clause did. If the resulting clause
-does result in satisfiable results for the queries, then the literal can be successfully dropped,
+does result in satisfiable results for both the queries, then the literal can be successfully dropped,
 but if not, the literal is added to a list \verb,needed, of necessary literals.
 After a parameterizable number of failed attempts at dropping a literal from the clause or after
 having attempted dropping all the literals, the
@@ -902,23 +990,55 @@ having attempted dropping all the literals, the
 literals in the clause (i.e. the literals that \verb,inductiveGeneralization, has not tried to drop)
 with the literals in \verb,needed,.
 
-\subsubsection{Minimal Inductive Subclauses}
-Another approximation for a MIC involves implementing the full algorithm for finding the MIC but again
-limiting the number of failed attempts at dropping a literal.
+\subsubsection{Minimal Inductive Subclauses and Counterexamples to Generalization}
+The more elaborate implementation of generalization implements the full
+(but limited in number of attempts) MIC algorithm implementation with the ability to deal with CTGs.
 
-\subsubsection{Counterexamples to Generalization}
-The most elaborate implementation of generalization adds to the full (but limited in number of attempts)
-MIC algorithm implementation the ability to deal with CTGs.
+When attempting to drop a literal $l$ from clause $c$, the \verb,down, function is called on the clause
+$c \setminus l$ with a list of past frames (which is all the frames except the deepest on the inital call
+to \verb,down,), a list of current and future frames (which contains only the deepest frame on initial call
+to \verb,down,), and a limit on the recursion depth \verb,r,.
+
+The \verb,down, function checks, as in the simple approximation for MIC, for the satisfiability of
+$I \Rightarrow c$ and $F_k \wedge c \wedge T \Rightarrow c'$. The difference is that \verb,down,
+does not immediately give a value if $I \Rightarrow c$ is true and $F_k \wedge c \wedge T \Rightarrow c'$ is
+not; in this case, the negated cTG \verb,negCTG, is acquired by taking and negating the current literals in
+the model the SAT solver gives for $\neg c' \wedge c \wedge T \wedge F_k$.
+
+The \verb,down, function then finds the deepest frame for which \verb,negCTI, is inductive, attempts to generalize
+\verb,negCTI, relative to that frame with a recursive call (with a decremented value of \verb,r,)
 
 \chapter{Evaluation}
+
 \section{Performance Impact of Improvements}
 Discuss performance comparison of the naive implementation of the
 model checker and the final implementation of the model checker.
 
+%The overall performance of the model checker is heavily dependent on the size and number of SAT-solver queries;
+%profiling consistently reveals that ...
+
+\subsection{Smaller Counterexamples to Induction}
+
+Discovering smaller CTIs leads, as expected, to a smaller number of literals per clause and smaller SAT queries,
+giving consistent performance improvements over the basic CTI-finding implementation for nontrivial
+examples (i.e. examples that require finding counterexamples).
+
+\subsection{Propagation}
+
+As expected, removing subsumed clauses results in a smaller number of literals per clause, 
+
+\subsection{Counterexamples to Generalization}
+
+The \emph{CTG} version that deals with CTGs performs the same as or worse than the \emph{BetterPropagation} version
+on examples, most likely because the examples used are too small for the performance benefits of using CTGs to
+eliminate more states to overcome the overheads of finding and proving negated CTGs. Similar results can be found
+in the performance of the reference implementation with basic generalization and improved (CTG-using) generalization
+on the same examples: for these examples, the reference implementation performs better with CTG-handling disabled.
+
 \section{Performance Comparison}
-Discuss performance comparison of final implementation with
-IC3 reference implementation, taking into account differences between
-the implementations.
+%Discuss performance comparison of final implementation with
+%IC3 reference implementation, taking into account differences between
+%the implementations.
 
 \chapter{Conclusion}
 
