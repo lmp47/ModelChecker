@@ -174,7 +174,7 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
     generalize [] _ _ needed _ = needed
     generalize (c:cs) f0 fk needed k =
       let res = unsafePerformIO (increment queryCount >> return (
-                  solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs)
+                  solveWithAssumps (solver (getFrameWith ((cs ++ needed):(clauses fk)) m)) (map (prime.neg) (cs ++ needed))
                 )) in
         if not (satisfiable res) && initiation f0 cs
           then generalize cs f0 fk needed k
