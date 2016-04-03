@@ -111,7 +111,7 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
     generalize cs _ _ needed 0 = cs ++ needed
     generalize [] _ _ needed _ = needed
     generalize (c:cs) f0 fk needed k =
-      let res = solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs) in
+      let res = solveWithAssumps (solver (getFrameWith ((cs ++ needed):(clauses fk)) m)) (map (prime.neg) (cs ++ needed)) in
         if not (satisfiable res) && initiation f0 cs
           then generalize cs f0 fk needed k
           else generalize cs f0 fk (c:needed) ( k - 1 )
