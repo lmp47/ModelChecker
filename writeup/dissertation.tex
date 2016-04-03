@@ -279,7 +279,12 @@ The model checker requires a way of taking input models and also
 requires a way to solve SAT queries.
 I chose the AIGER format for representing the hardware models and the
 MiniSat SAT solver for answering SAT queries, resulting in a need for an
-AIGER parser and an interface to MiniSat in Haskell.
+AIGER parser and an interface to MiniSat in Haskell. The choice of
+the AIGER format allows the model checker to be run on examples from
+the Hardware Model Checking Competition, since this is the format used
+to specify examples in the competitions. The choice of the MiniSat SAT
+solver, which is used by Aaron Bradley's reference implementation
+of IC3 that this implementation is to be compared against.
 
 Given that the model checking algorithm deals with transition systems
 (discussed later), the implementation also requires a representation of
@@ -297,23 +302,23 @@ In summary, the required components are as follows:
 
 \section{Tools Used}
 
-The tools used in the project and what they were used for are as follows:
+The tools used in the project are as follows:
 
 \begin{itemize}
 \item Git was used for version control, with GitHub providing backup
-storage
-\item Haddock was used for documentation
-\item HUnit was used for testing
-\item Criterion was used for benchmarking
-\item Cabal was used for package/dependency management
+storage.
+\item Haddock was used for documentation.
+\item HUnit was used for testing.
+\item Criterion was used for benchmarking.
+\item Cabal was used for package/dependency management.
 \item The {\tt hsc2hs} preprocessor eased writing Haskell interfaces to
-C code
+C code.
 \item The Aiger Utilities' parser for comparison with and as an
-alternative to the one developed as part of the project
-\item The {\tt bliftoaig} and {\tt aigtoaig} tools eased the specification
+alternative to the one developed as part of the project.
+\item The {\tt bliftoaig} and {\tt aigtoaig} tools were used to ease the specification
 of models by converting from human-readable BLIF and ASCII AIG
-formats to the binary AIG format
-\item The MiniSat SAT solver was used for handling SAT queries
+formats to the binary AIG format.
+\item The MiniSat SAT solver was used for handling SAT queries.
 \end{itemize}
 
 \section{Model Specification}
@@ -323,15 +328,15 @@ formats to the binary AIG format
 %Comments?
 
 I used both the AIGER format and Berkeley Logic Interchange Format (BLIF)
-to specify some of the example hardware models.
+to specify the example hardware models that were not taken from the
+Hardware Model Checking Competition.
 The hardware models that the model checker accepts as input
-are specified using the AIGER format, which is the format used to specify
-hardware models in the Hardware Model Checking Competitions;
+are specified using the AIGER format;
 however using the AIGER format to specify larger models was cumbersome,
 so such models were specified using BLIF and converted to AIGER format
-using the AIGER library's \verb,bliftoaig, tool.
+using the Aiger Utilities' \verb,bliftoaig, tool.
 
-The model checker takes as input models formatted using either the ASCII or
+Inputs to model checker are models formatted using either the ASCII or
 binary AIGER formats described below.
 
 \subsection{AIGER}
@@ -339,15 +344,17 @@ binary AIGER formats described below.
 The AIGER format provides a method of specifying hardware modeled as
 And-Inverter Graphs with latch elements providing single clock-tick
 delays: all circuits are modeled as a graph of nodes consisting only of
-AND gates, NOT gates, and latches.
+AND gates, inverters, and latches.
 
-The AIGER format has both an ASCII and binary version, where the ASCII
+The AIGER format has both an ASCII and a binary version, where the ASCII
 format is more flexible and human readable, and the binary version is
 more compact. The Hardware Model Checking Competition's examples
-are in the latter of the two.
+use the binary format.
 
 A new version of the AIGER format is currently under development, with
-examples from HWMCC'14 using the new version.
+examples from HWMCC'14 using the new version. The AIGER parser implemented
+as part of this project handles both the old and new versions of the AIGER
+format.
 
 \subsubsection{Old version}
 
@@ -359,17 +366,17 @@ where
 \begin{itemize}
 \item \verb,V, can take on values \verb,aag,, specifying that the file is in the ASCII format or \verb,aig,,
 specifying that the file is in the binary format.
-\item \verb,M, gives the maximum index of a variable
-\item \verb,L, gives the number of latches
-\item \verb,O, gives the number of outputs
-\item \verb,A, gives the number of two-input AND gates
+\item \verb,M, gives the maximum index of a variable.
+\item \verb,L, gives the number of latches.
+\item \verb,O, gives the number of outputs.
+\item \verb,A, gives the number of two-input AND gates.
 \end{itemize}
 
-Variables are represented in AIGER with even integers greater than
+Variables are represented in AIGER format with even integers greater than
 1, with 0 representing the constant value {\it False} and 1
-representing {\it True}.
-An odd integer value $i + 1$ represents the negated value of the literal
-represented by $i$.
+representing the constant value {\it True}.
+An odd integer value $i + 1$ represents the negated value of the positive
+literal represented by $i$.
 In other words, a variable named $x$ is represented by $x \times 2$,
 which gives the positive literal $x$, and $x \times 2 + 1$ gives the
 negative literal $\neg x$.
