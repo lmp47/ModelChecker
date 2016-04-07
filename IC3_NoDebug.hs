@@ -61,14 +61,14 @@ prove' m prop frame acc =
     then pushFrame frame (getFrame (vars m) []) acc
     else
       let cti = nextCTI frame [prop] m in
-        case proveNegCTI m frame (fst $ currentNext cti) acc [prop] of
-          (True, frame', acc') -> (clauses frame' /= clauses frame) &&
-                                  (case propagate (acc' ++ [frame']) of
-                                    Just fs ->
-                                      prove' m prop (fs !! (length fs - 1))
-                                        (take (length fs - 1) fs)
-                                    Nothing -> True)
-          (False, frame', acc') -> False
+        case proveNegCTI m frame (fst $ currentNext cti) acc [prop] [] of
+          (True, frame', acc', _) -> (clauses frame' /= clauses frame) &&
+                                     (case propagate (acc' ++ [frame']) of
+                                     Just fs ->
+                                       prove' m prop (fs !! (length fs - 1))
+                                         (take (length fs - 1) fs)
+                                     Nothing -> True)
+          (False, frame', acc', _) -> False
   where
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' acc =
@@ -84,31 +84,31 @@ prove' m prop frame acc =
                           Nothing -> Nothing
     propagate frames = Just frames
 
--- | Try to prove CTI unreachable at current depth given the current frame, CTI, previous frames and property
-proveNegCTI :: Model -> Frame -> [Lit] -> [Frame] -> Clause -> (Bool, Frame, [Frame])
-proveNegCTI m f _ [] p = (False, f, [])
-proveNegCTI m f cti acc p =
+-- | Try to prove CTI unreachable at current depth given the current frame, CTI, previous frames, property, and later frames
+proveNegCTI :: Model -> Frame -> [Lit] -> [Frame] -> Clause -> [Frame] -> (Bool, Frame, [Frame], [Frame])
+proveNegCTI m f _ [] p fs = (False, f, [], fs)
+proveNegCTI m f cti acc p fs =
     if satisfiable (solveWithAssumps (solver (getFrameWith (map neg cti:clauses (head acc)) m)) (map prime cti))
-      then (False, f, acc)
+      then (False, f, acc, fs)
       else
-        case pushNegCTI (map neg cti) acc f of
-          (Nothing, acc', f') -> if consecution f' p
-                                   then (True, f', acc')
-                                   else proveNegCTI m f' (fst (currentNext (nextCTI f' p m))) acc' p
-          (Just model, acc', f') -> case proveNegCTI m f' (fst (currentNext model)) acc' (map neg cti) of
-                                      (True, f'', acc'') -> proveNegCTI m f cti (acc'' ++ [f'']) p
-                                      false              -> false
+        case pushNegCTI (map neg cti) acc f fs of
+          (Nothing, acc', f', fs') -> if consecution f' p
+                                        then (True, f', acc', fs')
+                                        else proveNegCTI m f' (fst (currentNext (nextCTI f' p m))) acc' p fs'
+          (Just model, acc', f', fs') -> case proveNegCTI m f' (fst (currentNext model)) acc' (map neg cti) fs' of
+                                           (True, f'', acc'', fs'') -> proveNegCTI m f cti (acc'' ++ [f'']) p fs''
+                                           false                    -> false
   where
-    pushNegCTI negCTI [] f = (Nothing, [], f)
-    pushNegCTI negCTI acc f =
+    pushNegCTI negCTI [] f fs = (Nothing, [], f, fs)
+    pushNegCTI negCTI acc f fs =
       let res = solveWithAssumps
                   (solver (getFrameWith (negCTI:clauses (acc !! (length acc - 1))) m))
                   (map (prime.neg) negCTI) in
         if not (satisfiable res)
-          then let (negCTI', fs) = inductiveGeneralization negCTI acc f m 3 3 in
-            (Nothing, map (`addClauseToFrame` negCTI') (take (length fs - 1) fs), addClauseToFrame (last fs) negCTI')
+          then let (negCTI', bfs, f':fs') = inductiveGeneralization negCTI acc f fs m 3 3 in
+            (Nothing, map (`addClauseToFrame` negCTI') bfs, addClauseToFrame f negCTI', fs)
           else let f' = acc !! (length acc - 1) in
-            (Just (nextCTI f' negCTI m), take (length acc - 1) acc, f')
+            (Just (nextCTI f' negCTI m), take (length acc - 1) acc, f', fs)
 
 pushNegCTG :: Clause -> [Frame] -> [Frame] -> Model -> ([Frame], [Frame])
 pushNegCTG negCTG acc [] _ = (acc, [])
@@ -122,42 +122,41 @@ pushNegCTG negCTG acc (f:fs) m =
 
 -- | Find an approximate minimal subclause of the provided clause that satisfies initiation
 -- and consecution and adds to the last frame
-inductiveGeneralization :: Clause -> [Frame] -> Frame -> Model -> Word -> Word -> (Clause, [Frame])
-inductiveGeneralization clause fs fk m w w' = generalize clause fs fk [] w w'
+inductiveGeneralization :: Clause -> [Frame] -> Frame -> [Frame] -> Model -> Word -> Word -> (Clause, [Frame], [Frame])
+inductiveGeneralization clause bfs fc afs m w w' = generalize clause bfs fc afs [] w w'
   where
-    generalize cs fs fk needed 0 _ = (cs ++ needed, fs ++ [fk])
-    generalize [] fs fk needed _ _ = (needed, fs ++ [fk])
-    generalize (l:ls) fs fk needed k r =
-      case down ls fs [fk] r of
-        Just (fs', [fk'], ls') -> generalize ls' fs' fk' needed k r
-        Nothing -> generalize ls fs fk (l:needed) ( k - 1 ) r
-    down ls (f0:fs) (fk:fl) r =
+    generalize cs bfs fc afs needed 0 _ = (cs ++ needed, bfs, fc:afs)
+    generalize cs bfs fc afs needed _ 0 = (cs ++ needed, bfs, fc:afs)
+    generalize [] bfs fc afs needed _ _ = (needed, bfs, fc:afs)
+    generalize (l:ls) bfs fc afs needed k r = 
+      case down (ls ++ needed) bfs (fc:afs) r of
+        Just (fs', ls', r') -> let (fc':afs') = drop (length bfs) fs' in
+                                 generalize (ls' \\ needed) (take (length bfs) fs') fc' afs' needed k r'
+        Nothing -> generalize ls bfs fc afs (l:needed) ( k - 1 ) r 
+    down ls (f0:fs) (fc:afs) r = 
       -- Check initiation and consecution for the potential generalization
       let init = initiation f0 ls
-          consec = solveWithAssumps (solver (getFrameWith (ls:(clauses fk)) m)) (map (prime.neg) ls) in
+          consec = solveWithAssumps (solver (getFrameWith (ls:(clauses fc)) m)) (map (prime.neg) ls) in
       if not(init) || r == 0
         then Nothing
         else
           if not (satisfiable consec)
-            then Just (f0:fs, fk:fl, ls) -- Generalization succeeded
+            then Just (f0:fs ++ fc:afs, ls, r) -- Generalization succeeded
             else
               case model consec of
                 Just s ->  -- Try to push negCTG as far as possible
                   let negCTG = map neg (fst (currentNext s)) in
                     if not(null fs) && initiation f0 negCTG && consecution (last fs) negCTG
                       then
-                        let rest = take (length fl) (fk:fl) -- all but frontier frame
-                            lastf = last (fk:fl) -- frontier frame
+                        let rest = take (length afs) (fc:afs) -- all but frontier frame
+                            lastf = last (fc:afs) -- frontier frame
                             (ctgs, nctgs) = pushNegCTG negCTG [] rest m
                             ctgs' = f0:fs ++ ctgs
                             (fdps, fd) = (take (length ctgs' - 1) ctgs', last ctgs') -- fd is deepest frame with negCTI inductive
-                            (c, fs') = generalize negCTG fdps fd [] w ( r - 1 ) 
-                            fk':fl' = nctgs ++ [lastf] in
-                              down ls (map (`addClauseToFrame` c) fs') (addClauseToFrame fk' c:fl') r
-
-                      else down (ls `intersect` (map neg s)) (f0:fs) (fk:fl) ( r - 1 )
+                            (c, bfs', fc':afs') = generalize negCTG fdps fd (nctgs ++ [lastf]) [] ( w - 1 ) ( r - 1 ) in
+                              down ls bfs' (addClauseToFrame fc' c:afs') ( r - 1 )
+                      else down (ls `intersect` (map neg s)) (f0:fs) (fc:afs) ( r - 1 )
                 _ -> error "Could not find predecessor when finding MIC"
-                   
 
 -- | Finds a CTI given a safety property clause
 nextCTI :: Frame -> Clause -> Model -> [Lit]
