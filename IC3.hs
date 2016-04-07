@@ -216,8 +216,17 @@ inductiveGeneralization clause bfs fc afs m w w' = generalize clause bfs fc afs 
                             (ctgs, nctgs) = pushNegCTG negCTG [] rest m
                             ctgs' = f0:fs ++ ctgs
                             (fdps, fd) = (take (length ctgs' - 1) ctgs', last ctgs') -- fd is deepest frame with negCTI inductive
-                            (c, bfs', fc':afs') = generalize negCTG fdps fd (nctgs ++ [lastf]) [] ( w - 1 ) ( r - 1 ) in
-                              down ls bfs' (addClauseToFrame fc' c:afs') ( r - 1 )))
+                            (c, bfs', fs') = generalize negCTG fdps fd (nctgs ++ [lastf]) [] ( w - 1 ) ( r - 1 ) 
+                            bfs'' = if (length bfs' <= length fdps)
+                                      then map (`addClauseToFrame` c) bfs'
+                                      else let fd':abfs = (drop (length fdps + 1) bfs') in
+                                             (map (`addClauseToFrame` c) (take (length fdps) bfs')) ++ (addClauseToFrame fd' c:abfs)
+                            fc':afs' = let l = 1 + length fdps - length bfs'' in
+                                         if l > 0 
+                                           then let (fd':aafs) = (drop l fs') in
+                                                  (map (`addClauseToFrame` c) (take l fs')) ++ (addClauseToFrame fd' c:aafs)
+                                           else fs' in
+                              down ls bfs'' (fc':afs') ( r - 1 )))
                       else down (ls `intersect` (map neg s)) (f0:fs) (fc:afs) ( r - 1 )
                 _ -> error "Could not find predecessor when finding MIC"
                    
