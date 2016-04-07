@@ -21,6 +21,7 @@
                                         % more readable
 
 \begin{document}
+\SetKwProg{Fn}{Function}{:}{end}
 
 \bibliographystyle{plain}
 
@@ -318,9 +319,41 @@ used to document Haskell code, being used for most packages available
 on Hackage.
 
 \subsection{HUnit}
-HUnit is a JUnit-inspired unit testing framework for Haskell.
+HUnit is a framework for writing unit tests in Haskell based on the JUnit framework
+for unit testing in Java. HUnit allows tests to be specified by using functions
+that return the \verb,Assertion, type to write \verb,TestCase,s. For example, the
+\verb,assertBool :: String -> Bool -> Assertion, function takes a \verb,String,
+that gives an error message and a \verb,Bool, value, and raises an exception (with
+the error message) if the \verb,Bool, is not \verb,True,, so the following
+expression would give a \verb,TestCase, that tests that function
+\verb,isEven, returns \verb,True, when called with parameter 12:
+\begin{verbatim}
+TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
+\end{verbatim}
+
+\begin{figure}[h]
+\centering
+\begin{verbatim}
+data Test = TestCase Assertion
+          | TestList [Test]
+          | TestLabel String Test
+\end{verbatim}
+\caption{The HUnit {\tt Test} datatype}
+\end{figure}
+
+The \verb,Test, datatype in HUnit allows \verb,Test,s to be grouped
+and built up hierarchically. Tests that have been assembled into a
+singly tree can then be treated as a test suite, and the whole tree
+of unit tests can be run.
 
 \subsection{Criterion}
+
+Criterion is a library for performing benchmarking in Haskell.
+Criterion can output benchmarking results in any format specified in the \verb,.tpl,
+template format, and by default outputs to HTML.
+The \verb,.tpl, file can be configured such that
+Criterion will, for example, output benchmark sample results to a CSV, as the
+\verb,.tpl, for benchmarking this project was configured.
 
 \subsection{Cabal}
 
@@ -348,6 +381,8 @@ across platforms.
 
 
 \subsection{hsc2hs}
+
+The \verb,hsc2hs, preprocessor 
 
 \subsection{Aiger Utilities}
 Several tools provided in Aiger Utilities were used in the project. The
@@ -386,8 +421,6 @@ using the Aiger Utilities' \verb,bliftoaig, tool.
 Inputs to model checker are models formatted using either the ASCII or
 binary AIGER formats described below.
 
-\subsection{AIGER}
-
 The AIGER format provides a method of specifying hardware modeled as
 And-Inverter Graphs with latch elements providing single clock-tick
 delays: all circuits are modeled as a graph of nodes consisting only of
@@ -408,7 +441,7 @@ examples from HWMCC'14 using the new version. The AIGER parser implemented
 as part of this project handles both the old and new versions of the AIGER
 format.
 
-\subsubsection{Old version}
+\subsection{Old version}
 
 All AIGER files begin with a header of the form
 \begin{verbatim}
@@ -504,7 +537,7 @@ significant bit to 0 and the rest of the bits to $w_n$
 \end{itemize}
 
 
-\subsubsection{New version}
+\subsection{New version}
 
 The new AIGER format begins with a header of the form
 \begin{verbatim}
@@ -541,6 +574,24 @@ safety property $P$, IC3 aims either to prove inductively that $P$ holds
 at all reachable states from the initial state or
 to find a $\neg P$ state that can be reached.
 
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\Fn{prove((i,x,I,T),P,k)}{
+  \If{$\neg (I \Rightarrow P)$}{
+    \Return false \;
+  }
+  \eIf{$F_k \wedge T \Rightarrow P$}{
+    $F_{k + 1}$ := $\{c \in F_k | F_k \wedge T \Rightarrow c\}$ \;
+    \If {$F_k = F_{k + 1}$}{
+      \Return true}
+    {\it prove}$((i,x,I,T),P,k + 1)$ \;
+  } {
+    cti := {\it getCTI}($F_k \wedge T \Rightarrow P$) \;
+    {\it prove}$((i,x,I,T),\neg{\rm cti},k - 1)$
+  }
+  \Return s \;
+}
+\end{algorithm}
 \subsection{Transition Systems}
 A transition system is a tuple $(i,x,I,T)$ consisting of a set of input
 variables $i$, state variables $x$, next-state variables $x'$, an initial
@@ -621,8 +672,6 @@ The minimal inductive subclause can be found by dropping each literal
 in $s$ in turn and checking if the resulting clause is inductive
 relative to $F_k$:
 
-% format differently
-\SetKwProg{Fn}{Function}{:}{end}
 \begin{algorithm}[H]
 \DontPrintSemicolon
 \Fn{mic(s,k)}{
@@ -741,8 +790,8 @@ that does simplification and returns full assignments.
 
 \subsection{C Wrapper}
 
-Much of the C wrapper is straightforward: every MiniSat class is replaced with a C type,
-and every MiniSat function is replaced with a function with an \verb,extern C, function that
+Much of the C wrapper is straightforwardly as follows: every MiniSat class is replaced with a C
+type, and every MiniSat function is replaced with a function with an \verb,extern C, function that
 calls the MiniSat C++ function.
 I also added an additional \verb,result, struct to allow for the results of a SAT query to
 be returned from a single function call. The struct contains not only the result of the SAT
@@ -1075,10 +1124,9 @@ does not immediately give a value if $I \Rightarrow c$ is true and $F_k \wedge c
 not; in this case, the negated CTG \verb,negCTG, is acquired by taking and negating the current literals in
 the model the SAT solver gives for $\neg c' \wedge c \wedge T \wedge F_k$.
 
-The \verb,down, function then finds the deepest frame $F$ for which \verb,negCTG, is inductive, and attempts to generalize
+The \verb,down, function then finds the deepest frame $F_{j - 1}$ for which \verb,negCTG, is inductive, and attempts to generalize
 \verb,negCTG, relative to that frame with a recursive call to \verb,generalize, with a decremented value of \verb,r,.
-The generalization of \verb,negCTG, is then added to 
-% fix
+The generalization of \verb,negCTG, can then be added to frame $F_j$,
 and \verb,down, is called recursively on the updated set of frames.
 
 \chapter{Evaluation}
