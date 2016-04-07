@@ -282,9 +282,9 @@ MiniSat SAT solver for answering SAT queries, resulting in a need for an
 AIGER parser and an interface to MiniSat in Haskell. The choice of
 the AIGER format allows the model checker to be run on examples from
 the Hardware Model Checking Competition, since this is the format used
-to specify examples in the competitions. The choice of the MiniSat SAT
-solver, which is used by Aaron Bradley's reference implementation
-of IC3 that this implementation is to be compared against.
+to specify examples in the competitions. I chose the MiniSat SAT
+solver because it is the SAT solver used by Aaron Bradley's reference
+implementation of IC3 that this implementation is to be compared against.
 
 Given that the model checking algorithm deals with transition systems
 (discussed later), the implementation also requires a representation of
@@ -292,34 +292,81 @@ transition systems, which should correspond to the input hardware model.
 A further requirement is the implementation of the
 IC3 algorithm itself.
 
-In summary, the required components are as follows:
-\begin{itemize}
-\item AIGER parser
-\item MiniSat interface
-\item Transition system representation
-\item IC3 algorithm
-\end{itemize}
+In summary, the required components are the AIGER parser, MiniSat interface,
+transition system representation, and IC3 algorithm implementation.
 
 \section{Tools Used}
 
 The tools used in the project are as follows:
 
-\begin{itemize}
-\item Git was used for version control, with GitHub providing backup
-storage.
-\item Haddock was used for documentation.
-\item HUnit was used for testing.
-\item Criterion was used for benchmarking.
-\item Cabal was used for package/dependency management.
-\item The {\tt hsc2hs} preprocessor eased writing Haskell interfaces to
-C code.
-\item The Aiger Utilities' parser for comparison with and as an
-alternative to the one developed as part of the project.
-\item The {\tt bliftoaig} and {\tt aigtoaig} tools were used to ease the specification
-of models by converting from human-readable BLIF and ASCII AIG
-formats to the binary AIG format.
-\item The MiniSat SAT solver was used for handling SAT queries.
-\end{itemize}
+\subsection{Git}
+
+The Git version control system was used for managing the project's code.
+
+Git submodules, which allow the inclusion of other git projects within another
+project, were used to include MiniSat within the project.
+
+GitHub, a widely-used code hosting service, was used to keep backups of the
+code.
+
+\subsection{Haddock}
+
+The Haddock documentation tool for Haskell was used to generate documentation
+for the code. Haddock automatically generates documentation in
+several formats (e.g. HTML) from annotated Haskell code. It is commonly
+used to document Haskell code, being used for most packages available
+on Hackage.
+
+\subsection{HUnit}
+HUnit is a JUnit-inspired unit testing framework for Haskell.
+
+\subsection{Criterion}
+
+\subsection{Cabal}
+
+Cabal is the standard package and dependency management system for Haskell,
+where a package may be either a library or a complete piece of software.
+Information about a Cabal package, such as its version and dependencies,
+is specified through a \verb,.cabal, file in its root directory.
+The \verb,.cabal, file may contain several different sections, such as a
+\verb,library, section, describing the modules in the package that should be
+exposed in the library provided by the package or an \verb,executable, section,
+which has fields for specifying the Haskell file containing the \verb,Main,
+module and for specifying other Haskell files used by the program.
+The \verb,.cabal, file for this project also uses the \verb,Test-Suite, section
+to allow the HUnit test for the project to be run in a standard way (by running
+\verb,cabal test, in the root directory of the package) and the \verb,Benchmark,
+section to allow the benchmarking program to be run in a standard way also
+(by running \verb,cabal bench, in the root directory of the package).
+
+%Setup.hs
+
+The use of Cabal enables the project to be built easily on different platforms,
+since Cabal provides a standard method for building the package that works
+across platforms.
+
+
+
+\subsection{hsc2hs}
+
+\subsection{Aiger Utilities}
+Several tools provided in Aiger Utilities were used in the project. The
+AIGER parser provided was used for comparison with and as an alternative
+to the one developed as part of this project. 
+
+The Aiger Utilities' tools to convert between formats for specifying
+hardware models eased the specification of new hardware models that would
+be compatible with the model checker, which accepts only AIGER-formatted inputs,
+and that would be compatible with  Aaron Bradley's reference implementation of IC3,
+which takes only the binary format of AIGER as input.
+In particular, the tools of use were
+the {\tt bliftoaig}
+tool, which converts a circuit specified using the Berkeley Logic Interchange Format
+to a circuit specified using the binary AIGER format, and the {\tt aigtoaig} tool,
+which converts between the ASCII and binary AIGER formats.
+
+\subsection{MiniSat SAT Solver}
+
 
 \section{Model Specification}
 %Describe the AIGER (old and new version) and BLIF formats and
@@ -346,9 +393,14 @@ And-Inverter Graphs with latch elements providing single clock-tick
 delays: all circuits are modeled as a graph of nodes consisting only of
 AND gates, inverters, and latches.
 
-The AIGER format has both an ASCII and a binary version, where the ASCII
-format is more flexible and human readable, and the binary version is
-more compact. The Hardware Model Checking Competition's examples
+The AIGER format has both an ASCII and a binary version. The ASCII
+format is more flexible and human readable, imposing fewer constraints
+on the ordering of components within the input file. For example, an
+AND gate with variable name 20 may be specified before an AND gate with
+variable name 12 in the ASCII format, but AND gates must be specified in
+ascending order of their variable names in the binary AIGER format.
+The the binary version's assumptions on component ordering allows the format
+to be more compact. The Hardware Model Checking Competition's examples
 use the binary format.
 
 A new version of the AIGER format is currently under development, with
@@ -992,7 +1044,8 @@ and updates \verb,Frame, \verb,f',.
 \subsection{Generalization}
 While the algorithm describes generalization as involving finding the minimal inductive subclause (MIC),
 finding the MIC for a clause is in practice inefficient, and all implemented versions of generalization
-\verb,inductiveGeneralization, involve approximating the MIC.
+\verb,inductiveGeneralization, involve approximating the MIC with a call to the function
+\verb,generalize,.
 
 \subsubsection{Simple}
 The simplest approximation for a MIC involves attempting to drop each literal in turn and checking
@@ -1003,7 +1056,7 @@ but if not, the literal is added to a list \verb,needed, of necessary literals.
 After a parameterizable number of failed attempts at dropping a literal from the clause or after
 having attempted dropping all the literals, the
 \verb,inductiveGeneralization, function returns the clause resulting from appending the remaining
-literals in the clause (i.e. the literals that \verb,inductiveGeneralization, has not tried to drop)
+literals in the clause (i.e. the literals that \verb,generalize, has not tried to drop)
 with the literals in \verb,needed,.
 
 \subsubsection{Minimal Inductive Subclauses and Counterexamples to Generalization}
@@ -1013,23 +1066,28 @@ The more elaborate implementation of generalization implements the full
 When attempting to drop a literal $l$ from clause $c$, the \verb,down, function is called on the clause
 $c \setminus l$ with a list of past frames (which is all the frames except the deepest on the inital call
 to \verb,down,), a list of current and future frames (which contains only the deepest frame on initial call
-to \verb,down,), and a limit on the recursion depth \verb,r,.
+to \verb,down,), a limit on the recursion depth for generalization, and a limit \verb,r, on the number
+of CTGs to attempt to negate for each call to \verb,inductiveGeneralization,.
 
 The \verb,down, function checks, as in the simple approximation for MIC, for the satisfiability of
 $I \Rightarrow c$ and $F_k \wedge c \wedge T \Rightarrow c'$. The difference is that \verb,down,
 does not immediately give a value if $I \Rightarrow c$ is true and $F_k \wedge c \wedge T \Rightarrow c'$ is
-not; in this case, the negated cTG \verb,negCTG, is acquired by taking and negating the current literals in
+not; in this case, the negated CTG \verb,negCTG, is acquired by taking and negating the current literals in
 the model the SAT solver gives for $\neg c' \wedge c \wedge T \wedge F_k$.
 
-The \verb,down, function then finds the deepest frame for which \verb,negCTI, is inductive, attempts to generalize
-\verb,negCTI, relative to that frame with a recursive call (with a decremented value of \verb,r,)
+The \verb,down, function then finds the deepest frame $F$ for which \verb,negCTG, is inductive, and attempts to generalize
+\verb,negCTG, relative to that frame with a recursive call to \verb,generalize, with a decremented value of \verb,r,.
+The generalization of \verb,negCTG, is then added to 
+% fix
+and \verb,down, is called recursively on the updated set of frames.
 
 \chapter{Evaluation}
 
 \section{Benchmarking}
+%figure out how to indicate nontimeout/timeouts better
 Benchmarks were taken for the performance of the different versions of the model checker and reference implementation
-on fifteen handwritten examples, fifty examples from HWMCC'10, eleven (twenty) examples from HWMCC'11, and two (ten)
-examples from HWMCC'13. For each example, forty benchmarking samples were taken, and if the elapsed time for
+on fifteen handwritten examples, fifty (sixty) examples from HWMCC'10, eleven (twenty) examples from HWMCC'11, and
+two (ten) examples from HWMCC'13. For each example, forty benchmarking samples were taken, and if the elapsed time for
 attempting to solve an example takes longer than ten minutes, the attempt is considered to have timed out.
 
 Other than timing data, I also collected data about the number of frames needed to solve an example,
@@ -1060,8 +1118,9 @@ the \emph{BetterPropagation} version having slightly better performance than the
 The \emph{CTG} version that deals with CTGs performs the same as or worse than the \emph{BetterPropagation} version
 on examples, most likely because the examples used are too small for the performance benefits of using CTGs to
 eliminate more states to overcome the overheads of finding and proving negated CTGs. Similar results can be found
-in the performance of the reference implementation with basic generalization and improved (CTG-using) generalization
-on the same examples: for these examples, the reference implementation performs better with CTG-handling disabled.
+in the performance of Aaron Bradley's reference implementation with basic generalization and
+improved (CTG-using) generalization on the same examples: for these examples, the reference implementation performs
+better with CTG-handling disabled.
 
 \subsection{Priority Queues}
 
@@ -1075,10 +1134,59 @@ CTI $s$ would not, after its initial discovery, need to be discovered again.
 
 Even if $s$ is not a CTI for proving $p$ at depth $i + 2$, the proof obligations $(s, i+1)$ would still need to
 be fulfilled before \verb,proveObligations, attempts to fulfill $(\neg p, i + 2)$.
-\section{Performance Comparison}
+
+\section{Performance Comparison with Reference Implementation}
 %Discuss performance comparison of final implementation with
 %IC3 reference implementation, taking into account differences between
 %the implementations.
+
+The average performance of the most efficient implementation of the model checker across all examples is
+
+compared to the average performance of Aaron Bradley's reference implementation (with or without generalization
+involving CTGs enabled).
+
+\subsection{Implementation Differences}
+
+\subsubsection{Model Representation}
+The reference implementation differs from this project's implementation in representing the hardware model.
+
+The reference implementation keeps track of which variables are inputs, latches, and AND gates.
+Each \verb,Model, maintains both the the primed and current values for inputs and latches and keeps a
+table of values for variables that are the outputs of AND gates.
+
+%The next-state value for an unprimed variable is provided by a call to the \verb,primeVar, function in the
+%\verb,Model, class, which returns the stored value for the corresponding primed variable
+%if the variable is an input or latch. If the variable is the output of an AND gate, the \verb,Model,
+%either returns a precomputed, stored value for that primed variable or calculates the value of the output
+%of the AND gate, inserts the value into the AND table, and returns that value.
+
+As mentioned earlier, when the consecution query $F_k \wedge T \Rightarrow P'$ fails, this corresponds
+to the CNF query $F_k \wedge T \wedge \neg P'$ being satisfiable, and while a full satisfying assignment
+$s$ gives a CTI state, it is better to use a set of states $c \subset s$ as a CTI cube, so that several
+CTI states can be eliminated at once.
+The \verb,stateOf, function uses the information it keeps in \verb,Model,s to extract the smaller
+cube from the model $s$ giving the satisfying assignment for a failed consecution query directly,
+without further SAT-solver queries.
+The Haskell implementation instead uses several SAT-solver queries to extract the necessary literals
+from $s$.
+
+
+\subsubsection{MiniSat}
+The reference implementation is more closely coupled to MiniSat's implementation. Because both the reference
+implementation and MiniSat are in C++, the reference implementation can and does call MiniSat functions
+and instantiate MiniSat objects, such as \verb,SimpSolver,s directly. In contrast, the Haskell implementation
+must interact with MiniSat through an interface and suffers from associated overheads, such as those from
+marshalling data from the data structures returned from the C wrapper for MiniSat into the corresponding
+Haskell data structures.
+
+The reference implementation also makes use of empirical results to improve the performance of MiniSat queries.
+For example, in the \verb,stateOf, function, which extracts a model from a failed consecution query
+(to e.g. find a CTI cube), the set of literals passed to the MiniSat \verb,Solver, are reordered according
+to an ordering of that was found to be the best choice empirically.
+
+\subsubsection{Memory Management}
+%The reference implementation can and does manage memory carefully.
+%Haskell is garbage collected.
 
 \chapter{Conclusion}
 
