@@ -289,7 +289,7 @@ The model checker requires a way of taking input models and also
 requires a way to solve SAT queries.
 I chose the AIGER format for representing the hardware models and the
 MiniSat SAT solver for answering SAT queries, resulting in a need for an
-AIGER parser and an interface to MiniSat in Haskell. The choice of
+AIGER parser and a Haskell interface to MiniSat. The choice of
 the AIGER format allows the model checker to be run on examples from
 the Hardware Model Checking Competition, since this is the format used
 to specify examples in the competitions. I chose the MiniSat SAT
@@ -302,7 +302,7 @@ transition systems, which should correspond to the input hardware model.
 A further requirement is the implementation of the
 IC3 algorithm itself.
 
-In summary, the required components are the AIGER parser, MiniSat interface,
+The main required components are thus the AIGER parser, MiniSat interface,
 transition system representation, and IC3 algorithm implementation.
 
 \section{Tools Used}
@@ -418,7 +418,52 @@ to a circuit specified using the binary AIGER format, and the {\tt aigtoaig} too
 which converts between the ASCII and binary AIGER formats.
 }
 
-\subsection{MiniSat SAT Solver}
+\paragraph{MiniSat}{
+MiniSat is a SAT solver implemented in C++ that solves boolean satisfiability problems
+posed in conjunctive normal form. Further details are given in section \ref{MiniSat}.
+}
+
+\section{Symbolic Representation}
+I give a brief review of concepts in logic, and introduce transition systems and the
+representation of states using boolean formulas.
+
+\paragraph{Logic}{
+Unless otherwise specified, a variable is a propositional symbol,
+and can be assigned to boolean values {\it True} or {\it False}.
+A literal is defined as being either a variable $v$ or its negation $\neg v$.
+
+The concepts of a cube and a clause are useful in describing the
+representation of states as boolean formulas.
+A cube is defined to be a conjunction of literals and may be represented as the set
+of literals that occur in it. Similarly, a clause is a disjunction of literals that
+may also be represented as the set of literals that occur in it. Through the
+application of deMorgan's laws, the negation of a cube is a clause and vice-versa.}
+
+\paragraph{Transition Systems}{
+A transition system is a tuple $(i,x,I,T)$ consisting of a set of input
+variables $i$, state variables $x$, an initial
+set of states represented by the boolean expression $I(x)$ and
+a transition relation represented by the boolean expression $T(i,x,x')$,
+where $x'$ is the set of next-state variables.
+
+For each state variable $v$, $v'$ denotes the corresponding next-state variable.
+For example, a transition relation that states that all variables that are
+currently {\it True} should become {\it False} in the next state is as follows:
+$$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$}
+
+\paragraph{States}{
+A single state of the transition system (or a singleton set containing that state)
+is specified through the assignment of all variables in the transition system
+to boolean values, where a complete assignment is represented as a cube such
+that every variable appears in the formula exactly once.
+An incomplete assignment of variables in the transition system is a cube such that
+at least one variable in the transition system does not appear in the cube. Such an
+assignment $c$ specifies the set of cubes $\{a \in{\it Full~Assignment}|c \subset a\}$,
+where ${\it Full Assignment}$ is the set of complete assignments to the variables in the
+transition system.
+More generally, any boolean expression $b$ involving the variables in the transition
+system specifies the set of states
+$\{a \in {\it Full~Assignment} | a \wedge b~{\rm is~satisfiable}\}$.}
 
 
 \section{Model Specification}
@@ -448,8 +493,11 @@ The AIGER format has both an ASCII and a binary version. The ASCII
 format is more flexible and human readable, imposing fewer constraints
 on the ordering of components within the input file. For example, an
 AND gate with variable name 20 may be specified before an AND gate with
-variable name 12 in the ASCII format, but AND gates must be specified in
-ascending order of their variable names in the binary AIGER format.
+variable name 11 in the ASCII format, but AND gates must be specified in
+ascending order of their variable names in the binary AIGER format. Another
+example is that AND gates' inputs can be specified in any order in the ASCII
+format, but the binary format encodes AND gates under the assumption
+that inputs are specified in ascending order.
 The the binary version's assumptions on component ordering allows the format
 to be more compact. The Hardware Model Checking Competition's examples
 use the binary format.
@@ -459,9 +507,32 @@ examples from HWMCC'14 using the new version. The AIGER parser implemented
 as part of this project handles both the old and new versions of the AIGER
 format.
 
-\subsection{Old version}
+\paragraph{AIGER Variables}{
+A variable's name in AIGER format is a positive integer. Variables themselves
+are not represented directly in AIGER format; instead, nonnegative numbers
+are used to represent literals and boolean valies.
+I will refer to these nonnegative numbers as indices.
 
-All AIGER files begin with a header of the form
+For any variable named $x$, the index for positive literal $x$ is given by
+$2 \times x$, and the index for negative literals $\neg x$ is given by
+$2 \times x + 1$, i.e. a function to map from variable names $x$ and a boolean
+value $b$ giving the sign of the literal would be as follows:
+$${\it index}(x, b) =
+\begin{cases}
+2x & {\rm if}~b \\
+2x + 1 & {\rm otherwise}
+\end{cases}$$
+The indices 0 and 1 are used to represent the constant boolean values {\it False}
+and {\it True}, respectively.
+
+It is apparent that any index above 1 represents a literal and that for all such
+indices, all even indices represent positive literals, and all odd indices
+represent negative literals. The representation thus allows an implementation
+use the least significant bit of an index to be used to find the sign of a literal,
+and a single bitwise right shift to find the variable name for the literal.
+
+\paragraph{Old version}{
+All AIGER files in the old version begin with a header of the form
 \begin{verbatim}
 V M I L O A
 \end{verbatim}
@@ -475,27 +546,19 @@ specifying that the file is in the binary format.
 \item \verb,A, gives the number of two-input AND gates.
 \end{itemize}
 
-Variables are represented in AIGER format with even integers greater than
-1, with 0 representing the constant value {\it False} and 1
-representing the constant value {\it True}.
-An odd integer value $i + 1$ represents the negated value of the positive
-literal represented by $i$.
-In other words, a variable named $x$ is represented by $x \times 2$,
-which gives the positive literal $x$, and $x \times 2 + 1$ gives the
-negative literal $\neg x$.
-
 The different components are specified after the header
 in the order that their counts are given in the header.
 
 In the ASCII version of the format, inputs are specified by giving the
-index (greater than 2) that represents its corresponding variable name,
-and outputs are specified similarly as single indices.
-Latches initially begin with value 0 and are specified by giving the
-index representing
-their corresponding variable name followed by the integer that represents
-the literal giving their next-state value.
-AND gates are specified by giving their indices and their two inputs
-literals' integer representations.
+index that represents the positive literal for its corresponding variable name,
+and outputs are specified similarly as single indices (that may represent
+booleans or literals of any sign).
+
+Latches have initial value 0 (i.e., {\it False}) and are specified by giving the
+index representing the positive literals for their corresponding variable name
+followed by the index for their next-state value.
+AND gates are specified by giving the indices that represent the positive literal
+for their variable name and the two indices that specify their input values.
 
 \begin{figure}[h]
 \centering
@@ -515,8 +578,9 @@ A circuit specified in the old ASCII AIGER format
 For example, figure \ref{aagCircuit} specifies a circuit with
 no inputs, two latches with indices $2$ and $4$ and one AND gate
 $6$ that takes the outputs of the two latches as inputs and whose
-output is the single output of the circuit.
+output is the single output of the circuit.}
 
+\paragraph{Binary version}{
 In the binary version of the format, variable indices are assumed to
 occur in increasing order. Since each literal must be defined, this allows
 for the omission of the variable indices when defining inputs or latches.
@@ -552,11 +616,10 @@ $b_0, \ldots, b_n$, where
 significant bit to 1 and the rest of the bits to $w_k$, and
 \item $b_n$ is the byte obtained by setting the most
 significant bit to 0 and the rest of the bits to $w_n$
-\end{itemize}
+\end{itemize}}
 
 
-\subsection{New version}
-
+\paragraph{New version} {
 The new AIGER format begins with a header of the form
 \begin{verbatim}
 V M I L O A B C J F
@@ -570,9 +633,8 @@ in the old format, and
 \item \verb,F, gives the number of fairness constraints
 \end{itemize}
 
-Variables are represented in the same manner as the old format
-and are specified after the header in the same order that the counts
-are given in the header with the exception of AND gates, which
+Components are specified after the header in the same order that their
+counts are given in the header with the exception of AND gates, which
 occur at the end of the file. Latches' initial values can also be specified
 now with an additional \verb,0, or \verb,1, after the next-state literal's
 index. If the initial value is omitted, the initial value is assumed to be
@@ -582,7 +644,7 @@ zero, allowing any parser for the new AIGER format to be
 backwards-compatible.
 
 The new version of the format is otherwise
-the same as the old format.
+the same as the old format.}
 
 \section{The IC3 Algorithm}
 %Describe how the IC3 algorithm works when trying to prove a model has a property
@@ -591,43 +653,6 @@ Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
 safety property $P$, IC3 aims either to prove inductively that $P$ holds
 at all reachable states from the initial state or
 to find a $\neg P$ state that can be reached.
-
-Before explaining the algorithm, I provide an explanation of transition
-systems and boolean representations of states.
-
-A transition system is a tuple $(i,x,I,T)$ consisting of a set of input
-variables $i$, state variables $x$, an initial
-set of states represented by the boolean expression $I(x)$ and
-a transition relation represented by the boolean expression $T(i,x,x')$,
-where $x'$ is the set of next-state variables. A variable can take on
-boolean values {\it True} or {\it False}.
-
-For each state variable $v$, $v'$ denotes the corresponding next-state variable.
-For example, a transition relation that states that all variables that are
-currently {\it True} should become {\it False} in the next state is as follows:
-$$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$
-
-The concepts of a literal, cube, and clause are useful in describing the
-representation of states as boolean formulas.
-A literal is defined as being either a variable $v$ or its negation $\neg v$.
-A cube is defined to be a conjunction of literals and may be represented as the set
-of literals that occur in it. Similarly, a clause is a disjunction of literals that
-may also be represented as the set of literals that occur in it. Through the
-application of deMorgan's laws, the negation of a cube is a clause and vice-versa.
-
-A single state of the transition system (or a singleton set containing that state)
-is specified through the assignment of all variables in the transition system
-to boolean values, where a complete assignment is represented as a cube such
-that every variable appears in the formula exactly once.
-An incomplete assignment of variables in the transition system is a cube such that
-at least one variable in the transition system does not appear in the cube. Such an
-assignment $c$ specifies the set of cubes $\{a \in{\it Full~Assignment}|c \subset a\}$,
-where ${\it Full Assignment}$ is the set of complete assignments to the variables in the
-transition system.
-More generally, any boolean expression $b$ involving the variables in the transition
-system specifies the set of states
-$\{a \in {\it Full~Assignment} | a \wedge b~{\rm is~satisfiable}\}$.
-
 The following pseudocode gives an overview of the IC3 algorithm:
 
 \begin{algorithm}[H]
@@ -646,8 +671,10 @@ The following pseudocode gives an overview of the IC3 algorithm:
       $k$ := $k + 1$ \;
     } {
       \While {$\neg (F_k \wedge T \Rightarrow P'$)}{
-        {\rm cti} := {\it getCTI}($F_k \wedge T \Rightarrow P'$) \;
-        \lIf{{\it proveNegCTI}$((i,x,I,T),{\rm cti},k - 1)$}{
+        cti := {\it getCTI}($F_k \wedge T \Rightarrow P'$) \;
+        (fixed, proven) := {\it proveNegCTI}$((i,x,I,T),{\rm cti},k - 1)$ \;
+        \lIf{\rm fixed}{\Return{True}}
+        \lIf{\rm proven}{
         $F_k$ := $F_k \cup \{\neg{\rm cti}\}$}
         \lElse{\Return{False}}
       }
@@ -812,7 +839,7 @@ of the latch. For AND gates, the first element gives the variable name of the AN
 (as a positive literal), and the next two elements give the literals whose values are taken
 as inputs to the AND gate.
 
-\section{Minisat Interface}
+\section{MiniSat Interface}
 %Describe the process of implementing the Haskell bindings for Minisat
 %functions, including the wrapper functions for Minisat written in C.
 
@@ -821,13 +848,31 @@ Because the Haskell Foreign Function Interface cannot interface with C++ directl
 the interface to the MiniSat SAT solver is composed of a C wrapper for the relevant
 MiniSat functions and classes and a Haskell interface to the C wrapper.
 
-\subsection{Relevant MiniSat Functions}
+\subsection{MiniSat Overview}
+\label{MiniSat}
 
 To solve a SAT query, MiniSat creates an instance of a \verb,Solver, object,
-which contains a set of variables, sets of clauses represented by \verb,VecLit, instances
-that must be satisfied each SAT query, a model and a conflict vector.
-The \verb,solveWithAssumps, function makes a SAT query that must satisfy all of the clauses
-in the \verb,Solver, as well as all the literals supplied in the assumption \verb,VecLit,.
+which contains a set of variables, sets of clauses, and possibly a model or a conflict vector.
+The set of variables in the \verb,Solver, gives all the variables that may appear in
+a SAT query, the set of clauses forms the SAT query, and the model or conflict vector
+gives further information about the last SAT query made.
+
+In addition to a \verb,Var, type for representing variables, MiniSat has a \verb,Lit, type for
+representing literals, and MiniSat represents sets of clauses as \verb,vec<Lit>,s,
+vectors of literals. The set of clauses in a \verb,Solver, together represent a CNF query,
+so that if the \verb,Solver,'s \verb,solve(), function is called,
+the resulting \verb,bool, indicates whether the query is satisfiable or not. The
+\verb,solve(), function is overloaded so that it may also take an assumption \verb,vec<Lit>*, as
+an argument. The literals in the assumption vector must hold in addition to the CNF query formed
+by the \verb,Solver,'s clauses: if the \verb,Solver,'s clauses form some CNF query $C$ and
+\verb,solve(assumps), is called, where \verb,assumps, points to the the assumption vector
+containing all the literals in some set $A$, then the SAT query is $C \wedge \bigwedge_{l \in A} l$.
+
+If at least one query to a \verb,Solver, has been made, then if the last query to the
+\verb,Solver, was satisfiable, the \verb Solver, provides a \verb,model, pointer
+to a set of satisfying variable assignments for that query, or, if the last query to the solver
+was not satisfiable, the \verb,conflict, pointer to a set of literals from the assumption
+vector provided in the query that contributed to the query being unsatisfiable.
 
 If there has been at least one query made of the \verb,Solver, object, and the query was
 satisfiable, the \verb,Solver,'s \verb,model, variable points to a set of variable assignments
@@ -843,12 +888,38 @@ that does simplification and returns full assignments.
 
 Much of the C wrapper is straightforwardly as follows: every MiniSat class is replaced with a C
 type, and every MiniSat function is replaced with a function with an \verb,extern C, function that
-calls the MiniSat C++ function.
-I also added an additional \verb,result, struct to allow for the results of a SAT query to
+calls the MiniSat C++ function, as in figure \ref{addClause}.
+
+\begin{figure}[h]
+\begin{verbatim}
+extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
+                                 Minisat::vec<Minisat::Lit>* ps) {
+  return solver -> addClause (*ps);
+}
+\end{verbatim}
+\caption{The C wrapper function for {\tt addClause} from {\tt CSolver.cpp}}
+\label{addClause}
+\end{figure}
+
+I also added an additional \verb,result, struct to allow for all the results of a SAT query to
 be returned from a single function call. The struct contains not only the result of the SAT
 query, but also pointers to the model and conflict vector (if any) of the \verb,Solver,.
-The wrapper function for \verb,solveWithAssumps, returns a pointer to a \verb,result, struct
+The wrapper function \verb,solveWithAssumps, for the version of \verb,solve(), that takes an assumption
+vector as an argument and returns a pointer to a \verb,result, struct
 rather than just whether or not the query was satisfiable.
+
+\begin{figure}[h]
+\begin{verbatim}
+struct result {
+  unsigned solved;
+  unsigned modelSize;
+  unsigned conflictSize;
+  minisatLbool* model;
+  litptr* conflict;
+} res = {0, 0, 0, 0, 0};
+\end{verbatim}
+\caption{The {\tt result} struct from {\tt CSolver.h}}
+\end{figure}
 
 \subsection{Haskell Interface}
 
@@ -932,17 +1003,17 @@ is a constant-{\it True} value, and similarly, if \verb,next, is \verb,Boolean F
 the singleton clause containing only the negative primed literal for \verb,latchVar, is generated.
 Otherwise, the next-value clauses generated for \verb,latchVar, are $\{\verb,latchVar',, \neg \verb,next,\}$
 and $\{\neg\verb,latchVar',, \verb,next,\}$. The conjunction of these clauses are, as needed, logically equivalent
-to ${\tt next} \Longrightarrow {\tt latchVar}'$, i.e., where $\cong$ denotes logical equivalence,
+to ${\tt next} \Longrightarrow {\tt latchVar}'$, i.e., where $\simeq$ denotes logical equivalence,
 the following hold:
 \begin{align*}
-{\tt latchVar}' \Longleftrightarrow {\tt next} &\cong ({\tt latchVar}' \Longrightarrow {\tt next}) \wedge
+{\tt latchVar}' \Longleftrightarrow {\tt next} &\simeq ({\tt latchVar}' \Longrightarrow {\tt next}) \wedge
 ({\tt next} \Longrightarrow {\tt latchVar}')\\
-{\tt latchVar}' \Longrightarrow {\tt next} &\cong \neg {\tt latchVar}' \vee {\tt next}\\
-{\tt next} \Longrightarrow {\tt latchVar}' &\cong {\tt latchVar}' \vee \neg {\tt next}.
+{\tt latchVar}' \Longrightarrow {\tt next} &\simeq \neg {\tt latchVar}' \vee {\tt next}\\
+{\tt next} \Longrightarrow {\tt latchVar}' &\simeq {\tt latchVar}' \vee \neg {\tt next}.
 \end{align*}
 It follows that the original double implication is equivalent to the 
 the CNF formula that corresponds to the generated clauses:
-$${\tt latchVar}' \Longrightarrow {\tt next} \cong
+$${\tt latchVar}' \Longrightarrow {\tt next} \simeq
 (\neg {\tt latchVar}' \vee {\tt next}) \wedge ({\tt latchVar}' \vee \neg {\tt next}).$$
 
 The \verb,makeAnds, function generates a single \verb,Clausse, list for a list of \verb,Parser.AigModel.And,s,
@@ -961,24 +1032,24 @@ $\{\neg\verb,andVar,, \verb,in1,\}$, $\{\neg\verb,andVar,, \verb,in1,\}$, and
 $\{\neg\verb,in1,,\neg\verb,in2,,\verb,andVar,\}$. The conjunction of these clauses are, as needed,
 logically equivalent to $\verb,andVar, \Longleftrightarrow \verb,in1, \wedge \verb,in2,$:
 \begin{align*}
-{\tt andVar} \Longleftrightarrow {\tt in1} \wedge {\tt in2} &\cong
+{\tt andVar} \Longleftrightarrow {\tt in1} \wedge {\tt in2} &\simeq
 ({\tt andVar} \Longrightarrow {\tt in1} \wedge {\tt in2}) \wedge
 ({\tt in1} \wedge {\tt in2} \Longrightarrow {\tt andVar})\\
-{\tt andVar} \Longrightarrow {\tt in1} \wedge {\tt in2} &\cong
+{\tt andVar} \Longrightarrow {\tt in1} \wedge {\tt in2} &\simeq
 \neg {\tt andVar} \vee ({\tt in1} \wedge {\tt in2})\\
-{\tt in1} \wedge {\tt in2} \Longrightarrow {\tt andVar} &\cong
+{\tt in1} \wedge {\tt in2} \Longrightarrow {\tt andVar} &\simeq
 \neg ({\tt in1} \wedge {\tt in2}) \vee {\tt andVar}
 \end{align*}
 Distributing $\vee$ over $\wedge$ gives further equivalence
-$$\neg {\tt andVar} \vee ({\tt in1} \wedge {\tt in2}) \cong
+$$\neg {\tt andVar} \vee ({\tt in1} \wedge {\tt in2}) \simeq
 (\neg {\tt andVar} \vee {\tt in1}) \wedge (\neg {\tt andVar} \vee {\tt in2}),$$
 and using deMorgan's laws gives equivalence
-$$\neg ({\tt in1} \wedge {\tt in2}) \vee {\tt andVar} \cong
+$$\neg ({\tt in1} \wedge {\tt in2}) \vee {\tt andVar} \simeq
 \neg {\tt in1} \vee \neg {\tt in2} \vee {\tt andVar}.$$
 
 It follows that the original double implication is equivalent to the CNF
 formula that corresponds to the generated clauses:
-$$ {\tt andVar} \Longleftrightarrow {\tt in1} \wedge {\tt in2} \cong
+$$ {\tt andVar} \Longleftrightarrow {\tt in1} \wedge {\tt in2} \simeq
 (\neg {\tt andVar} \vee {\tt in1}) \wedge (\neg {\tt andVar} \vee {\tt in2}) \wedge
 (\neg {\tt in1} \vee \neg {\tt in2} \vee {\tt andVar}).$$
 
