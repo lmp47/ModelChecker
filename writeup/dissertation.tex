@@ -437,7 +437,12 @@ representation of states as boolean formulas.
 A cube is defined to be a conjunction of literals and may be represented as the set
 of literals that occur in it. Similarly, a clause is a disjunction of literals that
 may also be represented as the set of literals that occur in it. Through the
-application of deMorgan's laws, the negation of a cube is a clause and vice-versa.}
+application of deMorgan's laws, the negation of a cube is a clause and vice-versa.
+
+A boolean formula is in conjunctive normal form (CNF) if it is a conjunction 
+$\bigwedge_i D_i$ of disjunctions $D_i$ of literals (i.e. clauses). A set of clauses
+can and often will be interpreted as the CNF formula resulting from the conjunction
+of the clauses.}
 
 \paragraph{Transition Systems}{
 A transition system is a tuple $(i,x,I,T)$ consisting of a set of input
@@ -573,6 +578,14 @@ aag 3 0 2 1 1
 A circuit specified in the old ASCII AIGER format
 }
 \label{aagCircuit}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=100mm]{circuit.png}
+\caption{The circuit represented by figure \ref{aagCircuit}, where
+the variable name for each component is directly to the left of that
+component, with the corresponding index in parenthesis.}
 \end{figure}
 
 For example, figure \ref{aagCircuit} specifies a circuit with
