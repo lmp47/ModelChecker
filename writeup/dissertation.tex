@@ -5,6 +5,7 @@
 \usepackage{graphicx}  % allows inclusion of PDF, PNG and JPG images
 \usepackage{verbatim}
 \usepackage{amssymb}
+\usepackage{amsmath}
 \usepackage{docmute}   % only needed to allow inclusion of proposal.tex
 \usepackage{listings}  % for formatting code
 \usepackage{float}
@@ -111,29 +112,32 @@ extent for a comparable purpose.
 
 %Provide a brief description of model checking in general.
 
-Formal verification uses mathematics and logic to prove properties of
+Formal verification is the use of mathematics and logic to prove properties of
 hardware and software systems. Formal verification techniques are
 employed in several domains where the correctness of a system is
-crucial. Guaranteeing that there are no errors in hardware designs before
+crucial, such as in hardware design and aviation.
+Guaranteeing that there are no errors in hardware designs before
 manufacturing begins can help avoid the high costs associated with needing to
 remanufacture the hardware if the design needs to be corrected.
 Additionally, the ability to prove that certain kinds of errors do not
 occur are important for ensuring safety in safety-critical systems such
 as those in airplanes and medical devices.
 
-% Talk about different formal verification techniques
-
 One formal verification technique is model checking.
 Given a model of the system
-and a specified property, a model checker will automatically check
+and a specified property, a model checker will check
 whether all reachable states in the system satisfy this property.
+Unlike formal verification techniques that employ Hoare Logic
+and theorem provers that require user guidance, model checking
+is a fully automated verification technique.
 
 In addition to being automated, because model checkers prove
 properties by considering reachable states, when a model checker
 discovers that a property does not hold, the model checker has
-discovered a reachable state that violates the property. A
-counterexample trace can, in such cases, be provided, giving
-greater insight into why the property does not hold.
+necessarily discovered a reachable state that violates the property.
+A counterexample trace can, in such cases, be provided, giving
+greater insight into why the property does not hold for that
+model.
 
 A brief description of symbolic model-checking and SAT-based model-checking
 follows to provide further context for this project, which focuses on
@@ -269,6 +273,11 @@ small examples. Additionally, the project is meant to give me an opportunity
 to learn and use Haskell, to understand formal methods and especially model
 checking more deeply, and to put into practice software engineering techniques.
 
+I have successfully implemented not only a basic form of the IC3 algorithm,
+which can correctly check several examples from the hardware model checking
+competition in addition to the small hardware models I initially set out
+to check, but also several variants of the algorithm.
+
 \chapter{Preparation}
 
 \section{Requirements Analysis}
@@ -302,13 +311,18 @@ The tools used in the project are as follows:
 
 \subsection{Git}
 
-The Git version control system was used for managing the project's code.
+The Git version control system was used for managing the project's code. The
+previous versions maintained by the version control system proved useful in
+the development of the code, and branching and merging capabilities were
+useful for working on and organizing different variations of the model checker.
 
-Git submodules, which allow the inclusion of other git projects within another
-project, were used to include MiniSat within the project.
+Git submodules, which allow the inclusion of other Git projects within another
+project, were used to include MiniSat within the project, enabling easier
+acquisition of project dependencies (i.e., MiniSat can be obtained by running
+\verb,git submodule init, after running \verb,git clone, to clone the repository).
 
-GitHub, a widely-used code hosting service, was used to keep backups of the
-code.
+GitHub, a widely-used hosting service for Git repositories, was used to keep
+backups of the code.
 
 \subsection{Haddock}
 
@@ -588,6 +602,7 @@ to find a $\neg P$ state that can be reached.
   } {
     cti := {\it getCTI}($F_k \wedge T \Rightarrow P$) \;
     {\it prove}$((i,x,I,T),\neg{\rm cti},k - 1)$
+    
   }
   \Return s \;
 }
@@ -835,7 +850,8 @@ respectively give positive and negative next-state (primed) literals.
 \subsubsection{Transition Systems and Safety Properties}
 % Describe how transition systems and safety properties are represented.
 The representation of transition systems and the safety property for the model checker to check
-are both encompassed in the \verb,Model, data structure in \verb,Model.Model,.
+are both encompassed in the \verb,Model, data structure in \verb,Model.Model,, which serves
+as the representation of the hardware in the model checker.
 The inputs $i$ and state variables $x$ in the transition system $T(i,x,I,T)$
 are not distinguished, and the total count of variables is kept in \verb,vars,.
 Clauses that specify the initial state $I$ are kept in \verb,initial,.
@@ -843,12 +859,93 @@ The transition relation $T$ is captured by \verb,transition,, a list of both cla
 latches and clauses that specify AND gates.
 The literal that gives the safety property is given by \verb,safe,.
 
+\begin{figure}[H]
+\centering
+\begin{verbatim}
+data Model = Model { vars :: Word
+                   , initial :: [Clause]
+                   , transition :: [Clause]
+                   , safe :: Lit } deriving Show
+\end{verbatim}
+\caption{The data structure for representing the hardware model in the model checker.}
+\end{figure}
+
 \subsection{Construction}
 % Describe how transition systems are constructed given AIG models.
 
 The \verb,Model.Model, module contains functions to convert the \verb,Model, data
 structure in \verb,Parser.AigModel, into the hardware model representation used by
-the model checker.
+the model checker. In particular, the \verb,toModel, function takes an \verb,Parser.AigModel.Model,
+and outputs a \verb,Model.Model.Model,. The \verb,Model.Model, module has its own \verb,Lit,
+data structure that only has constructors for positive and negative literals; \verb,Lit,s from
+the \verb,Parser.AigModel, module are either converted to \verb,Model.Model.Lit,s or, in the case
+that they use the \verb,Boolean, constructor, are removed from the model during the conversion of
+the \verb,Latch, and \verb,And, components to \verb,Clause,s in \verb,Model.Model,.
+
+The \verb,makeLatches, function generates a pair of \verb,Clause, lists
+for a list of \verb,Parser.AigModel.Latch,es, where the first \verb,Clause, list contains
+clauses that describe the latches' initial values, and the second \verb,Clause, list
+contains a clauses that describe the latches' next-state values. For a given
+\verb,Parser.AigModel.Latch, \verb.[latchVar, next, init]., if \verb,init, is \verb,Boolean True,,
+then the singleton clause containing only the positive literal for \verb,latchVar, is generated for
+the initial value list, and if \verb,init, is \verb,Boolean False, then the negative literal for \verb,latchVar,
+is generated.
+Similarly, if \verb,next, is \verb,Boolean True,, then the singleton clause containing only the positive primed
+literal for \verb,latchVar, is generated for the next-state list because the next-state value for the variable
+is a constant-{\it True} value, and similarly, if \verb,next, is \verb,Boolean False,,
+the singleton clause containing only the negative primed literal for \verb,latchVar, is generated.
+Otherwise, the next-value clauses generated for \verb,latchVar, are $\{\verb,latchVar',, \neg \verb,next,\}$
+and $\{\neg\verb,latchVar',, \verb,next,\}$. The conjunction of these clauses are, as needed, logically equivalent
+to ${\tt next} \Longrightarrow {\tt latchVar}'$, i.e., where $\cong$ denotes logical equivalence,
+the following hold:
+\begin{align*}
+{\tt latchVar}' \Longleftrightarrow {\tt next} &\cong ({\tt latchVar}' \Longrightarrow {\tt next}) \wedge
+({\tt next} \Longrightarrow {\tt latchVar}')\\
+{\tt latchVar}' \Longrightarrow {\tt next} &\cong \neg {\tt latchVar}' \vee {\tt next}\\
+{\tt next} \Longrightarrow {\tt latchVar}' &\cong {\tt latchVar}' \vee \neg {\tt next}.
+\end{align*}
+It follows that the original double implication is equivalent to the 
+the CNF formula that corresponds to the generated clauses:
+$${\tt latchVar}' \Longrightarrow {\tt next} \cong
+(\neg {\tt latchVar}' \vee {\tt next}) \wedge ({\tt latchVar}' \vee \neg {\tt next}).$$
+
+The \verb,makeAnds, function generates a single \verb,Clausse, list for a list of \verb,Parser.AigModel.And,s,
+where for each \verb,And,, of the form \verb.[andVar, in1, in2]., if both \verb,in1, and \verb,in2, use
+the \verb,Boolean, constructor for \verb,Parser.AigModel.Lit,s, then \verb,makeAnds, generates a singleton
+clause containing the positive unprimed variable for \verb,andVar, if both \verb,in1, and \verb,in2, are
+\verb,Boolean True,, since theit conjunction gives a constant-{\it True} value for the current state of
+\verb,andVar, and generates a singleton clause containing the negative unprimed variable for \verb,andVar,
+otherwise, since if either input to an AND gate is {\it False}, the output of the AND gate is also {\it False}.
+If only one of \verb,in1, or \verb,in2, is a \verb,Boolean,, then if it is \verb,Boolean False, clauses equivalent
+to ${\tt makeAnds} \Longleftrightarrow {\it in}$, where ${\it in}$ is the non-\verb,Boolean, variable
+are generated using the logical equivalence employed in generating the \verb,Latch, next-state clauses, i.e.
+the clauses $\{\verb,andVar,, \neg {\it in}\}$ and $\{\neg\verb,andVar,, {\it in}\}$ are generated.
+If neither of \verb,in1, or \verb,in2, are \verb,Boolean,s, then the clauses generated are
+$\{\neg\verb,andVar,, \verb,in1,\}$, $\{\neg\verb,andVar,, \verb,in1,\}$, and
+$\{\neg\verb,in1,,\neg\verb,in2,,\verb,andVar,\}$. The conjunction of these clauses are, as needed,
+logically equivalent to $\verb,andVar, \Longleftrightarrow \verb,in1, \wedge \verb,in2,$:
+\begin{align*}
+{\tt andVar} \Longleftrightarrow {\tt in1} \wedge {\tt in2} &\cong
+({\tt andVar} \Longrightarrow {\tt in1} \wedge {\tt in2}) \wedge
+({\tt in1} \wedge {\tt in2} \Longrightarrow {\tt andVar})\\
+{\tt andVar} \Longrightarrow {\tt in1} \wedge {\tt in2} &\cong
+\neg {\tt andVar} \vee ({\tt in1} \wedge {\tt in2})\\
+{\tt in1} \wedge {\tt in2} \Longrightarrow {\tt andVar} &\cong
+\neg ({\tt in1} \wedge {\tt in2}) \vee {\tt andVar}
+\end{align*}
+Distributing $\vee$ over $\wedge$ gives further equivalence
+$$\neg {\tt andVar} \vee ({\tt in1} \wedge {\tt in2}) \cong
+(\neg {\tt andVar} \vee {\tt in1}) \wedge (\neg {\tt andVar} \vee {\tt in2}),$$
+and using deMorgan's laws gives equivalence
+$$\neg ({\tt in1} \wedge {\tt in2}) \vee {\tt andVar} \cong
+\neg {\tt in1} \vee \neg {\tt in2} \vee {\tt andVar}.$$
+
+It follows that the original double implication is equivalent to the CNF
+formula that corresponds to the generated clauses:
+$$ {\tt andVar} \Longleftrightarrow {\tt in1} \wedge {\tt in2} \cong
+(\neg {\tt andVar} \vee {\tt in1}) \wedge (\neg {\tt andVar} \vee {\tt in2}) \wedge
+(\neg {\tt in1} \vee \neg {\tt in2} \vee {\tt andVar}).$$
+
 
 \section{Model Checking}
 
@@ -861,15 +958,19 @@ and a version that improves upon the version with improved CTIs by considering s
 I have also implemented a variation of IC3 that uses priority queues (\emph{PriorityQueue}) and a
 variation that uses CTGs to improve generalization (\emph{CTG}).
 
+\begin{figure}[h]
+\centering
 \begin{tabular}{l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em}}
 & Priority Queue & Smaller CTIs & Subsumed Clauses & Basic Generalization & Generalization with CTGs\\
 \hline
-\emph{Basic} & & & \checkmark & \\
+\emph{Basic} & & & & \checkmark & \\
 \emph{BetterCTI} & & \checkmark & & \checkmark & \\
 \emph{BetterPropagation} & & \checkmark & \checkmark & \checkmark &\\
 \emph{PriorityQueue} & \checkmark & \checkmark & \checkmark & & \\
 \emph{CTG} & & \checkmark & \checkmark & & \checkmark
 \end{tabular}
+\caption{A summary of the different model-checker versions implemented.}
+\end{figure}
 
 \subsection{Overall structure}
 
@@ -1113,7 +1214,7 @@ The more elaborate implementation of generalization implements the full
 (but limited in number of attempts) MIC algorithm implementation with the ability to deal with CTGs.
 
 When attempting to drop a literal $l$ from clause $c$, the \verb,down, function is called on the clause
-$c \setminus l$ with a list of past frames (which is all the frames except the deepest on the inital call
+$c \setminus \{l\}$ with a list of past frames (which is all the frames except the deepest on the inital call
 to \verb,down,), a list of current and future frames (which contains only the deepest frame on initial call
 to \verb,down,), a limit on the recursion depth for generalization, and a limit \verb,r, on the number
 of CTGs to attempt to negate for each call to \verb,inductiveGeneralization,.
