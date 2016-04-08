@@ -753,19 +753,21 @@ the algorithm extracts a counterexample to induction cube and
 calls {\it proveNegCTI} to show that the counterexample is
 inductive relative to frame $F_{j - 1}$ so that the negated
 counterexample can be added to frame $F_j$.
+If the shallowest possible depth $j = 0$ is reached, then
+{\it proveNegCTI} fails and returns {\it False}.
 
-%fix
-
-If $I \Rightarrow \neg s$ does not hold, then eventually ${\it proveNegCTI}$
+The {\it proveNegCTI} pseudocode does not explicitly check for $I \Rightarrow
+\neg s$. An explicit check is unnecessary because if
+$I \Rightarrow \neg s$ does not hold, then eventually ${\it proveNegCTI}$
 will be called recursively with $k = 0$ and the attempt to show that
-$\neg s$ is relatively inductive to $F_k$ failes.
+$\neg s$ is relatively inductive to $F_k$ fails.
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
 \Fn{proveNegCTI$((i,x,I,T),s,j)$}{
   \lIf{$j = 0$}{\Return{False}}
-  \While{$\neg(F_j \wedge \neg s \wedge T \Rightarrow s')$}{
-    cti := {\it getCTI}$(F_j \wedge \neg s \wedge T \Rightarrow s')$ \;
+  \While{$\neg(F_j \wedge \neg s \wedge T \Rightarrow \neg s')$}{
+    cti := {\it getCTI}$(F_j \wedge \neg s \wedge T \Rightarrow \neg s')$ \;
     \lIf{{\it proveNegCTI}$((i,x,I,T),{\rm cti},j - 1))$}{$F_j$ := $F_j \cup \{\neg{\rm cti}\}$}
     \lElse{\Return{False}}
   }
@@ -800,7 +802,11 @@ Because $F_i$ contains the safety property $P$ as one of its clauses,
 this means that $P$ holds in all reachable states from the initial state,
 and the algorithm terminates (line \ref{fixed}).
 
-An obvious choice for would be $c = s$, which can be found easily using
+\subsection{Generalization}
+
+%%%
+
+An obvious choice for $c$ would be $c = s$, which can be found easily using
 a SAT solver. In practice, it is better to generalize $s$ and choose
 a smaller subset $c \subset s$, which can allow for a set of several states
 to be eliminated in $F_k$ rather than just eliminating the single state $s$
@@ -808,6 +814,7 @@ when $\neg c$ is shown to hold at depth $k$.
 In particular, the choice of $c$ that
 maximises the number of states eliminated in $F_k$ is the minimal
 inductive subclause of $\neg s$ relative to frame $F_k$.
+
 \subsection{Minimal Inductive Subclauses}
 A minimal inductive subclause for a frame $F_k$ and a clause $s$ that
 is inductive relative to $F_k$
@@ -841,9 +848,9 @@ An improvement to the generalization provided by finding minimal
 inductive subclauses in this way incorporates the use of counterexamples
 to generalization.
 
-\subsection{Counterexamples to Generalization}
+\subsubsection{Counterexamples to Generalization}
 
-Checking if a subclause $c = s / \{l\}$ of a clause $s$ is inductive
+Checking if a subclause $c = s \setminus \{l\}$ of a clause $s$ is inductive
 relative to a frame $F_k$, involves checking if
 $F_k \wedge T \wedge c \Rightarrow c'$ holds.
 If the implication does not hold, then $c$ is not inductive relative to
@@ -1158,7 +1165,13 @@ passing a \verb,Model, and the \verb,Lit, that is the safety property. The
 initiation query. If the query is unsuccessful and returns \verb,False,,
 then \verb,prove, can just return \verb,False,, since the safety property
 does not hold in the initial state. Then \verb,prove, calls \verb,prove',, which
-has different implementations based on whether the version is recursive or not.
+has different implementations based on whether the version is recursive or not, but
+is anal
+
+In other words, the \verb,prove, function implements the first three lines of
+pseudocode in the overview of the IC3 algorithm before calling the \verb,prove',
+function, which implements a variation of the main while loop of the algorithm
+on line \ref{main} of the pseudocode.
 
 \subsubsection{Recursive}
 In the general structure for the recursive implementations of the model checker,
@@ -1279,10 +1292,8 @@ a \verb,Solver,, which contains at least all the clauses in the frame's set of c
 %Describe how the step involving the initiation query is implemented.
 
 The initiation query $I \Rightarrow P$ is an implication, but a MiniSat \verb,Solver, can only
-solve queries given in conjunctive normal form (CNF), where each disjunct is one of the clauses passed
-to the solver (assumptions passed to the solver can be taken as a set of single-literal clauses
-that are also part of the conjunction). As a result, the representation for the query
-$I \Rightarrow P$ for a frame $I$ and a clause $P$ makes use of the logical equivalence between
+solve queries given in CNF (with an optional assumption cubes). As a result, the representation
+for the query $I \Rightarrow P$ for a frame $I$ and a clause $P$ makes use of the logical equivalence between
 $I \Rightarrow P$ and $\neg (\neg P \wedge I)$.
 
 Using the fact that the formula $\neg (\neg P \wedge I)$ is true iff $\neg P \wedge I$ is unsatisfiable,
