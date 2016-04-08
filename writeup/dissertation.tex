@@ -307,32 +307,32 @@ transition system representation, and IC3 algorithm implementation.
 
 \section{Tools Used}
 
-The tools used in the project are as follows:
+I used a variety of tools to employ software engineering practices, such
+as version control and testing, and to otherwise ease the development of
+the project's code.
 
-\subsection{Git}
-
+\paragraph{Git}{
 The Git version control system was used for managing the project's code. The
 previous versions maintained by the version control system proved useful in
 the development of the code, and branching and merging capabilities were
 useful for working on and organizing different variations of the model checker.
-
 Git submodules, which allow the inclusion of other Git projects within another
 project, were used to include MiniSat within the project, enabling easier
 acquisition of project dependencies (i.e., MiniSat can be obtained by running
 \verb,git submodule init, after running \verb,git clone, to clone the repository).
 
 GitHub, a widely-used hosting service for Git repositories, was used to keep
-backups of the code.
+backups of the code.}
 
-\subsection{Haddock}
-
+\paragraph{Haddock}{
 The Haddock documentation tool for Haskell was used to generate documentation
 for the code. Haddock automatically generates documentation in
 several formats (e.g. HTML) from annotated Haskell code. It is commonly
 used to document Haskell code, being used for most packages available
 on Hackage.
+}
 
-\subsection{HUnit}
+\paragraph{HUnit}{
 HUnit is a framework for writing unit tests in Haskell based on the JUnit framework
 for unit testing in Java. HUnit allows tests to be specified by using functions
 that return the \verb,Assertion, type to write \verb,TestCase,s. For example, the
@@ -344,7 +344,6 @@ expression would give a \verb,TestCase, that tests that function
 \begin{verbatim}
 TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
 \end{verbatim}
-
 \begin{figure}[h]
 \centering
 \begin{verbatim}
@@ -358,19 +357,17 @@ data Test = TestCase Assertion
 The \verb,Test, datatype in HUnit allows \verb,Test,s to be grouped
 and built up hierarchically. Tests that have been assembled into a
 singly tree can then be treated as a test suite, and the whole tree
-of unit tests can be run.
+of unit tests can be run.}
 
-\subsection{Criterion}
-
+\paragraph{Criterion}{
 Criterion is a library for performing benchmarking in Haskell.
 Criterion can output benchmarking results in any format specified in the \verb,.tpl,
 template format, and by default outputs to HTML.
 The \verb,.tpl, file can be configured such that
 Criterion will, for example, output benchmark sample results to a CSV, as the
-\verb,.tpl, for benchmarking this project was configured.
+\verb,.tpl, for benchmarking this project was configured.}
 
-\subsection{Cabal}
-
+\paragraph{Cabal}{
 Cabal is the standard package and dependency management system for Haskell,
 where a package may be either a library or a complete piece of software.
 Information about a Cabal package, such as its version and dependencies,
@@ -386,19 +383,25 @@ to allow the HUnit test for the project to be run in a standard way (by running
 section to allow the benchmarking program to be run in a standard way also
 (by running \verb,cabal bench, in the root directory of the package).
 
-%Setup.hs
+Cabal also uses a Haskell file \verb,Setup.hs, to give further information
+about how to build the package. For example, the \verb,Setup.hs, file
+for this project compiles the C and C++ code needed for the project before
+Cabal attempts to build the rest of the project, so the files necessary
+for linking are already present.
 
 The use of Cabal enables the project to be built easily on different platforms,
 since Cabal provides a standard method for building the package that works
-across platforms.
+across platforms.}
 
+\paragraph{hsc2hs}{
+The \verb,hsc2hs, preprocessor eases the writing of Haskell bindings to C
+code by enabling the programmer to write a \verb,.hsc, file containing
+macros that the preprocessor can expand to, e.g., pointer offsets. The
+\verb,hsc2hs, expands the macros in a \verb,.hsc, file to produce a
+\verb,.hs, file that can then be compiled with a Haskell compiler and run.
+}
 
-
-\subsection{hsc2hs}
-
-The \verb,hsc2hs, preprocessor 
-
-\subsection{Aiger Utilities}
+\paragraph{Aiger Utilities}{
 Several tools provided in Aiger Utilities were used in the project. The
 AIGER parser provided was used for comparison with and as an alternative
 to the one developed as part of this project. 
@@ -413,6 +416,7 @@ the {\tt bliftoaig}
 tool, which converts a circuit specified using the Berkeley Logic Interchange Format
 to a circuit specified using the binary AIGER format, and the {\tt aigtoaig} tool,
 which converts between the ASCII and binary AIGER formats.
+}
 
 \subsection{MiniSat SAT Solver}
 
@@ -583,52 +587,84 @@ the same as the old format.
 \section{The IC3 Algorithm}
 %Describe how the IC3 algorithm works when trying to prove a model has a property
 %$P$.
-Given a hardware model (i.e. a finite-state transition system) and a
+Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
 safety property $P$, IC3 aims either to prove inductively that $P$ holds
 at all reachable states from the initial state or
 to find a $\neg P$ state that can be reached.
 
+Before explaining the algorithm, I provide an explanation of transition
+systems and boolean representations of states.
+
+A transition system is a tuple $(i,x,I,T)$ consisting of a set of input
+variables $i$, state variables $x$, an initial
+set of states represented by the boolean expression $I(x)$ and
+a transition relation represented by the boolean expression $T(i,x,x')$,
+where $x'$ is the set of next-state variables. A variable can take on
+boolean values {\it True} or {\it False}.
+
+For each state variable $v$, $v'$ denotes the corresponding next-state variable.
+For example, a transition relation that states that all variables that are
+currently {\it True} should become {\it False} in the next state is as follows:
+$$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$
+
+The concepts of a literal, cube, and clause are useful in describing the
+representation of states as boolean formulas.
+A literal is defined as being either a variable $v$ or its negation $\neg v$.
+A cube is defined to be a conjunction of literals and may be represented as the set
+of literals that occur in it. Similarly, a clause is a disjunction of literals that
+may also be represented as the set of literals that occur in it. Through the
+application of deMorgan's laws, the negation of a cube is a clause and vice-versa.
+
+A single state of the transition system (or a singleton set containing that state)
+is specified through the assignment of all variables in the transition system
+to boolean values, where a complete assignment is represented as a cube such
+that every variable appears in the formula exactly once.
+An incomplete assignment of variables in the transition system is a cube such that
+at least one variable in the transition system does not appear in the cube. Such an
+assignment $c$ specifies the set of cubes $\{a \in{\it Full~Assignment}|c \subset a\}$,
+where ${\it Full Assignment}$ is the set of complete assignments to the variables in the
+transition system.
+More generally, any boolean expression $b$ involving the variables in the transition
+system specifies the set of states
+$\{a \in {\it Full~Assignment} | a \wedge b~{\rm is~satisfiable}\}$.
+
+The following pseudocode gives an overview of the IC3 algorithm:
+
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\Fn{prove((i,x,I,T),P,k)}{
-  \If{$\neg (I \Rightarrow P)$}{
-    \Return false \;
+\Fn{prove$((i,x,I,T),P)$}{
+  \lIf{$\neg (I \Rightarrow P)$}{
+    \Return{False}
   }
-  \eIf{$F_k \wedge T \Rightarrow P$}{
-    $F_{k + 1}$ := $\{c \in F_k | F_k \wedge T \Rightarrow c\}$ \;
-    \If {$F_k = F_{k + 1}$}{
-      \Return true}
-    {\it prove}$((i,x,I,T),P,k + 1)$ \;
-  } {
-    cti := {\it getCTI}($F_k \wedge T \Rightarrow P$) \;
-    {\it prove}$((i,x,I,T),\neg{\rm cti},k - 1)$
-    
+  $F_0 := I$ \;
+  $k := 0$ \;
+  \While{True}{
+    \eIf{$F_k \wedge T \Rightarrow P'$}{
+      $F_{k + 1}$ := $\{c \in F_k | F_k \wedge T \Rightarrow c'\}$ \;
+      \lIf {$F_k = F_{k + 1}$}{
+        \Return{True}}
+      $k$ := $k + 1$ \;
+    } {
+      \While {$\neg (F_k \wedge T \Rightarrow P'$)}{
+        {\rm cti} := {\it getCTI}($F_k \wedge T \Rightarrow P'$) \;
+        \lIf{{\it proveNegCTI}$((i,x,I,T),{\rm cti},k - 1)$}{
+        $F_k$ := $F_k \cup \{\neg{\rm cti}\}$}
+        \lElse{\Return{False}}
+      }
+    }
   }
-  \Return s \;
 }
 \end{algorithm}
-\subsection{Transition Systems}
-A transition system is a tuple $(i,x,I,T)$ consisting of a set of input
-variables $i$, state variables $x$, next-state variables $x'$, an initial
-set of states represented by the boolean expression $I(x)$ and
-a transition relation represented by the boolean expression $T(i,x,x')$.
 
-A single state of the system (or a singleton set containing that state) is
-specified through the assignment
-of all state variables in $x$.
-
-\subsection{Frames}
-As with other inductive approaches to model checking,
-the IC3 algorithm maintains a set of $k$ frames $F_0,\ldots,F_k$, where
-each frame $F_i$ is a set of clauses whose conjunction represents an
+The IC3 algorithm maintains a set of $k$ frames $F_0,\ldots,F_k$, where
+each frame $F_i$ is a set of clauses whose disjunction represents an
 overapproximation of the set of states that reachable by the transition
 system in $i$ steps
-(so, for example, $F_0$ is just the initial state set $I$).
+(so, for example, $F_0$ is just the initial state set $I$, as seen
+in the pseudocode).
 
 If $F_i = F_{i + 1}$ holds for any $i$ at any point, then a fixed point has
 been found, and the algorithm terminates.
-
-\subsection{Checking Properties}
 %Initiation query
 The initiation query $I \Rightarrow P$ is used to check that the safety
 property holds in the initial state $I$.
