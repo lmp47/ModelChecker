@@ -9,7 +9,7 @@
 \usepackage{docmute}   % only needed to allow inclusion of proposal.tex
 \usepackage{listings}  % for formatting code
 \usepackage{float}
-\usepackage[]{algorithm2e}
+\usepackage[linesnumbered,figure]{algorithm2e}
 \floatstyle{boxed} 
 \restylefloat{figure}
 
@@ -454,7 +454,12 @@ where $x'$ is the set of next-state variables.
 For each state variable $v$, $v'$ denotes the corresponding next-state variable.
 For example, a transition relation that states that all variables that are
 currently {\it True} should become {\it False} in the next state is as follows:
-$$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$}
+$$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$
+
+Given transition relation $(i,x,I,T)$, a boolean formula $C$ is, by definition,
+be inductive relative to another boolean formula $F$ if both
+$I \Rightarrow C$ and $F \wedge C \wedge T \Rightarrow C'$ hold.
+}
 
 \paragraph{States}{
 A single state of the transition system (or a singleton set containing that state)
@@ -467,8 +472,15 @@ assignment $c$ specifies the set of cubes $\{a \in{\it Full~Assignment}|c \subse
 where ${\it Full Assignment}$ is the set of complete assignments to the variables in the
 transition system.
 More generally, any boolean expression $b$ involving the variables in the transition
-system specifies the set of states
-$\{a \in {\it Full~Assignment} | a \wedge b~{\rm is~satisfiable}\}$.}
+system gives the set of states
+$\{a \in {\it Full~Assignment} | a \wedge b~{\rm is~satisfiable}\}$.
+
+A state that is in the set of states represented by a boolean formula $B$ is referred to
+as a $B$ state. A set of states $s$ is said to be reachable
+in $k$ steps of the transition relation iff there exist states $s_0, \ldots, s_k$ such that
+$s_0$ is an $I$ state and $s_i \wedge T \Rightarrow s_{i + 1}$ for $1 \leq i < k$.
+
+}
 
 
 \section{Model Specification}
@@ -666,90 +678,136 @@ Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
 safety property $P$, IC3 aims either to prove inductively that $P$ holds
 at all reachable states from the initial state or
 to find a $\neg P$ state that can be reached.
-The following pseudocode gives an overview of the IC3 algorithm:
+The following pseudocode gives an overview of the basic IC3 algorithm:
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
 \Fn{prove$((i,x,I,T),P)$}{
-  \lIf{$\neg (I \Rightarrow P)$}{
+  \lIf{$\neg (I \Rightarrow P)$ \label{initiation}}{
     \Return{False}
   }
   $F_0 := I$ \;
   $k := 0$ \;
-  \While{True}{
-    \eIf{$F_k \wedge T \Rightarrow P'$}{
-      $F_{k + 1}$ := $\{c \in F_k | F_k \wedge T \Rightarrow c'\}$ \;
-      \lIf {$F_k = F_{k + 1}$}{
-        \Return{True}}
-      $k$ := $k + 1$ \;
-    } {
-      \While {$\neg (F_k \wedge T \Rightarrow P'$)}{
-        cti := {\it getCTI}($F_k \wedge T \Rightarrow P'$) \;
-        (fixed, proven) := {\it proveNegCTI}$((i,x,I,T),{\rm cti},k - 1)$ \;
-        \lIf{\rm fixed}{\Return{True}}
-        \lIf{\rm proven}{
-        $F_k$ := $F_k \cup \{\neg{\rm cti}\}$}
-        \lElse{\Return{False}}
-      }
+  \While{True \label{main}}{
+    \eIf{$F_k \wedge T \Rightarrow P'$ \label{consecution}}
+    {create frame $F_{k + 1}$ \;
+     $k$ := $k + 1$ \;}
+    {\While {$\neg (F_k \wedge T \Rightarrow P')$ \label{reconsec}}{
+        cti := {\it getCTI}($F_k \wedge T \Rightarrow P'$) \label{CTI} \;
+        \lIf{{\it proveNegCTI}$((i,x,I,T),{\rm cti},k - 1)$ \label{negCTI}}{$F_k$ := $F_k \cup \{\neg{\rm cti}\}$}
+        \lElse{\Return{False}}}} \label{Unsafe}
+    \For{ i = 0 \KwTo $k - 1$ }{ \label{forprop}
+      $F_{i + 1} := F_{i + 1} \cup \{c \in F_i | F_i \wedge T \Rightarrow c'\}$ \label{push} \;
+      \lIf {$F_i = F_{i + 1}$}{\Return {True}} \label{fixed}
     }
   }
 }
 \end{algorithm}
 
-The IC3 algorithm maintains a set of $k$ frames $F_0,\ldots,F_k$, where
+The IC3 algorithm maintains a set of $k + 1$ frames $F_0,\ldots,F_k$, where
 each frame $F_i$ is a set of clauses whose disjunction represents an
 overapproximation of the set of states that reachable by the transition
-system in $i$ steps
+system in at most $i$ steps
 (so, for example, $F_0$ is just the initial state set $I$, as seen
 in the pseudocode).
+The deepest frame $F_k$ in the set of frames is called the frontier frame.
 
-If $F_i = F_{i + 1}$ holds for any $i$ at any point, then a fixed point has
-been found, and the algorithm terminates.
 %Initiation query
-The initiation query $I \Rightarrow P$ is used to check that the safety
+The initiation query $I \Rightarrow P$ on line \ref{initiation} is used to check that the safety
 property holds in the initial state $I$.
 This query is run once at the start of
-the algorithm for the desired safety property. If it fails (i.e. if it
-is false), then the algorithm terminates, as an error state in
-which $\neg P$ holds is reachable in 0 steps. If the query succeeds,
-then the algorithm proceeds.
+the algorithm for the desired safety property.
+If it fails (i.e. if it is {\it False}), then the algorithm terminates,
+as an error state in which $\neg P$ holds is reachable in 0 steps.
+If the query succeeds, then the algorithm proceeds to its main loop.
+
+The main loop of the algorithm is the while-loop beginning on line \ref{main}.
+The algorithm only exits the loop when it has determined whether or not the
+safety property holds at all reachable states in the model.
 
 %Consecution query
-The consecution query $F_k \wedge T \Rightarrow P'$ for a frame $F_k$
+The consecution query $F_k \wedge T \Rightarrow P'$ on line \ref{consecution} is
 is used to check whether the property $P$ necessarily holds in the next
-frame.
-
-%Recursive part of algorithm
-The algorithm extends its set of frames $F_0,\ldots,F_k$ with a new frame
-$F_{k + 1}$ by running the consecution query.
-If the consecution query is successful, then the new frame $F_{k + 1}$
-with clause $\{P\}$ can be added.
-All clauses in frame $F_k$ are then propagated to $F_{k + 1}$:
-For each clause $C \in F_k$, if $F_k \wedge T \Rightarrow C'$ holds, then $C'$
-is added to $F_{k + 1}$.
-
+frame. If it succeeds (i.e., if it is {\it True}), then IC3 creates a new
+frontier frame $F_{k + 1}$.
 %Describe what happens when a consecution query fails
 If a consecution query $F_k \wedge T \Rightarrow P'$ fails, then that means that
 there is an $F_k$ state that is a predecessor of the $\neg P'$ state,
 i.e. there is an $F_k$ state $s$ and a $\neg P'$ state $v$ with $T(i,s,v')$.
-The state
-$s$ is a \emph{counterexample to induction} (CTI) state.
+The state $s$ is called a \emph{counterexample to induction} (CTI) state.
 
 The algorithm aims to refine the approximation $F_k$ of the set of states
-reachable in at least $k$ steps
-by finding a clause $c$ that holds at depth $k$ such that
-$F_k \wedge c \wedge T \Rightarrow P'$ holds:
+reachable in at most $k$ steps by showing that all states that are
+reachable in at most $k$ steps are $\neg s$ states.
 
-Such a $c$ must be such that for the counterexample to induction $s$,
-$$c \Rightarrow \neg s,$$
-with an obvious choice being $c = \neg s$, which can be found easily using
-a SAT solver. In practice, it is better to generalize $\neg s$ and choose
-a smaller $c$,
-which can allow for a set of several states to be eliminated in $F_k$
-rather than just eliminating $s$. In particular, the choice of $c$ that
+The call to {\it getCTI} in line \ref{CTI} finds the counterexample to
+induction state $s$. The call to {\it proveNegCTI} on line \ref{negCTI}
+attempts to prove that $\neg s$ is inductive relative to $F_{k - 1}$,
+so that all $F_k$ states are necessarily $\neg s$ states, so $\neg s$ can
+be added to the set of $F_k$ clauses.
+
+The {\it proveNegCTI} function works similarly to the
+while loop on line \ref{reconsec}. For as long as the query
+$F_k \wedge \neg s \wedge T \Rightarrow s'$ is unsuccessful,
+the algorithm extracts a counterexample to induction cube and
+calls {\it proveNegCTI} to show that the counterexample is
+inductive relative to frame $F_{j - 1}$ so that the negated
+counterexample can be added to frame $F_j$.
+
+%fix
+
+If $I \Rightarrow \neg s$ does not hold, then eventually ${\it proveNegCTI}$
+will be called recursively with $k = 0$ and the attempt to show that
+$\neg s$ is relatively inductive to $F_k$ failes.
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\Fn{proveNegCTI$((i,x,I,T),s,j)$}{
+  \lIf{$j = 0$}{\Return{False}}
+  \While{$\neg(F_j \wedge \neg s \wedge T \Rightarrow s')$}{
+    cti := {\it getCTI}$(F_j \wedge \neg s \wedge T \Rightarrow s')$ \;
+    \lIf{{\it proveNegCTI}$((i,x,I,T),{\rm cti},j - 1))$}{$F_j$ := $F_j \cup \{\neg{\rm cti}\}$}
+    \lElse{\Return{False}}
+  }
+}
+\end{algorithm}
+
+If $\neg c$ cannot be proven to hold at $k$ steps of
+the transition relation from the initial state, i.e. the state $s$ is in the actual
+set of states reachable in $k$ steps from the initial state, then a $\neg P$ state
+is reachable in $k + 1$ steps from the initial state; the safety property does not
+hold, and the algorithm terminates (line \ref{Unsafe}).
+
+Because there may be several counterxamples to induction, it is necessary to
+perform the consecution query again (line \ref{reconsec}). If it fails again,
+the process of finding the new counterexample to induction state(s) $d$ and trying to
+prove that $\neg d$ holds at depth $k$ repeats. Upon the success of the consecution
+query, the algorithm moves to the propagation phase.
+
+Pushing a clause $c$ from a frame $F_i$ to frame $F_{i + 1}$ refers to the act
+of setting $F_{i + 1} := F_{i + 1} \cup \{ c \}$.
+A clause $c$ can be pushed from a frame $F_i$ to the next frame $F_{i + 1}$
+if the consecution query $F_i \wedge T \Rightarrow c'$ holds.
+The propagation phase of the algorithm goes through the set of frames
+$F_0, \ldots, F_k$, and, for every $F_i$ with $0 \leq i < k$ (line \ref{forprop}),
+pushes all the clauses that it can from $F_i$ to $F_{i + 1}$ (line \ref{push}).
+
+If $F_i = F_{i + 1}$ holds for any $i$ at any point, then a fixed point has
+been found: frames at any greater depth than $i$ will continue to be the
+same as $F_i$, since all the the clauses in $F_i$ and therefore $F_{i + 1}$
+can be pushed.
+Because $F_i$ contains the safety property $P$ as one of its clauses,
+this means that $P$ holds in all reachable states from the initial state,
+and the algorithm terminates (line \ref{fixed}).
+
+An obvious choice for would be $c = s$, which can be found easily using
+a SAT solver. In practice, it is better to generalize $s$ and choose
+a smaller subset $c \subset s$, which can allow for a set of several states
+to be eliminated in $F_k$ rather than just eliminating the single state $s$
+when $\neg c$ is shown to hold at depth $k$.
+In particular, the choice of $c$ that
 maximises the number of states eliminated in $F_k$ is the minimal
 inductive subclause of $\neg s$ relative to frame $F_k$.
-
 \subsection{Minimal Inductive Subclauses}
 A minimal inductive subclause for a frame $F_k$ and a clause $s$ that
 is inductive relative to $F_k$
