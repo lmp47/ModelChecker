@@ -9,7 +9,7 @@
 \usepackage{docmute}   % only needed to allow inclusion of proposal.tex
 \usepackage{listings}  % for formatting code
 \usepackage{float}
-\usepackage[linesnumbered,figure]{algorithm2e}
+\usepackage[linesnumbered,figure,vlined]{algorithm2e}
 \floatstyle{boxed} 
 \restylefloat{figure}
 
@@ -432,17 +432,23 @@ representation of states using boolean formulas.
 \paragraph{Logic}{
 Unless otherwise specified, a variable is a propositional symbol,
 and can be assigned to boolean values {\it True} or {\it False}.
-A literal is defined as being either a variable $v$ or its negation $\neg v$.
+A \emph{literal} is defined as being either a variable $v$ or its negation $\neg v$.
 
 The concepts of a cube and a clause are useful in describing the
 representation of states as boolean formulas.
-A cube is defined to be a conjunction of literals and may be represented as the set
-of literals that occur in it. Similarly, a clause is a disjunction of literals that
+A \emph{cube} is defined to be a conjunction of literals and may be represented as the set
+of literals that occur in it. Similarly, a \emph{clause} is a disjunction of literals that
 may also be represented as the set of literals that occur in it.
+
+Given a cube $c$, a $d$ is a i\emph{subcube} of $c$ (written $d \subset c$)
+iff the set of literals in $d$ are a subset of the set of literals in $c$.
+Similarly, given a clause $c$, a clause $d$ is a \emph{subclause} of $c$ (also
+denoted $d \subset c$) iff the set of literals in $d$ are a subset of
+the literals in $c$.
 
 Through the application of deMorgan's laws, the negation of a cube is a clause and
 vice-versa. In particular, a cube $C = l_0 \wedge \ldots \wedge l_n$ has negation
-$\neg C = \neg (l_0 \wedge \ldots \wedge l_n$, which is logically equivalent,
+$\neg C = \neg (l_0 \wedge \ldots \wedge l_n)$, which is logically equivalent,
 by deMorgan's laws, to the formula $\neg l_0 \vee \ldots \vee \neg l_n$.
 Similarly, a clause $D = l_0 \vee \ldots \vee l_n$ has a negation that is
 logically equivalent to $\neg l_0 \wedge \ldots \wedge \neg l_n$. It follows
@@ -450,13 +456,13 @@ that the clause obtained by negating a cube is specified by the set obtained
 by negating each literal in the cube set and that the cube obtained by negating
 a clause is specified by the set obtained by negating each literal in the clause.
 
-A boolean formula is in conjunctive normal form (CNF) if it is a conjunction 
+A boolean formula is in \emph{conjunctive normal form} (CNF) if it is a conjunction 
 $\bigwedge_i D_i$ of disjunctions $D_i$ of literals (i.e. clauses). A set of clauses
 can and often will be interpreted as the CNF formula resulting from the conjunction
 of the clauses.}
 
 \paragraph{Transition Systems}{
-A transition system is a tuple $(i,x,I,T)$ consisting of a set of input
+A \emph{transition system} is a tuple $(i,x,I,T)$ consisting of a set of input
 variables $i$, state variables $x$, an initial
 set of states represented by the boolean expression $I(x)$ and
 a transition relation represented by the boolean expression $T(i,x,x')$,
@@ -713,7 +719,7 @@ The following pseudocode gives an overview of the basic IC3 algorithm:
     }
   }
 }
-\caption{An overview of the IC3 algorithm. Frames are assumed to be passed by reference:.}
+\caption{An overview of the IC3 algorithm. Frames are assumed to be passed by reference.}
 \label{overview}
 \end{algorithm}
 
@@ -829,7 +835,8 @@ is chosen so that $\neg c \Longrightarrow \neg s$, at least one CTI state
 has been removed from $F_{i + 1}$, and because $c$ contains several states,
 it is possible that several CTIs may have been removed from $F_{i + 1}$
 by adding the clause $\neg c$ to it. The process of finding such a cube $c$
-is referred to as \emph{generalization}.
+is referred to as \emph{generalization}, and the best such $c$ is the
+one such the $\neg c$ is the minimal inductive subclause for $F_i$ and $\neg s$.
 
 \subsection{Minimal Inductive Subclauses}
 The \emph{minimal inductive subclause} for a frame $F_i$ and a clause $\neg s$ that
@@ -840,20 +847,52 @@ literals are the smallest subset of the literals in $\neg s$ such that
 $\neg c$ is also inductive relative to $F_i$.
 
 The minimal inductive subclause can be found by dropping each literal
-in $s$ in turn and checking if the resulting clause is inductive
-relative to $F_k$:
+in $\neg s$ in turn and checking the resulting clause.
+
+The checking phase (described by {\it down} in figure \ref{mic})
+performs the normal queries
+for determining whether the subclause is inductive relative to
+$F_k$: for a subclause $t = \neg s \ \{l\}$ found by dropping
+literal $l$ from $\neg s$, it checks that
+$I \Rightarrow t$ and $F_i \wedge t \wedge T \Rightarrow t$ both hold.
+
+If both formulas hold, then the literal $l$ can be dropped from $\neg s$.
+If only the formula $F_i \wedge t \wedge T \Rightarrow t$ fails to hold, then
+it is possible that expanding the set of states in $t$ by removing some of the
+literals in $t$ would result in a clause that is inductive relative to $F_i$.
+If $I \Rightarrow t$ fails to hold, then removing any literals in $t$ to
+obtain a subclause $u \subset t$ would still result in the query $I \Rightarrow u$
+failing, since it is the case that $u \Longrightarrow t$.
+
+The failure of $F_i \wedge t \wedge T \Rightarrow t$ to hold indicates
+that there is a predecessor to a $\neg t$ state that is a $F_i \wedge t$ state.
+This predecessor state $p$ can be extracted from the SAT query for
+$F_i \wedge t \wedge T \Rightarrow t$ in the same way that CTIs are found.
+The clause $t$ can then be expanded to the clause $t \cap \neg p$
+formed by taking the common literals in $t$ and $\neg p$.
+The checking phase then repeats, checking the expanded clause $t \cap \neg p$.
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\Fn{mic(cls,k)}{
+\Fn{mic(cls,i)}{
   \ForEach{literal l in cls}{
     $subcls := cls \setminus \{l\} $\;
-    \If{subcls {\rm is inductive relative to frame at depth} k}{
+    \If{${\it down(subcls, i)}$}{
       $cls := subcls$ \;
     }
   }
   \Return{cls} \;
 }
+\Fn{down(cls, i)}{
+  \lIf{$\neg (I \Longrightarrow {\it cls})$}{\Return{False}}
+  \lIf{$F_i \wedge {\it cls} \wedge T \Longrightarrow {\it cls}'$}{\Return{True}}
+  $p$ := $F_i \wedge t$ state such that $F_i \wedge t \wedge p \Longrightarrow \neg t'$ \;
+  {\it cls} := $cls \cap p$\;
+  \Return{down(cls,i)} 
+}
+\caption{The algorithm for finding the minimal inductive subclause. Clauses are assumed
+to be passed by reference.}
+\label{mic}
 \end{algorithm}
 
 %Finding the minimal inductive subclause can be computationally
@@ -1356,6 +1395,10 @@ the current-state literals from $q$ to obtain the CTI.
 
 \subsection{Propagation}
 
+Both the implementation of the {\it pushFrame} function and the implementation of the
+{\it propagate} function in figure \ref{recstr} rely on the implementation of the
+{\it push} function, which has two variants described below.
+
 \subsubsection{Basic}
 The most basic implementation's \verb,push, function, when invoked as \verb,push f model f', tries
 to push all clauses in \verb,Frame, \verb,f, that are not in \verb,Frame, \verb,f', to \verb,f', and
@@ -1430,7 +1473,10 @@ and \verb,down, is called recursively on the updated set of frames.
 
 The \emph{PriorityQueue} implementation keeps track of what to prove next by using a priority
 queue of proof obligations instead of through recursive calls that explicitly specify which
-property to prove at which depth. I first provide a definition of proof obligations, an
+property to prove at which depth. The implementation of this variant of the algorithm makes
+use of some of the same functions (e.g. \verb,negCTI, and \verb,push,) as the others, but
+differs in its overall structure.
+I first provide a definition of proof obligations, an
 overview of the structure of the implementation for this variation of the algorithm,
 and some implementation details about representing proof obligations and the priority queue.
 
@@ -1530,7 +1576,7 @@ such that $\neg c$ is inductive relative to $F_{j - 1}$. If a fixed point is
 found, then the algorithm can terminate. Otherwise, the proof obligation
 $(c,j)$ is enqueued, and {\it fulfillObligations} calls itself recursively.
 
-\subsection{Proof Obligations and Priority Queues}
+\subsubsection{Proof Obligations and Priority Queues}
 
 The {\it PriorityQueue} implementation represents proof obligations $(s,i)$ using the
 \verb,Obligation, type, which is a triple \verb.(Int, Int, Clause). of the depth $i$, a
