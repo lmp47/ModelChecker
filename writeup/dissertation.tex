@@ -424,6 +424,8 @@ posed in conjunctive normal form. Further details are given in section \ref{Mini
 }
 
 \section{Symbolic Representation}
+\label{logic}
+
 I give a brief review of concepts in logic, and introduce transition systems and the
 representation of states using boolean formulas.
 
@@ -436,8 +438,17 @@ The concepts of a cube and a clause are useful in describing the
 representation of states as boolean formulas.
 A cube is defined to be a conjunction of literals and may be represented as the set
 of literals that occur in it. Similarly, a clause is a disjunction of literals that
-may also be represented as the set of literals that occur in it. Through the
-application of deMorgan's laws, the negation of a cube is a clause and vice-versa.
+may also be represented as the set of literals that occur in it.
+
+Through the application of deMorgan's laws, the negation of a cube is a clause and
+vice-versa. In particular, a cube $C = l_0 \wedge \ldots \wedge l_n$ has negation
+$\neg C = \neg (l_0 \wedge \ldots \wedge l_n$, which is logically equivalent,
+by deMorgan's laws, to the formula $\neg l_0 \vee \ldots \vee \neg l_n$.
+Similarly, a clause $D = l_0 \vee \ldots \vee l_n$ has a negation that is
+logically equivalent to $\neg l_0 \wedge \ldots \wedge \neg l_n$. It follows
+that the clause obtained by negating a cube is specified by the set obtained
+by negating each literal in the cube set and that the cube obtained by negating
+a clause is specified by the set obtained by negating each literal in the clause.
 
 A boolean formula is in conjunctive normal form (CNF) if it is a conjunction 
 $\bigwedge_i D_i$ of disjunctions $D_i$ of literals (i.e. clauses). A set of clauses
@@ -804,7 +815,7 @@ Because $F_i$ contains the safety property $P$ as one of its clauses,
 this means that $P$ holds in all reachable states from the initial state,
 and the algorithm terminates (line \ref{fixed}).
 
-\subsection{Generalization}
+\subsection{Inductive Generalization}
 
 After showing that a negated CTI state $\neg s$ is relatively inductive to a
 frame $F_i$ and adding the clause $\neg s$ to frame $F_{i + 1}$, the state
@@ -1188,6 +1199,9 @@ I give pseudocode in figure \ref{recstr}
 that outlines the general structure shared by all the
 implementations of the model checker except {\it PriorityQueue}
 and compare this structure with figure \ref{overview}.
+I provide an explanation of the variant used in the
+{\it PriorityQueue} implementation is provided in section
+\ref{pqueue}.
 
 \SetKwProg{Let}{let }{ in}{end}
 \begin{algorithm}[!Ht]
@@ -1263,7 +1277,160 @@ checks only a single pair of frames (which also makes the recursive call to ${\i
 When the consecution query fails, the adjusted algorithm, like the original in figure \ref{overview},
 calls the ${\it propagate}$ function to handle the updates to the frames made by ${\it proveNegCTI}$.
 
-\subsubsection{Priority queues}
+\subsection{Frames}
+The \verb,Frame, data structure represents frames in the IC3 algorithm.
+Along with the set of clauses (represented by a list of literals), a \verb,Frame, also includes
+a \verb,Solver,, which contains at least all the clauses in the frame's set of clauses. The
+\verb,Solver, may also contain the \verb,transition, clauses for the hardware model.
+
+\subsection{Initiation}
+%Describe how the step involving the initiation query is implemented.
+
+The initiation query $I \Rightarrow P$ is an implication, but a MiniSat \verb,Solver, can only
+solve queries given in CNF (with an optional assumption cube). As a result, the representation
+for the query $I \Rightarrow P$ for a frame $I$ and a clause $P$ makes use of the logical equivalence between
+$I \Rightarrow P$ and $\neg (\neg P \wedge I)$.
+
+The implementation of the initiation query in figure \ref{impl:initiation} makes use of
+the fact that the formula $\neg (\neg P \wedge I)$ is true iff $\neg P \wedge I$ is unsatisfiable.
+The \verb,initiation,
+The implementation also makes use of deMorgan's laws as described in section
+\ref{logic} to acquire the assumption cube by negating all the literals in the \verb,prop, clause.
+
+\begin{figure}[H]
+\begin{verbatim}
+initiation :: Frame -> Clause -> Bool
+initiation f prop =
+  not (satisfiable (solveWithAssumps (solver f) (map neg prop)))
+\end{verbatim}
+\caption{The initiation query implementation.}
+\label{impl:initiation}
+\end{figure}
+
+\subsection{Consecution}
+%Describe how the step involving the consecution query is implemented.
+
+Similarly to how the implication in the initiation query is converted to an equivalent CNF
+formula, the implementation uses the logical equivalence of
+$F_k \wedge T \Rightarrow P'$ and $\neg (\neg P' \wedge F_k \wedge T)$ along with deMorgan's
+laws to yield the implementation in figure \ref{impl:consecution}.
+
+\begin{figure}[H]
+\begin{verbatim}
+consecution :: Frame -> Clause -> Bool
+consecution f prop =
+  not (satisfiable (solveWithAssumps (solver f) (map (prime.neg) prop)))
+\end{verbatim}
+\caption{The consecution query implementation.}
+\label{impl:consecution}
+\end{figure}
+
+\subsection{Counterexamples to Induction}
+%Describe how the implementation discovers counterexamples
+%to induction and proves them unreachable.
+
+When the consecution query $F_k \wedge T \Rightarrow P$
+in \verb,prove', fails, then a call to the function \verb,nextCTI,
+gives a cube (a conjunction of literals) whose current-state literals
+give relevant CTI for the query. After, in the recursive version,
+\verb,proveNegCTI, attempts to prove that the CTI cannot be reached
+(which may involve further calls to \verb,nextCTI,), and in
+the \emph{PriorityQueue} version, \verb,proveObligations, enqueues
+a proof obligation for proving the negated CTI.
+
+\subsubsection{Basic}
+In the \emph{Basic} implementation of the IC3 algorithm, \verb,negCTI, asks for a model
+(i.e. the set of true literals) for the satisfiable query $\neg P' \wedge F_k \wedge T$.
+The current-state literals are then extracted from the model in the function that
+called \verb,negCTI,.
+
+\subsubsection{Smaller Counterexamples to Induction}
+In the other implementations of the algorithm, \verb,negCTI, again asks for a model $m$
+for the satisfiable query $\neg P' \wedge F_k \wedge T$. The only literals in $m$ that
+must necessarily be included in the CTI are those current-state literals that result in
+the unsatisfiability of $m \wedge P' \wedge T$. That is, the current-state literals of any
+subcube $q$ of $m$ for which $q \wedge P' \wedge T$ holds is also a valid CTI, with
+the state $m$ being one of the states in the set represented by $q$.
+
+The conflict vector resulting from querying the SAT solver with $P' \wedge T$ and assumption
+cube $m$ contains such a $q$ that has only literals relevant to the conflict. This $q$ is
+then returned to the calling function, which, as in the \emph{Basic} implementation, extracts
+the current-state literals from $q$.
+
+
+\subsection{Propagation}
+
+\subsubsection{Basic}
+The most basic implementation's \verb,push, function, when invoked as \verb,push f model f', tries
+to push all clauses in \verb,Frame, \verb,f, that are not in \verb,Frame, \verb,f', to \verb,f', and
+results in a pair containing a \verb,Bool, indicating whether a fixed point has been reached
+(i.e., all clauses could be pushed) and a \verb,Frame, with all the clauses in \verb,f', and all
+the clauses in \verb,f, that could be pushed to \verb,f',.
+For each clause in \verb,f, that is not in \verb,f', the \verb,consecution, function is called to
+see if the clause is inductive relative to the frame represented by \verb,f,. If it is, then
+the clause can be conjoined to the frame represented by \verb,f',, and if it is not, then the
+function must have \verb,False, as the first element in the pair it returns.
+
+\subsubsection{Subsumed clauses}
+The basic implementation's \verb,push, function avoids unnecessary consecution queries by only
+considering clauses in \verb,f, that are not in \verb,f',. Further consecution queries may be
+eliminated by considering the clauses in \verb,f, that are subsumed by other clauses.
+
+A clause $c$ subsumes a clause $c'$ if the literals in $c$ are a subset of the literals in $c'$.
+In this case, $c \Rightarrow c'$ holds, so $c'$ can be removed from the set of clauses. By
+removing all subsumed clauses $c'$ from a frame before trying to push clauses, the model
+checker can avoid making the consecution queries that arise from attempts to push those clauses.
+
+The versions of \verb,push, that consider subsumed clauses include a call to the function
+\verb,removeSubsumed, when acquiring the list of clauses to attempt to push.
+The \verb,removeSubsumed, function takes a list of clauses and removes all clauses in the list
+that are subsumed by other clauses in the list. The \verb,push, function replaces the frame
+\verb,f, with a version of \verb,f, with all the subsumed clauses in the frame removed for
+the rest of the function and proceeds as the basic implementation's \verb,push, function does,
+returning a triple containing the updated \verb,f, along with the fixed-point \verb,Bool,
+and updates \verb,Frame, \verb,f',.
+
+\subsection{Inductive Generalization}
+While the algorithm describes generalization as involving finding the minimal inductive subclause (MIC),
+finding the MIC for a clause is in practice inefficient, and all implemented versions of generalization
+\verb,inductiveGeneralization, involve approximating the MIC with a call to the function
+\verb,generalize,.
+
+\subsubsection{Simple}
+The simplest approximation for a MIC involves attempting to drop each literal in turn and checking
+that the resulting clause $c$ results in the truth of formulas $I \Rightarrow c$ and
+$F_k \wedge c \wedge T \Rightarrow c'$ that the original clause did. If the resulting clause
+does result in satisfiable results for both the queries, then the literal can be successfully dropped,
+but if not, the literal is added to a list \verb,needed, of necessary literals.
+After a parameterizable number of failed attempts at dropping a literal from the clause or after
+having attempted dropping all the literals, the
+\verb,inductiveGeneralization, function returns the clause resulting from appending the remaining
+literals in the clause (i.e. the literals that \verb,generalize, has not tried to drop)
+with the literals in \verb,needed,.
+
+\subsubsection{Minimal Inductive Subclauses and Counterexamples to Generalization}
+The more elaborate implementation of generalization implements the full
+(but limited in number of attempts) MIC algorithm implementation with the ability to deal with CTGs.
+
+When attempting to drop a literal $l$ from clause $c$, the \verb,down, function is called on the clause
+$c \setminus \{l\}$ with a list of past frames (which is all the frames except the deepest on the inital call
+to \verb,down,), a list of current and future frames (which contains only the deepest frame on initial call
+to \verb,down,), a limit on the recursion depth for generalization, and a limit \verb,r, on the number
+of CTGs to attempt to negate for each call to \verb,inductiveGeneralization,.
+
+The \verb,down, function checks, as in the simple approximation for MIC, for the satisfiability of
+$I \Rightarrow c$ and $F_k \wedge c \wedge T \Rightarrow c'$. The difference is that \verb,down,
+does not immediately give a value if $I \Rightarrow c$ is true and $F_k \wedge c \wedge T \Rightarrow c'$ is
+not; in this case, the negated CTG \verb,negCTG, is acquired by taking and negating the current literals in
+the model the SAT solver gives for $\neg c' \wedge c \wedge T \wedge F_k$.
+
+The \verb,down, function then finds the deepest frame $F_{j - 1}$ for which \verb,negCTG, is inductive, and attempts to generalize
+\verb,negCTG, relative to that frame with a recursive call to \verb,generalize, with a decremented value of \verb,r,.
+The generalization of \verb,negCTG, can then be added to frame $F_j$,
+and \verb,down, is called recursively on the updated set of frames.
+
+\subsection{Priority Queue Variant}
+\label{pqueue}
 
 The \emph{PriorityQueue} implementation keeps track of what to prove next by using a priority
 queue of proof obligations instead of through recursive calls that explicitly specify which
@@ -1271,6 +1438,7 @@ property to prove at which depth. I first provide a definition of proof obligati
 overview of the structure of the implementation for this variation of the algorithm,
 and some implementation details about representing proof obligations and the priority queue.
 
+\subsubsection{Proof Obligations}
 A \emph{proof obligation} is a pair $(s,i)$ of a state $s$ that is either a set of bad states
 or a counterexample to induction and a depth $i$. When the model checker encounters a proof obligation
 $(s,i)$ as the highest-priority element of the queue, it must prove $\neg s$ holds for all states
@@ -1279,6 +1447,7 @@ $(s, i)$.
 The presence of proof obligation $(s,i)$ on the priority queue also indicates that for all values $j$
 with $0 \leq j < i$, $(s, j)$ has already been fulfilled.
 
+\subsubsection{Overall Structure}
 \begin{algorithm}[!Ht]
 \DontPrintSemicolon
 \Fn{prove$(M,P)$}{
@@ -1286,11 +1455,7 @@ with $0 \leq j < i$, $(s, j)$ has already been fulfilled.
     \Return{False}
   }
   \Let{${\it queue}$ = {\rm queue containing proof obligation} $(\neg P, 1)$}{
-  \Return {${\it prove'}(M,[I],{\rm nil},queue)$}}
-}
-\Fn{prove'$(M,[F_0,\ldots,F_k],Q])$}{
-  \Let{${\it (result,frames,queue) = fulfillObligations(M,P,[F_0,\ldots,F_k],Q])}$}
-  {\Return{result}}
+  \Return {${\it fulfillObligations}(M,[I],queue)$}}
 }
 \Fn{fulfillObligations$(M,[F_0,\ldots,F_k],{\it queue}])$}{
   \Let{$((s,i), {\it q}) = {\it dequeue(queue)}$ \label{dequeue}}{
@@ -1299,13 +1464,11 @@ with $0 \leq j < i$, $(s, j)$ has already been fulfilled.
   \lElse{\Let{${\it cti = nextCTI(F_{i - 1} \wedge T \Rightarrow \neg s')}$}{
       \If{$I \Rightarrow \neg {\it cti}$}{
         \Let{${\it (fixed, [G_0, \ldots, G_k], d) = propagate([F_0 \cup \{\neg cti\}, F_1, \ldots, F_k], {\it \neg cti})}$}{
-          \lIf{\it fixed}{\Return{$(True, [G_0,\ldots,G_k], q)$}}
+          \lIf{\it fixed}{\Return{True}}
           \Return{${\it fulfillObligation(M, [G_0 , \ldots, G_k], (\neg cti,d))}$}
         }
       }
-      \lElse{\Return{False}}
-    }
-  }
+      \lElse{\Return{False}}}}
 }
 %\Fn{pushFrame$([M, F_0,\ldots,F_k], {\it queue}, (s,i))$}{
 %  \Let{$({\it fixed}, G_i) = {\it push}(F_{i - 1}, F_i)$}{
@@ -1367,183 +1530,22 @@ The approach employed by the {\it PriorityQueue} implementation checks
 that $I \Rightarrow \neg c$, adds $\neg c$ to $F_0$, and then uses a modified
 version of {\it propagate} to push clauses and check for fixed points up to
 depth $j \leq i$, where $j$ is the greatest value that is less than $i$
-such that $\neg c$ is inductive relative to $F_j$. If a fixed point is
-found, then the algorithm
+such that $\neg c$ is inductive relative to $F_{j - 1}$. If a fixed point is
+found, then the algorithm can terminate. Otherwise, the proof obligation
+$(c,j)$ is enqueued, and {\it fulfillObligations} calls itself recursively.
 
+\subsection{Proof Obligations and Priority Queues}
 
-The implementation represents proof obligations $(s,i)$ using the \verb,Obligation, type, which
-is a triple \verb.(Int, Int, Clause). of the depth $i$, a rank for deciding the ordering of
-proof obligations at the same depth within the priority queue, and the clause $\neg s$.
+The {\it PriorityQueue} implementation represents proof obligations $(s,i)$ using the
+\verb,Obligation, type, which is a triple \verb.(Int, Int, Clause). of the depth $i$, a
+rank for deciding the ordering of proof obligations at the same depth within the priority
+queue, and the clause $\neg s$.
 
 In the \emph{PriorityQueue} implementation, the priority queue is represented by
 a \verb,MinQueue, (the minimal element has the highest
 priority) of \verb,Obligation,s containing the priority queue with only \verb,Obligation,
 \verb.(1, 0, [prop]). in it, and the initial frame. The function \verb,prove', then invokes \verb,proveObligations,,
 the main function for the \emph{PriorityQueue} implementation.
-
-The \verb,proveObligations, function removes the minimum (i.e. highest-priority) \verb,Obligation, 
-representing $(s,i)$ from the priority queue and makes the consecution query
-$F_{i - 1} \wedge T \Rightarrow \neg s$. If the consecution query returns \verb,True,,
-then \verb,proveObligations, invokes \verb,pushFrame,, which works the same as in the recursive version,
-except that the recursive call to \verb,prove', is replaced with a recursive call to \verb,proveObligations,
-with an updated priority queue that has proof obligation $(s, i + 1)$.
-
-If the consecution query instead returns \verb,False,, then the negated CTI $\neg s$ is found by
-negating the extracted current-state literals taken from the value given by an invocation of \verb,nextCTI,.
-The \verb,proveObligations, function checks that $\neg s$ does not hold in the initial state, adds $\neg s$
-to frame $F_0$, and then invokes the \verb,propagate, function to propagate clauses until one of the following
-occurs:
-\begin{itemize}
-\item The depth $i$ in the proof obligation has been reached
-\item The clause $\neg s$ can no longer be pushed
-\item A fixed point has been reached.
-\end{itemize}
-In the first case, \verb,proveObligations, enqueues obligation $(s,i)$ with a rank that gives it a priority
-such that it occurs after all other proof obligations at depth $i$ and calls itself recursively.
-In the second case, \verb,propagate, gives the greatest $j$ such that $\neg s$ has been shown to hold at
-$j$-steps from the initial state (i.e. $\neg s$ is inductive relative to $F_{j - 1}$. Then \verb,proveObligations,
-enqueues obligation $(s,j)$ with a rank that gives it a priority such that it occurs after all other
-proof obligations at depth $j$ and calls itself recursively.
-In the third case, \verb,proveObligations, returns a value containing \verb,True,, since the safety property
-has been proven to hold at all reachable states.
-
-\subsection{Frames}
-The \verb,Frame, data structure represents frames in the IC3 algorithm.
-Along with the set of clauses (represented by a list of literals), a \verb,Frame, also includes
-a \verb,Solver,, which contains at least all the clauses in the frame's set of clauses. The
-\verb,Solver, may also contain the \verb,transition, clauses for the hardware model.
-
-\subsection{Initiation}
-%Describe how the step involving the initiation query is implemented.
-
-The initiation query $I \Rightarrow P$ is an implication, but a MiniSat \verb,Solver, can only
-solve queries given in CNF (with an optional assumption cubes). As a result, the representation
-for the query $I \Rightarrow P$ for a frame $I$ and a clause $P$ makes use of the logical equivalence between
-$I \Rightarrow P$ and $\neg (\neg P \wedge I)$.
-
-Using the fact that the formula $\neg (\neg P \wedge I)$ is true iff $\neg P \wedge I$ is unsatisfiable,
-and deMorgan's laws gives the following implementation of the initiation query:
-
-\begin{verbatim}
-initiation :: Frame -> Clause -> Bool
-initiation = not (satisfiable (solveWithAssumps (solver f) (map neg prop)))
-\end{verbatim}
-
-\subsection{Consecution}
-%Describe how the step involving the consecution query is implemented.
-
-Similarly to how the implication in the initiation query is converted to an equivalent logical
-expression that renders a CNF query to a MiniSat \verb,Solver, to determine the satisfiability
-of the query, the consecution query's implementation uses the logical equivalence of
-$F_k \wedge T \Rightarrow P'$ and $\neg (\neg P' \wedge F_k \wedge T)$. Again, along with deMorgan's
-laws, this yields the implementation of the consecution query (where it is assumed that the
-\verb,Frame,'s \verb,Solver, contains the \verb,transition, clauses of the \verb,Model,.
-
-\begin{lstlisting}
-\end{lstlisting}
-
-\subsection{Counterexamples to Induction}
-%Describe how the implementation discovers counterexamples
-%to induction and proves them unreachable.
-
-When the consecution query $F_k \wedge T \Rightarrow P$
-in \verb,prove', fails, then a call to the function \verb,nextCTI,
-gives a cube (a conjunction of literals) whose current-state literals
-give relevant CTI for the query. After, in the recursive version,
-\verb,proveNegCTI, attempts to prove that the CTI cannot be reached
-(which may involve further calls to \verb,nextCTI,), and in
-the \emph{PriorityQueue} version, \verb,proveObligations, enqueues
-a proof obligation for proving the negated CTI.
-
-\subsubsection{Basic}
-In the \emph{Basic} implementation of the IC3 algorithm, \verb,negCTI, asks for a model
-(i.e. the set of true literals) for the satisfiable query $\neg P' \wedge F_k \wedge T$.
-The current-state literals are then extracted from the model in the function that
-called \verb,negCTI,.
-
-\subsubsection{Smaller Counterexamples to Induction}
-In the other implementations of the algorithm, \verb,negCTI, again asks for a model $m$
-for the satisfiable query $\neg P' \wedge F_k \wedge T$. The only literals in $m$ that
-must necessarily be included in the CTI are those current-state literals that result in
-the unsatisfiability of $m \wedge P' \wedge T$. That is, the current-state literals of any
-subcube $q$ of $m$ for which $q \wedge P' \wedge T$ holds is also a valid CTI.
-The conflict vector resulting from querying the SAT solver with $P' \wedge T$ and assumption
-cube $m$ contains such a $q$ that has only literals relevant to the conflict. This $q$ is
-then returned to the calling function, which, as in the \emph{Basic} implementation, extracts
-the current-state literals from $q$.
-
-
-\subsection{Propagation}
-
-\subsubsection{Basic}
-The most basic implementation's \verb,push, function, when invoked as \verb,push f model f', tries
-to push all clauses in \verb,Frame, \verb,f, that are not in \verb,Frame, \verb,f', to \verb,f', and
-results in a pair containing a \verb,Bool, indicating whether a fixed point has been reached
-(i.e., all clauses could be pushed) and a \verb,Frame, with all the clauses in \verb,f', and all
-the clauses in \verb,f, that could be pushed to \verb,f',.
-For each clause in \verb,f, that is not in \verb,f', the \verb,consecution, function is called to
-see if the clause is inductive relative to the frame represented by \verb,f,. If it is, then
-the clause can be conjoined to the frame represented by \verb,f',, and if it is not, then the
-function must have \verb,False, as the first element in the pair it returns.
-
-\subsubsection{Subsumed clauses}
-The basic implementation's \verb,push, function avoids unnecessary consecution queries by only
-considering clauses in \verb,f, that are not in \verb,f',. Further consecution queries may be
-eliminated by considering the clauses in \verb,f, that are subsumed by other clauses.
-
-A clause $c$ subsumes a clause $c'$ if the literals in $c$ are a subset of the literals in $c'$.
-In this case, $c \Rightarrow c'$ holds, so $c'$ can be removed from the set of clauses. By
-removing all subsumed clauses $c'$ from a frame before trying to push clauses, the model
-checker can avoid making the consecution queries that arise from attempts to push those clauses.
-
-The versions of \verb,push, that consider subsumed clauses include a call to the function
-\verb,removeSubsumed, when acquiring the list of clauses to attempt to push.
-The \verb,removeSubsumed, function takes a list of clauses and removes all clauses in the list
-that are subsumed by other clauses in the list. The \verb,push, function replaces the frame
-\verb,f, with a version of \verb,f, with all the subsumed clauses in the frame removed for
-the rest of the function and proceeds as the basic implementation's \verb,push, function does,
-returning a triple containing the updated \verb,f, along with the fixed-point \verb,Bool,
-and updates \verb,Frame, \verb,f',.
-
-\subsection{Generalization}
-While the algorithm describes generalization as involving finding the minimal inductive subclause (MIC),
-finding the MIC for a clause is in practice inefficient, and all implemented versions of generalization
-\verb,inductiveGeneralization, involve approximating the MIC with a call to the function
-\verb,generalize,.
-
-\subsubsection{Simple}
-The simplest approximation for a MIC involves attempting to drop each literal in turn and checking
-that the resulting clause $c$ results in the truth of formulas $I \Rightarrow c$ and
-$F_k \wedge c \wedge T \Rightarrow c'$ that the original clause did. If the resulting clause
-does result in satisfiable results for both the queries, then the literal can be successfully dropped,
-but if not, the literal is added to a list \verb,needed, of necessary literals.
-After a parameterizable number of failed attempts at dropping a literal from the clause or after
-having attempted dropping all the literals, the
-\verb,inductiveGeneralization, function returns the clause resulting from appending the remaining
-literals in the clause (i.e. the literals that \verb,generalize, has not tried to drop)
-with the literals in \verb,needed,.
-
-\subsubsection{Minimal Inductive Subclauses and Counterexamples to Generalization}
-The more elaborate implementation of generalization implements the full
-(but limited in number of attempts) MIC algorithm implementation with the ability to deal with CTGs.
-
-When attempting to drop a literal $l$ from clause $c$, the \verb,down, function is called on the clause
-$c \setminus \{l\}$ with a list of past frames (which is all the frames except the deepest on the inital call
-to \verb,down,), a list of current and future frames (which contains only the deepest frame on initial call
-to \verb,down,), a limit on the recursion depth for generalization, and a limit \verb,r, on the number
-of CTGs to attempt to negate for each call to \verb,inductiveGeneralization,.
-
-The \verb,down, function checks, as in the simple approximation for MIC, for the satisfiability of
-$I \Rightarrow c$ and $F_k \wedge c \wedge T \Rightarrow c'$. The difference is that \verb,down,
-does not immediately give a value if $I \Rightarrow c$ is true and $F_k \wedge c \wedge T \Rightarrow c'$ is
-not; in this case, the negated CTG \verb,negCTG, is acquired by taking and negating the current literals in
-the model the SAT solver gives for $\neg c' \wedge c \wedge T \wedge F_k$.
-
-The \verb,down, function then finds the deepest frame $F_{j - 1}$ for which \verb,negCTG, is inductive, and attempts to generalize
-\verb,negCTG, relative to that frame with a recursive call to \verb,generalize, with a decremented value of \verb,r,.
-The generalization of \verb,negCTG, can then be added to frame $F_j$,
-and \verb,down, is called recursively on the updated set of frames.
-
 \chapter{Evaluation}
 
 \section{Benchmarking}
