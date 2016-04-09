@@ -1215,7 +1215,8 @@ and compare this structure with figure \ref{overview}.
   \lIf{\it fixed}{\Return{True}}
   \lElse{\Return{${\it prove'}(M, P, G_k, [F_0,\ldots,F_{k - 2},F_{k - 1}])$}}}
 }
-\caption{General structure of the algorithm implementation.}
+\caption{General structure of the algorithm implementation. The transition relation $T$ is acquired
+from the model $M$}
 \label{recstr}
 \end{algorithm}
 
@@ -1239,7 +1240,7 @@ In addition to the necessary language-related modifications to the algorithm, I 
 change to how often the full propagation phase is carried out, calling the {\it pushFrame}
 function instead where appropriate.
 
-The propagation phase of the algorithm is carried by the {\it propagate} function.
+The propagation phase of the algorithm is carried out by the {\it propagate} function.
 The actual implementation of the ${\it propagate}$ function returns type \verb,Maybe [Frame],,
 but for the sake of discussing the high level structure of the implementation,
 it is assumed here to return a pair of a boolean value indicating whether a fixed point
@@ -1266,7 +1267,9 @@ calls the ${\it propagate}$ function to handle the updates to the frames made by
 
 The \emph{PriorityQueue} implementation keeps track of what to prove next by using a priority
 queue of proof obligations instead of through recursive calls that explicitly specify which
-property to prove at which depth. 
+property to prove at which depth. I first provide a definition of proof obligations, an
+overview of the structure of the implementation for this variation of the algorithm,
+and some implementation details about representing proof obligations and the priority queue.
 
 A \emph{proof obligation} is a pair $(s,i)$ of a state $s$ that is either a set of bad states
 or a counterexample to induction and a depth $i$. When the model checker encounters a proof obligation
@@ -1290,11 +1293,10 @@ with $0 \leq j < i$, $(s, j)$ has already been fulfilled.
   {\Return{result}}
 }
 \Fn{fulfillObligations$(M,[F_0,\ldots,F_k],{\it queue}])$}{
-  \Let{$((s,i), {\it q}) = {\it dequeue(queue)}$}{
+  \Let{$((s,i), {\it q}) = {\it dequeue(queue)}$ \label{dequeue}}{
   \lIf{$F_{i - 1} \wedge T \Rightarrow \neg s'$}{\Return{${\it pushFrame(M, [F_0, \dots, F_k], q, (s,i))}$}}
   }
-  \Else{
-    \Let{${\it cti = nextCTI(F_{i - 1} \wedge T \Rightarrow \neg s')}$}{
+  \lElse{\Let{${\it cti = nextCTI(F_{i - 1} \wedge T \Rightarrow \neg s')}$}{
       \If{$I \Rightarrow \neg {\it cti}$}{
         \Let{${\it (fixed, [G_0, \ldots, G_k], d) = propagate([F_0 \cup \{\neg cti\}, F_1, \ldots, F_k], {\it \neg cti})}$}{
           \lIf{\it fixed}{\Return{$(True, [G_0,\ldots,G_k], q)$}}
@@ -1315,12 +1317,66 @@ with $0 \leq j < i$, $(s, j)$ has already been fulfilled.
 \label{pqueuestr}
 \end{algorithm}
 
+The variant of the algorithm used in the {\it PriorityQueue} implementation
+relies on a priority queue of proof obligations.
+When a proof obligation $(s,i)$ is added to the priority queue,
+it is assigned a priority higher than any proof obligation in the queue $(t,j)$ with $j > i$
+and lower than any proof obligation in the queue $(u,k)$ with $k \leq i$. The
+way that the implementation achieves this priority ordering is discussed later.
+
+Unlike in the other variations of the algorithm, there is
+no distinction between the negation of the safety property $P$ and any other property that needs
+to be proved. The priority queue maintains all the information about which properties need to be proven,
+and the main recursive {\it fulfillObligations} function attempts proves whichever property has the highest
+priority in the queue. In other words, the {\it fulfillObligations} function always 
+attempts to fulfill the proof obligation with the highest priority in the queue (this proof obligation
+is the one returned by ${\it dequeue(queue)}$ in line \ref{dequeue} of \ref{pqueuestr}).
+
+Whenever a proof obligation $(s,i)$ is fulfilled at a certain depth $i$, the proof obligation
+$(s, i + 1)$ is added to the queue, which is what particularly distinguishes this variant of
+the IC3 algorithm from the others: if $s$ is a CTI, then it will never need to be rediscovered.
+Assume that $s$ is a CTI for proving that a property $P$ holds for all $F_j$ states. After
+having fulfilled the proof obligation $(s,j-1)$, the proof obligation $(s,j)$ is enqueued,
+so if the algorithm reaches the point of needing to prove the property $P$ at some
+depth $k$ that is greater than $j$, the CTI $s$ must already have been eliminated at
+depth $k - 1$ by the time that {\it fulfillObligations} encounters the proof obligation $(P,k)$
+because a proof obligation at depth $k - 1$ has a higher priority than one at depth $k$.
+
+In attempting to fulfill a proof obligation $(s,i)$, {\it fulfillObligations} proceeds
+generally in the same way as the other variants: if a consecution query succeeds,
+then {\it pushFrame} is called, and if not, a CTI is discovered with the intent to
+prove its negation is inductive relative to frame $F_{i - 1}$.
+
+The structure of the {\it pushFrame} function is modified to accomodate priority queues
+and the fact that the pair of frames may not be the pair the greatest possible depth.
+The {\it pushFrame} function pushes clauses from frame $F_{i - 1}$ to frame $F_i$ (where
+$F_i$ is not necessarily the frontier frame) and checks
+for the equality of $F_{i - 1}$ and $F_i$.
+The recursive call in {\it pushFrame} is then
+$${\it fulfillObligations}(M,[F_0,\ldots,F_{i - 1},G_i,F_{i + 1}, \ldots, F_k], q),$$
+where $q = {\it enqueue((s, i+1), queue)}$, the result of enqueueing the proof obligation
+for property $s$ at the next depth $i + 1$ in the priority queue {\it queue}.
+
+When a CTI $c$ for proof obligation $(s,i)$ is discovered, it is sufficient to 
+check that $I \Rightarrow \neg c$ holds and enqueue proof obligation $(c,1)$ before
+calling {\it fulfillObligations} recursively, since then the proof obligation
+$(c,i - 1)$ must be fulfilled before attempting to fulfill proof obligation $(s,i)$
+again.
+
+The approach employed by the {\it PriorityQueue} implementation checks
+that $I \Rightarrow \neg c$, adds $\neg c$ to $F_0$, and then uses a modified
+version of {\it propagate} to push clauses and check for fixed points up to
+depth $j \leq i$, where $j$ is the greatest value that is less than $i$
+such that $\neg c$ is inductive relative to $F_j$. If a fixed point is
+found, then the algorithm
+
+
 The implementation represents proof obligations $(s,i)$ using the \verb,Obligation, type, which
 is a triple \verb.(Int, Int, Clause). of the depth $i$, a rank for deciding the ordering of
 proof obligations at the same depth within the priority queue, and the clause $\neg s$.
 
-In the \emph{PriorityQueue} implementation, \verb,prove', also takes a \verb,Model, as a parameter
-but otherwise takes a \verb,MinQueue, (the minimal element has the highest
+In the \emph{PriorityQueue} implementation, the priority queue is represented by
+a \verb,MinQueue, (the minimal element has the highest
 priority) of \verb,Obligation,s containing the priority queue with only \verb,Obligation,
 \verb.(1, 0, [prop]). in it, and the initial frame. The function \verb,prove', then invokes \verb,proveObligations,,
 the main function for the \emph{PriorityQueue} implementation.
