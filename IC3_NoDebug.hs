@@ -58,7 +58,9 @@ proveObligations m queue frames rank =
       let negCTI = (map neg $ fst $ currentNext $ nextCTI frame prop m) in
         case initiation (head frames) negCTI of
           True -> case propagate (head frames) (addClauseToFrame (head frames) negCTI:tail frames) negCTI 1 of
-                    Just (frames', d) -> proveObligations m (insert (d, rank, negCTI) queue) frames' (rank + 1)
+                    Just (frames', d) -> proveObligations m
+                                           (insert (d, rank, inductiveGeneralization negCTI (head frames) (head $ drop (d - 1) frames) m 3) queue)
+                                           frames' (rank + 1)
                     Nothing -> True
           _ -> False
   where
