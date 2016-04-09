@@ -859,8 +859,6 @@ relative to $F_k$:
 %Finding the minimal inductive subclause can be computationally
 %expensive, so it is often approximated in practice.
 
-A
-
 An improvement to the generalization provided by finding minimal
 inductive subclauses in this way incorporates the use of counterexamples
 to generalization.
@@ -868,7 +866,7 @@ to generalization.
 \subsubsection{Counterexamples to Generalization}
 
 Checking if a subclause $\neg c = s \setminus \{l\}$ of a clause $\neg s$ is inductive
-relative to a frame $F_i$, involves checking if
+relative to a frame $F_i$ involves checking if
 $F_i \wedge T \wedge \neg c \Rightarrow \neg c'$ holds.
 If the implication does not hold, then $\neg c$ is not inductive relative to
 $F_k$. In the original method of generalization described above,
@@ -882,7 +880,7 @@ query at $F_k$ might fail. As with consecution queries, discovering a
 new clause that can be added to $F_k$ may allow the queries that
 check for relative induction to succeed, and the discovery of this
 clause can be directed by a counterexample extracted from the
-SAT-solver after the query for $F_k \wedge T \wedge c \Rightarrow c'$.
+SAT solver after the query for $F_k \wedge T \wedge c \Rightarrow c'$.
 
 The counterexample state in this case is called a \emph{counterexample
 to generalization} (CTG), and proving the negated CTG to be true at
@@ -1329,19 +1327,17 @@ consecution f prop =
 %Describe how the implementation discovers counterexamples
 %to induction and proves them unreachable.
 
-When the consecution query $F_k \wedge T \Rightarrow P$
-in \verb,prove', fails, then a call to the function \verb,nextCTI,
-gives a cube (a conjunction of literals) whose current-state literals
-give relevant CTI for the query. After, in the recursive version,
-\verb,proveNegCTI, attempts to prove that the CTI cannot be reached
-(which may involve further calls to \verb,nextCTI,), and in
-the \emph{PriorityQueue} version, \verb,proveObligations, enqueues
-a proof obligation for proving the negated CTI.
+Counterexamples to induction are found by the \verb,negCTI, function, which
+uses results from SAT queries to find a full or partial assignment to
+the variables in the \verb,Model, from which the CTI can be extracted.
 
 \subsubsection{Basic}
 In the \emph{Basic} implementation of the IC3 algorithm, \verb,negCTI, asks for a model
 (i.e. the set of true literals) for the satisfiable query $\neg P' \wedge F_k \wedge T$.
-The current-state literals are then extracted from the model in the function that
+The current-state literals then give a predecessor state (a state from which
+a $\neg P$ state can be reached in one step of the transition relation) for $\neg P$,
+i.e., the current-state literals give the CTI.
+These current-state literals are extracted from the model in the function that
 called \verb,negCTI,.
 
 \subsubsection{Smaller Counterexamples to Induction}
@@ -1355,7 +1351,7 @@ the state $m$ being one of the states in the set represented by $q$.
 The conflict vector resulting from querying the SAT solver with $P' \wedge T$ and assumption
 cube $m$ contains such a $q$ that has only literals relevant to the conflict. This $q$ is
 then returned to the calling function, which, as in the \emph{Basic} implementation, extracts
-the current-state literals from $q$.
+the current-state literals from $q$ to obtain the CTI.
 
 
 \subsection{Propagation}
