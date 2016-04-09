@@ -38,7 +38,7 @@ getFrameWith clauses model = addTransitionToFrame (getFrame (vars model) clauses
 -- | Given a model and a safety property, checks if the model satisfies the property
 prove :: Model -> Lit -> Bool
 prove model prop =
-  initiation f0 [prop] && prove' model (singleton (1, 0, [prop])) (addClauseToFrame f0 [prop])
+  initiation f0 [prop] && proveObligations model (singleton (1, 0, [prop])) [addClauseToFrame f0 [prop]] 1
   where
     f0 = getFrameWith (initial model) model
 
@@ -50,12 +50,7 @@ initiation f prop = not (satisfiable (solveWithAssumps (solver f) (map neg prop)
 consecution :: Frame -> Clause -> Bool
 consecution f prop = not (satisfiable (solveWithAssumps (solver f) (map (prime.neg) prop)))
 
-prove' :: Model -> MinQueue Obligation -> Frame -> Bool
-prove' m queue frame =
-  case proveObligations m queue [frame] 1 of
-  (res, frames, _) -> res
-
-proveObligations :: Model -> MinQueue Obligation -> [Frame] -> Int -> (Bool, [Frame], MinQueue Obligation)
+proveObligations :: Model -> MinQueue Obligation -> [Frame] -> Int -> Bool
 proveObligations m queue frames rank =
   if consecution frame prop
     then pushFrame frame nextFrame
@@ -64,8 +59,8 @@ proveObligations m queue frames rank =
         case initiation (head frames) negCTI of
           True -> case propagate (head frames) (addClauseToFrame (head frames) negCTI:tail frames) negCTI 1 of
                     Just (frames', d) -> proveObligations m (insert (d, rank, negCTI) queue) frames' (rank + 1)
-                    Nothing -> (True, frames, queue)
-          _ -> (False, frames, queue)
+                    Nothing -> True
+          _ -> False
   where
     ((depth, r, prop), queue') = deleteFindMin queue
     pre = take (depth - 1) frames
@@ -75,7 +70,7 @@ proveObligations m queue frames rank =
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' =
       case push (head frames) f m f' of
-        (_, True, _) -> (True, frames, queue)
+        (_, True, _) -> True
         (f, False, f'') -> proveObligations m (insert (depth + 1, r, prop) queue') (pre ++ f:f'':post) rank
     -- Push all clauses as far as possible until the current obligation depth
     -- and see if fixed point has been reached (resulting in Nothing)

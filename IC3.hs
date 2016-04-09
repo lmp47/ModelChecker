@@ -66,7 +66,7 @@ getFrameWith clauses model = addTransitionToFrame (getFrame (vars model) clauses
 prove :: Model -> Lit -> Bool
 prove model prop =
   unsafePerformIO (zero ctiCount >> zero queryCount >> return (
-    initiation f0 [prop] && prove' model (singleton (1, 0, [prop])) (addClauseToFrame f0 [prop])
+    initiation f0 [prop] && proveObligations model (singleton (1, 0, [prop])) [addClauseToFrame f0 [prop]] 1
   ))
   where
     f0 = getFrameWith (initial model) model
@@ -104,22 +104,17 @@ stats frames cc qc = trace ("Number of frames: " ++ show (length frames) ++
                             "\nNumber of ctis: " ++ (show $ unsafePerformIO $ readR cc) ++ 
                             "\nNumber of queries: " ++ (show $ unsafePerformIO $ readR qc) )
 
-prove' :: Model -> MinQueue Obligation -> Frame -> Bool
-prove' m queue frame =
-  case proveObligations m queue [frame] 1 of
-  (res, frames, _) -> stats frames ctiCount queryCount res
-
-proveObligations :: Model -> MinQueue Obligation -> [Frame] -> Int -> (Bool, [Frame], MinQueue Obligation)
+proveObligations :: Model -> MinQueue Obligation -> [Frame] -> Int -> Bool
 proveObligations m queue frames rank =
-  if trace ((show depth) ++ ", " ++ (show prop) ++ ", " ++ (show $ clauses frame) ++ ", " ++ (show $ clauses nextFrame)) (consecution frame prop)
+  if consecution frame prop
     then pushFrame frame nextFrame
     else
       let negCTI = (map neg $ fst $ currentNext $ nextCTI frame prop m) in
         case initiation (head frames) negCTI of
           True -> case propagate (head frames) (addClauseToFrame (head frames) negCTI:tail frames) negCTI 1 of
                     Just (frames', d) -> proveObligations m (insert (d, rank, negCTI) queue) frames' (rank + 1)
-                    Nothing -> (True, frames, queue)
-          _ -> (False, frames, queue)
+                    Nothing -> stats frames ctiCount queryCount True
+          _ -> stats frames ctiCount queryCount False
   where
     ((depth, r, prop), queue') = deleteFindMin queue
     pre = take (depth - 1) frames
@@ -129,8 +124,8 @@ proveObligations m queue frames rank =
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' =
       case push (head frames) f m f' of
-        (_, True, _) -> (True, frames, queue)
-        (f, False, f'') -> trace ("pf prop: " ++ (show prop) ++ ", frame:" ++ (show $ clauses f'')) proveObligations m (insert (depth + 1, r, prop) queue') (pre ++ f:f'':post) rank
+        (_, True, _) -> stats frames ctiCount queryCount True
+        (f, False, f'') -> proveObligations m (insert (depth + 1, r, prop) queue') (pre ++ f:f'':post) rank
     -- Push all clauses as far as possible until the current obligation depth
     -- and see if fixed point has been reached (resulting in Nothing)
     -- Need to check that negCTI is inside
@@ -143,7 +138,7 @@ proveObligations m queue frames rank =
                                  Just (fs, d) -> Just ((f:fs), d)
                                  Nothing -> Nothing
                                else Just ((f:f'':frames), d)
-      | otherwise = trace ((show $ checkSubsumed negCTI (clauses f')) ++ ", curr:" ++ (show depth) ++ ", d:" ++ (show d) ++ ", " ++ (show negCTI) ++ ", " ++ (show $ clauses f')) Just ((f:f':frames), d)
+      | otherwise = Just ((f:f':frames), d)
     propagate _ frames _ d = Just (frames, d)
     checkSubsumed p (c:cs) = (c \\ p == []) || checkSubsumed p cs
     checkSubsumed _ [] = False
@@ -168,7 +163,7 @@ nextCTI :: Frame -> Clause -> Model -> [Lit]
 nextCTI frame prop m =
   case unsafePerformIO (increment ctiCount >> return res) of
     Just ls -> case pred ls of
-                 Just ps -> trace (show $ getVarsFrom ps ls) (getVarsFrom ps ls)
+                 Just ps -> getVarsFrom ps ls
                  _       -> error "Should be UNSAT."
     _       -> error "No CTI found."
   where
@@ -209,6 +204,6 @@ push f0 f model f' =
              else getFrameWith cleaned model
     pusher (c:cs) b f' = 
       if consecution newF c
-      then trace ("gen: " ++ (show $ inductiveGeneralization c f0 f model 3)) (pusher cs b (addClauseToFrame f' c))
+      then pusher cs b (addClauseToFrame f' c)
       else pusher cs False f'
     pusher _ b f' = (newF, b, addTransitionToFrame f' model)
