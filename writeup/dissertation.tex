@@ -884,9 +884,9 @@ The checking phase then repeats, checking the expanded clause $t \cap \neg p$.
   \Return{cls} \;
 }
 \Fn{down(cls, i)}{
-  \lIf{$\neg (I \Longrightarrow {\it cls})$}{\Return{False}}
-  \lIf{$F_i \wedge {\it cls} \wedge T \Longrightarrow {\it cls}'$}{\Return{True}}
-  $p$ := $F_i \wedge t$ state such that $F_i \wedge t \wedge p \Longrightarrow \neg t'$ \;
+  \lIf{$\neg (I \Rightarrow {\it cls})$}{\Return{False}}
+  \lIf{$F_i \wedge {\it cls} \wedge T \Rightarrow {\it cls}'$}{\Return{True}}
+  $p$ := $F_i \wedge t$ state such that $F_i \wedge t \wedge p \Rightarrow \neg t'$ \;
   {\it cls} := $cls \cap p$\;
   \Return{down(cls,i)} 
 }
@@ -1430,8 +1430,8 @@ returning a triple containing the updated \verb,f, along with the fixed-point \v
 and updates \verb,Frame, \verb,f',.
 
 \subsection{Inductive Generalization}
-While the algorithm describes generalization as involving finding the minimal inductive subclause (MIC),
-finding the MIC for a clause is in practice inefficient, and all implemented versions of generalization
+Finding the minimal inductive subclause (MIC) for a clause is in practice inefficient,
+and all implemented versions of generalization
 \verb,inductiveGeneralization, involve approximating the MIC with a call to the function
 \verb,generalize,.
 
@@ -1447,19 +1447,40 @@ having attempted dropping all the literals, the
 literals in the clause (i.e. the literals that \verb,generalize, has not tried to drop)
 with the literals in \verb,needed,.
 
+This corresponds to the algorithm described in figure \ref{mic}, but where {\it down} simply
+checks for the relative inductiveness of the subclause and does not attempt to expand it.
+
 \subsubsection{Minimal Inductive Subclauses and Counterexamples to Generalization}
 The more elaborate implementation of generalization implements the full
-(but limited in number of attempts) MIC algorithm implementation with the ability to deal with CTGs.
+(but limited in number of attempts) MIC algorithm with the {\it down} function modified
+so that it deals with CTGs.
 
-When attempting to drop a literal $l$ from clause $c$, the \verb,down, function is called on the clause
-$c \setminus \{l\}$ with a list of past frames (which is all the frames except the deepest on the inital call
-to \verb,down,), a list of current and future frames (which contains only the deepest frame on initial call
-to \verb,down,), a limit on the recursion depth for generalization, and a limit \verb,r, on the number
-of CTGs to attempt to negate for each call to \verb,inductiveGeneralization,.
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\Fn{down$(cls, i)$}{
+  \lIf{$\neg (I \Rightarrow {\it cls})$}{\Return{False}}
+  \lIf{$F_i \wedge {\it cls} \wedge T \Rightarrow {\it cls}'$}{\Return{True}}
+  {\it ctg}:= model extracted from SAT query $F_i \wedge {\it cls} \wedge T \Rightarrow {\it cls}'$
+  \eIf{$I \Rightarrow \neg{\it ctg}$ {\rm and} $F_i \wedge \neg{\it ctg} \wedge T \Rightarrow \neg {\it ctg}'$}
+  { $j := 0$ \;
+    \lWhile{$F_j \wedge \neg{\it ctg} \wedge T \Rightarrow \neg {\it ctg}$}{$j := j + 1$}
+    $generalizedNegCTG := {\it mic}(\neg ctg,j)$\;
+    $F_j := F_j \cup \{{\it generalizedNegCTG}\}$\;
+    \Return{${\it down(cls,i)}$}
+  }
+  {$p$ := $F_i \wedge t$ state such that $F_i \wedge t \wedge p \Rightarrow \neg t'$ \;
+  {\it cls} := $cls \cap p$\;
+  \Return{down(cls,i)}}
+}
+\caption{The algorithm for the version of {\it down} that handles CTGs.}
+\label{mic}
+\end{algorithm}
 
-The \verb,down, function checks, as in the simple approximation for MIC, for the satisfiability of
-$I \Rightarrow c$ and $F_k \wedge c \wedge T \Rightarrow c'$. The difference is that \verb,down,
-does not immediately give a value if $I \Rightarrow c$ is true and $F_k \wedge c \wedge T \Rightarrow c'$ is
+The modified {\it down} algorithm checks, as in the simple approximation for MIC, for the satisfiability of
+$I \Rightarrow c$ and $F_k \wedge c \wedge T \Rightarrow c'$, where $c$ is the subclause passed to
+the algorithm.
+The difference is that {\it down} does not immediately attempt to expand $c$
+if $I \Rightarrow c$ is true and $F_k \wedge c \wedge T \Rightarrow c'$ is
 not; in this case, the negated CTG \verb,negCTG, is acquired by taking and negating the current literals in
 the model the SAT solver gives for $\neg c' \wedge c \wedge T \wedge F_k$.
 

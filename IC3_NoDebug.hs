@@ -55,12 +55,11 @@ prove' m prop frame acc =
     else
       let cti = nextCTI frame [prop] m in
         case proveNegCTI m frame (fst $ currentNext cti) acc [prop] of
-          (True, frame', acc') -> (clauses frame' /= clauses frame) &&
-                                  (case propagate (acc' ++ [frame']) of
+          (True, frame', acc') -> case propagate (acc' ++ [frame']) of
                                     Just fs ->
                                       prove' m prop (fs !! (length fs - 1))
                                         (take (length fs - 1) fs)
-                                    Nothing -> True)
+                                    Nothing -> True
           (False, frame', acc') -> False
   where
     -- Push all possible clauses from frame f to frame f'
@@ -81,16 +80,13 @@ prove' m prop frame acc =
 proveNegCTI :: Model -> Frame -> [Lit] -> [Frame] -> Clause -> (Bool, Frame, [Frame])
 proveNegCTI m f _ [] p = (False, f, [])
 proveNegCTI m f cti acc p =
-    if satisfiable (solveWithAssumps (solver (getFrameWith (map neg cti:clauses (head acc)) m)) (map prime cti))
-      then (False, f, acc)
-      else
-        case pushNegCTI (map neg cti) acc f of
-          (Nothing, acc', f') -> if consecution f' p
-                                   then (True, f', acc')
-                                   else proveNegCTI m f' (fst (currentNext (nextCTI f' p m))) acc' p
-          (Just model, acc', f') -> case proveNegCTI m f' (fst (currentNext model)) acc' (map neg cti) of
-                                      (True, f'', acc'') -> proveNegCTI m f cti (acc'' ++ [f'']) p
-                                      false              -> false
+  case pushNegCTI (map neg cti) acc f of
+    (Nothing, acc', f') -> if consecution f' p
+                             then (True, f', acc')
+                             else proveNegCTI m f' (fst (currentNext (nextCTI f' p m))) acc' p
+    (Just model, acc', f') -> case proveNegCTI m f' (fst (currentNext model)) acc' (map neg cti) of
+                                (True, f'', acc'') -> proveNegCTI m f cti (acc'' ++ [f'']) p
+                                false              -> false
   where
     pushNegCTI negCTI [] f = (Nothing, [], f)
     pushNegCTI negCTI acc f =
@@ -99,7 +95,7 @@ proveNegCTI m f cti acc p =
                   (map (prime.neg) negCTI) in
         if not (satisfiable res)
           then let negCTI' = inductiveGeneralization negCTI (head acc) f m 3 in
-            (Nothing, map (`addClauseToFrame` negCTI') acc, addClauseToFrame f negCTI')
+            (Nothing, acc, addClauseToFrame f negCTI')
           else let f' = acc !! (length acc - 1) in
             (Just (nextCTI f' negCTI m), take (length acc - 1) acc, f')
 
@@ -111,7 +107,7 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
     generalize cs _ _ needed 0 = cs ++ needed
     generalize [] _ _ needed _ = needed
     generalize (c:cs) f0 fk needed k =
-      let res = solveWithAssumps (solver (getFrameWith ((cs ++ needed):(clauses fk)) m)) (map (prime.neg) (cs ++ needed)) in
+      let res = solveWithAssumps (solver (getFrameWith ((cs ++ needed):clauses fk) m)) (map (prime.neg) (cs ++ needed)) in
         if not (satisfiable res) && initiation f0 cs
           then generalize cs f0 fk needed k
           else generalize cs f0 fk (c:needed) ( k - 1 )
