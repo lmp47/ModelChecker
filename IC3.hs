@@ -42,7 +42,7 @@ zero x = atomicModifyIORef' x zero'
   where
     zero' y = (0, ())
 
-readR :: IORef Int -> IO (Int)
+readR :: IORef Int -> IO Int
 readR x = atomicModifyIORef' x read'
   where
     read' x = (x, x)
@@ -95,20 +95,20 @@ printFrames [] = print "No frames in list."
 -- | Calculate the average number of literals per clause in each frame
 calcAvgLitsPerCls :: [Frame] -> Double
 calcAvgLitsPerCls frames =
-  (sum (map calcAvgPerFrame frames)) / (fromIntegral (length frames))
+  sum (map calcAvgPerFrame frames) / fromIntegral (length frames)
   where
   calcAvgPerFrame f =
     let cls = clauses f in
-      (fromIntegral (sum (map length cls))) / (fromIntegral (length cls))
+      fromIntegral (sum (map length cls)) / fromIntegral (length cls)
 
 -- | Trace stat output
 stats :: [Frame] -> IORef Int -> IORef Int -> IORef Int -> a -> a
 stats frames cc gc qc = trace ("Number of frames: " ++ show (length frames) ++
                             "\nAverage number of literals/clause (not counting transition relation): "
                             ++ show(calcAvgLitsPerCls frames) ++
-                            "\nNumber of ctis: " ++ (show $ unsafePerformIO $ readR cc) ++ 
-                            "\nNumber of ctgs: " ++ (show $ unsafePerformIO $ readR gc) ++ 
-                            "\nNumber of queries: " ++ (show $ unsafePerformIO $ readR qc) )
+                            "\nNumber of ctis: " ++ show (unsafePerformIO $ readR cc) ++ 
+                            "\nNumber of ctgs: " ++ show (unsafePerformIO $ readR gc) ++ 
+                            "\nNumber of queries: " ++ show (unsafePerformIO $ readR qc) )
 
 -- | Consecution phase of the algorithm (calls subsequent consecution queries for
 -- other frames)
@@ -119,12 +119,11 @@ prove' m prop frame acc =
     else
       let cti = nextCTI frame [prop] m in
         case proveNegCTI m frame (fst $ currentNext cti) acc [prop] [] of
-          (True, frame', acc', _) -> (clauses frame' /= clauses frame) &&
-                                     (case propagate (acc' ++ [frame']) of
+          (True, frame', acc', _) -> case propagate (acc' ++ [frame']) of
                                      Just fs ->
                                        prove' m prop (fs !! (length fs - 1))
                                          (take (length fs - 1) fs)
-                                     Nothing -> stats (frame:acc) ctiCount ctgCount queryCount True)
+                                     Nothing -> stats (frame:acc) ctiCount ctgCount queryCount True
           (False, frame', acc', _)-> stats (frame:acc) ctiCount ctgCount queryCount False
   where
     -- Push all possible clauses from frame f to frame f'
@@ -145,18 +144,13 @@ prove' m prop frame acc =
 proveNegCTI :: Model -> Frame -> [Lit] -> [Frame] -> Clause -> [Frame] -> (Bool, Frame, [Frame], [Frame])
 proveNegCTI m f _ [] p fs = (False, f, [], fs)
 proveNegCTI m f cti acc p fs =
-    if unsafePerformIO (increment queryCount >> return (
-         satisfiable (solveWithAssumps (solver (getFrameWith (map neg cti:clauses (head acc)) m)) (map prime cti))
-       ))
-      then (False, f, acc, fs)
-      else
-        case pushNegCTI (map neg cti) acc f fs of
-          (Nothing, acc', f', fs') -> if consecution f' p
-                                        then (True, f', acc', fs')
-                                        else proveNegCTI m f' (fst (currentNext (nextCTI f' p m))) acc' p fs'
-          (Just model, acc', f', fs') -> case proveNegCTI m f' (fst (currentNext model)) acc' (map neg cti) fs' of
-                                           (True, f'', acc'', fs'') -> proveNegCTI m f cti (acc'' ++ [f'']) p fs''
-                                           false                    -> false
+  case pushNegCTI (map neg cti) acc f fs of
+    (Nothing, acc', f', fs') -> if consecution f' p
+                                  then (True, f', acc', fs')
+                                  else proveNegCTI m f' (fst (currentNext (nextCTI f' p m))) acc' p fs'
+    (Just model, acc', f', fs') -> case proveNegCTI m f' (fst (currentNext model)) acc' (map neg cti) fs' of
+                                     (True, f'', acc'', fs'') -> proveNegCTI m f cti (acc'' ++ [f'']) p fs''
+                                     false                    -> false
   where
     pushNegCTI negCTI [] f fs = (Nothing, [], f, fs)
     pushNegCTI negCTI acc f fs =
@@ -166,7 +160,7 @@ proveNegCTI m f cti acc p fs =
                   (map (prime.neg) negCTI) )) in
         if not (satisfiable res)
           then let (negCTI', bfs, f':fs') = inductiveGeneralization negCTI acc f fs m 3 3 in
-            (Nothing, map (`addClauseToFrame` negCTI') bfs, addClauseToFrame f negCTI', fs)
+            (Nothing, bfs, addClauseToFrame f negCTI', fs)
           else let f' = acc !! (length acc - 1) in
             (Just (nextCTI f' negCTI m), take (length acc - 1) acc, f', fs)
 
@@ -198,9 +192,9 @@ inductiveGeneralization clause bfs fc afs m w w' = generalize clause bfs fc afs 
       -- Check initiation and consecution for the potential generalization
       let init = initiation f0 ls
           consec = unsafePerformIO (increment queryCount >> return (
-                     solveWithAssumps (solver (getFrameWith (ls:(clauses fc)) m)) (map (prime.neg) ls)
+                     solveWithAssumps (solver (getFrameWith (ls:clauses fc) m)) (map (prime.neg) ls)
                    )) in
-      if not(init) || r == 0
+      if not init || r == 0
         then Nothing
         else
           if not (satisfiable consec)
@@ -216,18 +210,9 @@ inductiveGeneralization clause bfs fc afs m w w' = generalize clause bfs fc afs 
                             (ctgs, nctgs) = pushNegCTG negCTG [] rest m
                             ctgs' = f0:fs ++ ctgs
                             (fdps, fd) = (take (length ctgs' - 1) ctgs', last ctgs') -- fd is deepest frame with negCTI inductive
-                            (c, bfs', fs') = generalize negCTG fdps fd (nctgs ++ [lastf]) [] ( w - 1 ) ( r - 1 ) 
-                            bfs'' = if (length bfs' <= length fdps)
-                                      then map (`addClauseToFrame` c) bfs'
-                                      else let fd':abfs = (drop (length fdps + 1) bfs') in
-                                             (map (`addClauseToFrame` c) (take (length fdps) bfs')) ++ (addClauseToFrame fd' c:abfs)
-                            fc':afs' = let l = 1 + length fdps - length bfs'' in
-                                         if l > 0 
-                                           then let (fd':aafs) = (drop l fs') in
-                                                  (map (`addClauseToFrame` c) (take l fs')) ++ (addClauseToFrame fd' c:aafs)
-                                           else fs' in
-                              down ls bfs'' (fc':afs') ( r - 1 )))
-                      else down (ls `intersect` (map neg s)) (f0:fs) (fc:afs) ( r - 1 )
+                            (c, bfs', fc':afs') = generalize negCTG fdps fd (nctgs ++ [lastf]) [] ( w - 1 ) ( r - 1 ) in
+                              down ls bfs' (addClauseToFrame fc' c:afs') ( r - 1 )))
+                      else down (ls `intersect` map neg s) (f0:fs) (fc:afs) ( r - 1 )
                 _ -> error "Could not find predecessor when finding MIC"
                    
 
