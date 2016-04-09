@@ -690,11 +690,11 @@ The following pseudocode gives an overview of the basic IC3 algorithm:
   $k := 0$ \;
   \While{True \label{main}}{
     \eIf{$F_k \wedge T \Rightarrow P'$ \label{consecution}}
-    {create frame $F_{k + 1}$ \;
+    {create frame $F_{k + 1}$ initialized to $\emptyset$\;
      $k$ := $k + 1$ \;}
     {\While {$\neg (F_k \wedge T \Rightarrow P')$ \label{reconsec}}{
-        cti := {\it getCTI}($F_k \wedge T \Rightarrow P'$) \label{CTI} \;
-        \lIf{{\it proveNegCTI}$((i,x,I,T),{\rm cti},k - 1)$ \label{negCTI}}{$F_k$ := $F_k \cup \{\neg{\rm cti}\}$}
+        ${\it cti} := {\it nextCTI}(F_k \wedge T \Rightarrow P')$ \label{CTI} \;
+        \lIf{{\it proveNegCTI}$((i,x,I,T),{\it cti},k - 1)$ \label{negCTI}}{$F_k$ := $F_k \cup \{\neg{\it cti}\}$}
         \lElse{\Return{False}}}} \label{Unsafe}
     \For{ i = 0 \KwTo $k - 1$ }{ \label{forprop}
       $F_{i + 1} := F_{i + 1} \cup \{c \in F_i | F_i \wedge T \Rightarrow c'\}$ \label{push} \;
@@ -702,6 +702,8 @@ The following pseudocode gives an overview of the basic IC3 algorithm:
     }
   }
 }
+\caption{An overview of the IC3 algorithm. Frames are assumed to be passed by reference:.}
+\label{overview}
 \end{algorithm}
 
 The IC3 algorithm maintains a set of $k + 1$ frames $F_0,\ldots,F_k$, where
@@ -740,7 +742,7 @@ The algorithm aims to refine the approximation $F_k$ of the set of states
 reachable in at most $k$ steps by showing that all states that are
 reachable in at most $k$ steps are $\neg s$ states.
 
-The call to {\it getCTI} in line \ref{CTI} finds the counterexample to
+The call to {\it nextCTI} in line \ref{CTI} finds the counterexample to
 induction state $s$. The call to {\it proveNegCTI} on line \ref{negCTI}
 attempts to prove that $\neg s$ is inductive relative to $F_{k - 1}$,
 so that all $F_k$ states are necessarily $\neg s$ states, so $\neg s$ can
@@ -759,16 +761,16 @@ If the shallowest possible depth $j = 0$ is reached, then
 The {\it proveNegCTI} pseudocode does not explicitly check for $I \Rightarrow
 \neg s$. An explicit check is unnecessary because if
 $I \Rightarrow \neg s$ does not hold, then eventually ${\it proveNegCTI}$
-will be called recursively with $k = 0$ and the attempt to show that
-$\neg s$ is relatively inductive to $F_k$ fails.
+will be called recursively with $j = 0$ and the attempt to show that
+$\neg s$ is relatively inductive to $F_j$ fails.
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
 \Fn{proveNegCTI$((i,x,I,T),s,j)$}{
   \lIf{$j = 0$}{\Return{False}}
   \While{$\neg(F_j \wedge \neg s \wedge T \Rightarrow \neg s')$}{
-    cti := {\it getCTI}$(F_j \wedge \neg s \wedge T \Rightarrow \neg s')$ \;
-    \lIf{{\it proveNegCTI}$((i,x,I,T),{\rm cti},j - 1))$}{$F_j$ := $F_j \cup \{\neg{\rm cti}\}$}
+    ${\it cti} := {\it nextCTI}(F_j \wedge \neg s \wedge T \Rightarrow \neg s')$ \;
+    \lIf{{\it proveNegCTI}$((i,x,I,T),{\rm cti},j - 1))$}{$F_j$ := $F_j \cup \{\neg{\it cti}\}$}
     \lElse{\Return{False}}
   }
 }
@@ -780,7 +782,7 @@ set of states reachable in $k$ steps from the initial state, then a $\neg P$ sta
 is reachable in $k + 1$ steps from the initial state; the safety property does not
 hold, and the algorithm terminates (line \ref{Unsafe}).
 
-Because there may be several counterxamples to induction, it is necessary to
+Because there may be several counterexamples to induction, it is necessary to
 perform the consecution query again (line \ref{reconsec}). If it fails again,
 the process of finding the new counterexample to induction state(s) $d$ and trying to
 prove that $\neg d$ holds at depth $k$ repeats. Upon the success of the consecution
@@ -804,25 +806,27 @@ and the algorithm terminates (line \ref{fixed}).
 
 \subsection{Generalization}
 
-%%%
-
-An obvious choice for $c$ would be $c = s$, which can be found easily using
-a SAT solver. In practice, it is better to generalize $s$ and choose
-a smaller subset $c \subset s$, which can allow for a set of several states
-to be eliminated in $F_k$ rather than just eliminating the single state $s$
-when $\neg c$ is shown to hold at depth $k$.
-In particular, the choice of $c$ that
-maximises the number of states eliminated in $F_k$ is the minimal
-inductive subclause of $\neg s$ relative to frame $F_k$.
+After showing that a negated CTI state $\neg s$ is relatively inductive to a
+frame $F_i$ and adding the clause $\neg s$ to frame $F_{i + 1}$, the state
+$s$ is eliminated from the approximation $F_{i + 1}$ of the set of states
+reachable in at most $i + 1$ steps. An improvement can be made by generalizing
+$s$ to a set of several states $c$ rather than a single state, and treating
+$c$ as the CTI. If $\neg c$ is successfully proven to be relatively inductive
+to $F_i$, then adding it to frame $F_{i + 1}$ eliminates several states (i.e.,
+all $c$ states) at once rather than only $s$. Because the cube $c$
+is chosen so that $\neg c \Longrightarrow \neg s$, at least one CTI state
+has been removed from $F_{i + 1}$, and because $c$ contains several states,
+it is possible that several CTIs may have been removed from $F_{i + 1}$
+by adding the clause $\neg c$ to it. The process of finding such a cube $c$
+is referred to as \emph{generalization}.
 
 \subsection{Minimal Inductive Subclauses}
-A minimal inductive subclause for a frame $F_k$ and a clause $s$ that
-is inductive relative to $F_k$
-(i.e. $F_0 \Rightarrow s'$ and $F_k \wedge T \wedge s \Rightarrow s'$)
-is a clause $c$ whose
-literals are the smallest subset of the literals in $s$ such that
-$$F_k \wedge T \wedge c \Rightarrow c'$$
-holds.
+The \emph{minimal inductive subclause} for a frame $F_i$ and a clause $\neg s$ that
+is inductive relative to $F_i$
+(i.e. $F_0 \Rightarrow s'$ and $F_i \wedge T \wedge s \Rightarrow s'$)
+is a clause $\neg c$ whose
+literals are the smallest subset of the literals in $\neg s$ such that
+$\neg c$ is also inductive relative to $F_i$.
 
 The minimal inductive subclause can be found by dropping each literal
 in $s$ in turn and checking if the resulting clause is inductive
@@ -830,19 +834,21 @@ relative to $F_k$:
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\Fn{mic(s,k)}{
-  \ForEach{literal l in s}{
-    c := s $\setminus$ \{l\} \;
-    \If{c is inductive relative to frame at depth k}{
-      s := c \;
+\Fn{mic(cls,k)}{
+  \ForEach{literal l in cls}{
+    $subcls := cls \setminus \{l\} $\;
+    \If{subcls {\rm is inductive relative to frame at depth} k}{
+      $cls := subcls$ \;
     }
   }
-  \Return s \;
+  \Return{cls} \;
 }
 \end{algorithm}
 
-Finding the minimal inductive subclause can be computationally
-expensive, so it is often approximated in practice.
+%Finding the minimal inductive subclause can be computationally
+%expensive, so it is often approximated in practice.
+
+A
 
 An improvement to the generalization provided by finding minimal
 inductive subclauses in this way incorporates the use of counterexamples
@@ -850,19 +856,19 @@ to generalization.
 
 \subsubsection{Counterexamples to Generalization}
 
-Checking if a subclause $c = s \setminus \{l\}$ of a clause $s$ is inductive
-relative to a frame $F_k$, involves checking if
-$F_k \wedge T \wedge c \Rightarrow c'$ holds.
-If the implication does not hold, then $c$ is not inductive relative to
+Checking if a subclause $\neg c = s \setminus \{l\}$ of a clause $\neg s$ is inductive
+relative to a frame $F_i$, involves checking if
+$F_i \wedge T \wedge \neg c \Rightarrow \neg c'$ holds.
+If the implication does not hold, then $\neg c$ is not inductive relative to
 $F_k$. In the original method of generalization described above,
-this means that $s$ cannot be generalized to $c$, and generalization
+this means that $\neg s$ cannot be generalized to $\neg c$, and generalization
 proceeds without dropping $l$.
 
 It could be the case that the reason that the query
 $F_k \wedge T \wedge c \Rightarrow c'$ is unsatisfiable because
 $F_k$ is too broad an approximation, similarly to why a consecution
 query at $F_k$ might fail. As with consecution queries, discovering a
-new clause that can be conjoined to $F_k$ may allow the queries that
+new clause that can be added to $F_k$ may allow the queries that
 check for relative induction to succeed, and the discovery of this
 clause can be directed by a counterexample extracted from the
 SAT-solver after the query for $F_k \wedge T \wedge c \Rightarrow c'$.
@@ -884,8 +890,8 @@ MiniSat interface, the hardware model representation, and the model checker.
 %the ASCII and binary versions of the format and the representation
 %of AIG models.
 
-The parser component parses both ASCII or binary-formatted AIGER files,
-assuming the new format is used (because all old format AIGER files are also
+The parser component parses both ASCII or binary-formatted AIGER files and
+assumes that the new format is used (because all old format AIGER files are also
 new instances of the new format). The justice properties and fairness constraints
 are ignored by the parser, as they are not used by the model checker.
 
@@ -902,15 +908,27 @@ and invariant constraints. The data structure also stores latches and AND gates 
 lists of lists of literals. I discuss the representation of literals, latches, and
 AND gates below.
 
-Literals are represented by a \verb,Lit, data structure in \verb,Parser.AigModel,,
-which instead of representing a positive literal $x$ as $2 \times x$ and negative
-literal $\neg x$ as $2 \times x + 1$, represents positive literal $x$ as
-\verb,Lit ,$x - 1$ and negative literal $\neg x$ as \verb,Neg ,$x - 1$. The subtraction
-by 1 allows variable indices to start at 0 rather than 1, since starting at 1 is
-unnecessary because the \verb,Lit, data struture also contains the separate
-\verb,Bool, constructor for representing the values \verb,True, and \verb,False,.
+Literals are represented by a \verb,Lit, data structure in the \verb,Parser.AigModel,
+module, which stores decoded versions of AIGER format indices:
+The \verb,Lit, data structure has a constructor \verb,Boolean, that takes a \verb,Bool,
+argument for representing the boolean values that correspond with AIGER indices
+0 and 1, a \verb,Var, constructor that takes a \verb,Word, for representing a positive literal,
+and a \verb,Neg, constructor that takes a \verb,Word, for representing a negative literal.
+Variable names are adjusted (by subtracting 1) so that they start at 0.
 
-Latches and AND gates are represented by three-element literal lists.
+\begin{figure}[H]
+\centering
+\begin{verbatim}
+data Lit = Var Word | Neg Word | Boolean Bool
+\end{verbatim}
+\caption{The {\tt Lit} data structure in {\it Parser.AigModel}}
+\end{figure}
+
+For example, the index 3 read from an AIGER file is parsed into \verb,Neg 0,:
+the odd index 3 indicates that it is a negative literal of the variable named 1, and
+subtracting by 1 gives the new variable name 0.
+
+Latches and AND gates are represented using three-element \verb,Lit, lists.
 For latches, the first element gives the variable name of the latch (as a positive literal),
 the second gives the next-state literal, and the final element gives the initial state
 of the latch. For AND gates, the first element gives the variable name of the AND gate
@@ -1159,92 +1177,143 @@ variation that uses CTGs to improve generalization (\emph{CTG}).
 
 \subsection{Overall structure}
 
-All versions of the model checker begin with a call to the \verb,prove, function,
-passing a \verb,Model, and the \verb,Lit, that is the safety property. The
-\verb,prove, function first creates the frame for the initial state and makes an
-initiation query. If the query is unsuccessful and returns \verb,False,,
-then \verb,prove, can just return \verb,False,, since the safety property
-does not hold in the initial state. Then \verb,prove, calls \verb,prove',, which
-has different implementations based on whether the version is recursive or not, but
-is anal
+The general structure of the algorithm in the implementations is similar
+to the structure given in figure \ref{overview}; however, there are some
+small differences that result from implementing the algorithm in a
+functional language and an adjustment to how the propagation phase is
+carried out.
 
-In other words, the \verb,prove, function implements the first three lines of
-pseudocode in the overview of the IC3 algorithm before calling the \verb,prove',
-function, which implements a variation of the main while loop of the algorithm
-on line \ref{main} of the pseudocode.
+To explain the modifications to the structure of the algorithm,
+I give pseudocode in figure \ref{recstr}
+that outlines the general structure shared by all the
+implementations of the model checker except {\it PriorityQueue}
+and compare this structure with figure \ref{overview}.
 
-\subsubsection{Recursive}
-In the general structure for the recursive implementations of the model checker,
-\verb,prove', takes as arguments the \verb,Model, for the hardware, the
-\verb,Lit, that gives the safety property, the frontier \verb,Frame, 
-(i.e. the \verb,Frame, that approximates the reachable set at the greatest
-depth considered so far), and the rest of the \verb,Frame,s in a list ordered by
-increasing depth.
+\SetKwProg{Let}{let }{ in}{end}
+\begin{algorithm}[!Ht]
+\DontPrintSemicolon
+\Fn{prove$(M,P)$}{
+  \lIf{$\neg (I \Rightarrow P)$}{
+    \Return{False}
+  }
+  \Return ${\it prove'}(M,P,I,{\rm nil})$
+}
+\Fn{prove'$(M,P,F_k,[F_0,\ldots,F_{k - 1}])$}{
+  \eIf{$F_k \wedge T \Rightarrow P'$}
+  {\Return{{\it pushFrame}$(F_k, \emptyset,M,P,[F_0,\ldots,F_{k - 1}])$}}
+  {\Let{{\it cti} = {\it nextCTI}$(F_k \wedge T \Rightarrow P')$, \;
+  $({\it result}, [G_0,\ldots,G_{k - 1}], G_k)$ = {\it proveNegCTI}$((i,x,I,T),{\rm cti},k - 1)$ \label{proveNegCTItuple}} 
+  {
+  \If{\it result} {
+    \Let{$({\it fixed}, [H_0,\ldots,H_{k - 1},H_k]) = {\it propagate}([G_0,\ldots,G_{k - 1},G_k])$}{
+    \lIf{\it fixed}{\Return{True}}
+    \lElse{\Return{${prove'}(M,P,H_k,[H_0,\ldots,H_{k - 1}])$}}}}
+  \lElse{\Return{False}}}}
+}
+\Fn{pushFrame$(F_{k - 1}, F_k,M,[F_0,\ldots,F_{k - 2}])$}{
+  \Let{$({\it fixed}, G_k) = {\it push}(F_{k - 1}, F_k)$}{
+  \lIf{\it fixed}{\Return{True}}
+  \lElse{\Return{${\it prove'}(M, P, G_k, [F_0,\ldots,F_{k - 2},F_{k - 1}])$}}}
+}
+\caption{General structure of the algorithm implementation.}
+\label{recstr}
+\end{algorithm}
 
-The \verb,prove', function makes a consecution query for the safety property and frontier
-frame \verb,frame,. If the consecution query returns \verb,True,, then \verb,prove',
-creates a new frame and calls \verb,pushFrame, which uses the \verb,push, function to
-push as many clauses as possible from \verb,frame, to the new frame. If \verb,push,
-indicates that a fixed point has been reached, then \verb,pushFrame, returns \verb,True,,
-but otherwise \verb,pushFrame, calls \verb,prove', recursively with the new frontier
-frame added to the list of frames.
+Because the implementation of the model checker is in Haskell, the overall
+structure of the algorithm has been modified to be recursive rather than iterative.
+The {\it prove} function makes an initiation query, and, if it succeeds, calls the
+{\it prove'} function that corresponds the main while loop in line \ref{main} of figure
+\ref{overview} using recursion. The {\it proveNegCTI} function here
+does not correspond just to the {\it proveNegCTI} function in \ref{overview} but rather
+to the while loop that contains that function.
 
-If the consecution query returns \verb,False,, then \verb,prove', calls \verb,nextCTI,
-to find a (possibly incomplete, depending on the implementation version)
-assignment whose current-state literals give a CTI cube.
-The CTI is extracted from the result of \verb,nextCTI, and passed along to \verb,proveNegCTI,
-along with the frontier frame, the rest of the frames, and the safety property.
+Because functions in Haskell are pure, the assumption made in figure \ref{overview}
+that function can could modify the set of (passed-by-reference) frames can no longer be made.
+Instead, the updated values of frames are returned explicitly from the function call in
+a tuple along with any other values needed from the function call. For example,
+{\it proveNegCTI} on line \ref{proveNegCTItuple} in \ref{recstr} returns not only the result
+indicating whether or not the negated CTI was proven, but also returns the possibly updated
+values for the frontier frame $G_k$ and previous frames $G_0, \ldots, G_{k - 1}$.
 
-The function \verb,proveNegCTI, attempts to show that the CTI
-$s$ is unreachable at the current depth by showing that $\neg s$ holds in the current frame.
-The function checks first that $I \wedge \neg s \wedge s'$ is unsatisfiable
-(i.e. to check that $I \wedge \neg s \Rightarrow \neg s'$ and therefore that $\neg s$ is
-inductive relative to $I$). Then \verb,pushNegCTI, finds the deepest frame (the frame
-$F_k$ with the largest $k$) that comes before the frame that contains the counterexample to
-induction state relative to which $\neg s$ is inductive and adds the clause
-$\neg s$ to all frames up to that depth.
+In addition to the necessary language-related modifications to the algorithm, I made a
+change to how often the full propagation phase is carried out, calling the {\it pushFrame}
+function instead where appropriate.
 
-If this deepest frame $F_{k - 1}$ is the frame just before the frame that contains the
-CTI, then since $\neg s$ is inductive relative to $F_{k - 1}$, $\neg s$ can also be added
-to $F_k$, establishing that $\neg s$ is not reachable in $k$ steps. The \verb,pushNegCTI,
-function in this case yields a triple \verb:(Nothing, acc', f'):, where \verb,acc', gives
-a list containing the representation of frames $F_0, \ldots, F_{k - 1}$ after having $\neg s$
-conjoined to them, and \verb,f', contains the representation of frame $F_k$ after having
-$\neg s$ conjoined to it. The function \verb,proveNegCTI, then checks again if the safety
-property is inductive relative to the updated $F_k$. If so, then \verb,proveNegCTI, has
-successfully proven enough CTIs are unreachable at depth $k$. Otherwise, \verb,proveNegCTI,
-calls \verb,nextCTI, to extract the next CTI to prove unreachable at depth $k$ and calls
-itself recursively with this newly-discovered CTI.
+The propagation phase of the algorithm is carried by the {\it propagate} function.
+The actual implementation of the ${\it propagate}$ function returns type \verb,Maybe [Frame],,
+but for the sake of discussing the high level structure of the implementation,
+it is assumed here to return a pair of a boolean value indicating whether a fixed point
+has been found while pushing clauses and a list of the updated frames.
 
-If the deepest frame $F_{k - 1}$ to which $\neg s$ is relatively inductive is not the frame just before
-the CTI-containing frame, then \verb,proveNegCTI, uses \verb,nextCTI, to find a new CTI $z$
-that is a counterexample for the property $\neg s$ being relatively inductive to $F_k$. It then
-calls itself recursively with this new CTI to prove, and the frames up to $F_{k - 1}$ rather than
-$F_k$. After updating frames $F_0, \ldots F_{k - 1}$ to prove that $\neg z$ holds at $F_{k - 1}$,
-the call to \verb,negCTI, to prove $\neg s$ is repeated using the updated frames $F_0, \ldots, F_{k - 1}$.
+While in figure \ref{overview}, the propagation phase is called at each iteration
+of the algorithm, if the consecution query succeeds and a new frontier frame $F_k$
+is added in that iteration, then none of the frames have had any new clauses
+added to them. As a result, the only frame that modified during the propagation phase
+is the frame $F_k$ because all the frames before $F_{k - 1}$ have already had all
+possible clauses pushed forward in previous iterations.
+Similarly, the only way a fixed point would be detected is if $F_{k - 1} = F_k$,
+since all pairs of consecutive frames except $(F_{k - 1}, F_k)$ have been checked for
+equality.
 
-If any call to \verb,proveNegCTI, ever reaches the point where the only frame it is called with is
-$F_0$, then \verb,proveNegCTI, has failed to prove a property necessary to show that the error
-state is unreachable, and the model checker can then give the result that the safety property
-does not hold.
-
-When \verb,proveNegCTI, successfully proves a negated CTI unreachable, \verb,prove', then propagates
-clauses through all frames from the inital frame $F_0$ to the frontier frame and checks for a fixed
-point. If a fixed point has been found, then the safety property holds at all reachable states and the
-model checker can return \verb,True,. Otherwise, \verb,prove', calls itself recursively to prove
-the safety property at the same depth, but with the updated frames (with negated CTIs conjoined
-to them).
+In the case that the consecution query succeeds, considering pairs of frames other
+than $(F_{k - 1}, F_k)$ is unecessary work. The modified algorithm is such that
+that when the consecution query succeeds, it calls the ${\it pushFrame}$ function that
+checks only a single pair of frames (which also makes the recursive call to ${\it prove}$).
+When the consecution query fails, the adjusted algorithm, like the original in figure \ref{overview},
+calls the ${\it propagate}$ function to handle the updates to the frames made by ${\it proveNegCTI}$.
 
 \subsubsection{Priority queues}
 
-The priority queue implementation keeps track of what to prove next by using a priority queue of proof
-obligations instead of through recursive calls that explicitly specify which property to prove at
-which depth. A proof obligation is a pair $(s,i)$ of a state $s$ that is either a set of bad states
+The \emph{PriorityQueue} implementation keeps track of what to prove next by using a priority
+queue of proof obligations instead of through recursive calls that explicitly specify which
+property to prove at which depth. 
+
+A \emph{proof obligation} is a pair $(s,i)$ of a state $s$ that is either a set of bad states
 or a counterexample to induction and a depth $i$. When the model checker encounters a proof obligation
-$(s,i)$ as the highest-priority element of the queue, it must prove $\neg s$ at depth $i$ to fulfill
+$(s,i)$ as the highest-priority element of the queue, it must prove $\neg s$ holds for all states
+reachable in at most $i$ steps of the transition relation to fulfill
 $(s, i)$.
 The presence of proof obligation $(s,i)$ on the priority queue also indicates that for all values $j$
 with $0 \leq j < i$, $(s, j)$ has already been fulfilled.
+
+\begin{algorithm}[!Ht]
+\DontPrintSemicolon
+\Fn{prove$(M,P)$}{
+  \lIf{$\neg (I \Rightarrow P)$}{
+    \Return{False}
+  }
+  \Let{${\it queue}$ = {\rm queue containing proof obligation} $(\neg P, 1)$}{
+  \Return {${\it prove'}(M,[I],{\rm nil},queue)$}}
+}
+\Fn{prove'$(M,[F_0,\ldots,F_k],Q])$}{
+  \Let{${\it (result,frames,queue) = fulfillObligations(M,P,[F_0,\ldots,F_k],Q])}$}
+  {\Return{result}}
+}
+\Fn{fulfillObligations$(M,[F_0,\ldots,F_k],{\it queue}])$}{
+  \Let{$((s,i), {\it q}) = {\it dequeue(queue)}$}{
+  \lIf{$F_{i - 1} \wedge T \Rightarrow \neg s'$}{\Return{${\it pushFrame(M, [F_0, \dots, F_k], q, (s,i))}$}}
+  }
+  \Else{
+    \Let{${\it cti = nextCTI(F_{i - 1} \wedge T \Rightarrow \neg s')}$}{
+      \If{$I \Rightarrow \neg {\it cti}$}{
+        \Let{${\it (fixed, [G_0, \ldots, G_k], d) = propagate([F_0 \cup \{\neg cti\}, F_1, \ldots, F_k], {\it \neg cti})}$}{
+          \lIf{\it fixed}{\Return{$(True, [G_0,\ldots,G_k], q)$}}
+          \Return{${\it fulfillObligation(M, [G_0 , \ldots, G_k], (\neg cti,d))}$}
+        }
+      }
+      \lElse{\Return{False}}
+    }
+  }
+}
+%\Fn{pushFrame$([M, F_0,\ldots,F_k], {\it queue}, (s,i))$}{
+%  \Let{$({\it fixed}, G_i) = {\it push}(F_{i - 1}, F_i)$}{
+%    \lIf{\it fixed}{\Return{True}}
+%    \lElse{\Let{$q = {\it enqueue{(s, i+1), queue)}}$}
+%      {\Return{${\it fulfillObligations}(M,[F_0,\ldots,F_{i - 1},G_i,F_{i + 1}, \ldots, F_k], q)$}}}}
+%}
+\caption{General structure of the algorithm implementation in {\it PriorityQueue}.}
+\label{pqueuestr}
+\end{algorithm}
 
 The implementation represents proof obligations $(s,i)$ using the \verb,Obligation, type, which
 is a triple \verb.(Int, Int, Clause). of the depth $i$, a rank for deciding the ordering of
