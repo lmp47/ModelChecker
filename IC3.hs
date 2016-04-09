@@ -32,7 +32,7 @@ zero x = atomicModifyIORef' x zero'
   where
     zero' y = (0, ())
 
-readR :: IORef Int -> IO (Int)
+readR :: IORef Int -> IO Int
 readR x = atomicModifyIORef' x read'
   where
     read' x = (x, x)
@@ -85,19 +85,19 @@ printFrames [] = print "No frames in list."
 -- | Calculate the average number of literals per clause in each frame
 calcAvgLitsPerCls :: [Frame] -> Double
 calcAvgLitsPerCls frames =
-  (sum (map calcAvgPerFrame frames)) / (fromIntegral (length frames))
+  sum (map calcAvgPerFrame frames) / fromIntegral (length frames)
   where
   calcAvgPerFrame f =
     let cls = clauses f in
-      (fromIntegral (sum (map length cls))) / (fromIntegral (length cls))
+      fromIntegral (sum (map length cls)) / fromIntegral (length cls)
 
 -- | Trace stat output
 stats :: [Frame] -> IORef Int -> IORef Int -> a -> a
 stats frames cc qc = trace ("Number of frames: " ++ show (length frames) ++
                             "\nAverage number of literals/clause (not counting transition relation): "
                             ++ show(calcAvgLitsPerCls frames) ++
-                            "\nNumber of ctis: " ++ (show $ unsafePerformIO $ readR cc) ++ 
-                            "\nNumber of queries: " ++ (show $ unsafePerformIO $ readR qc) )
+                            "\nNumber of ctis: " ++ show (unsafePerformIO $ readR cc) ++ 
+                            "\nNumber of queries: " ++ show (unsafePerformIO $ readR qc) )
 
 -- | Consecution phase of the algorithm (calls subsequent consecution queries for
 -- other frames)
@@ -108,12 +108,11 @@ prove' m prop frame acc =
     else
       let cti = nextCTI frame [prop] m in
         case proveNegCTI m frame (fst $ currentNext cti) acc [prop] of
-          (True, frame', acc') -> (clauses frame' /= clauses frame) &&
-                                  (case propagate (acc' ++ [frame']) of
+          (True, frame', acc') -> case propagate (acc' ++ [frame']) of
                                     Just fs ->
                                       prove' m prop (fs !! (length fs - 1))
                                         (take (length fs - 1) fs)
-                                    Nothing -> stats (frame:acc) ctiCount queryCount True)
+                                    Nothing -> stats (frame:acc) ctiCount queryCount True
           (False, frame', acc') -> stats (frame:acc) ctiCount queryCount False
   where
     -- Push all possible clauses from frame f to frame f'
@@ -134,18 +133,13 @@ prove' m prop frame acc =
 proveNegCTI :: Model -> Frame -> [Lit] -> [Frame] -> Clause -> (Bool, Frame, [Frame])
 proveNegCTI m f _ [] p = (False, f, [])
 proveNegCTI m f cti acc p =
-    if unsafePerformIO (increment queryCount >> return (
-         satisfiable (solveWithAssumps (solver (getFrameWith (map neg cti:clauses (head acc)) m)) (map prime cti))
-       ))
-      then (False, f, acc)
-      else
-        case pushNegCTI (map neg cti) acc f of
-          (Nothing, acc', f') -> if consecution f' p
-                                   then (True, f', acc')
-                                   else proveNegCTI m f' (fst (currentNext (nextCTI f' p m))) acc' p
-          (Just model, acc', f') -> case proveNegCTI m f' (fst (currentNext model)) acc' (map neg cti) of
-                                      (True, f'', acc'') -> proveNegCTI m f cti (acc'' ++ [f'']) p
-                                      false              -> false
+  case pushNegCTI (map neg cti) acc f of
+    (Nothing, acc', f') -> if consecution f' p
+                             then (True, f', acc')
+                             else proveNegCTI m f' (fst (currentNext (nextCTI f' p m))) acc' p
+    (Just model, acc', f') -> case proveNegCTI m f' (fst (currentNext model)) acc' (map neg cti) of
+                                (True, f'', acc'') -> proveNegCTI m f cti (acc'' ++ [f'']) p
+                                false              -> false
   where
     pushNegCTI negCTI [] f = (Nothing, [], f)
     pushNegCTI negCTI acc f =
@@ -155,7 +149,7 @@ proveNegCTI m f cti acc p =
                   (map (prime.neg) negCTI) )) in
         if not (satisfiable res)
           then let negCTI' = inductiveGeneralization negCTI (head acc) f m 3 in
-            (Nothing, map (`addClauseToFrame` negCTI') acc, addClauseToFrame f negCTI')
+            (Nothing, acc, addClauseToFrame f negCTI')
           else let f' = acc !! (length acc - 1) in
             (Just (nextCTI f' negCTI m), take (length acc - 1) acc, f')
 
@@ -168,7 +162,7 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
     generalize [] _ _ needed _ = needed
     generalize (c:cs) f0 fk needed k =
       let res = unsafePerformIO (increment queryCount >> return (
-                  solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs)
+                  solveWithAssumps (solver (getFrameWith (cs:clauses fk) m)) (map (prime.neg) cs)
                 )) in
         if not (satisfiable res) && initiation f0 cs
           then generalize cs f0 fk needed k
@@ -186,14 +180,14 @@ nextCTI frame prop m =
     res = unsafePerformIO (increment queryCount >> return (
             model $ solveWithAssumps (solver frame) (map (prime.neg) prop) ))
     pred psc = unsafePerformIO (increment queryCount >> return (
-                 conflict $ solveWithAssumps (solver (getFrameWith [map prime prop] m)) (psc) ))
+                 conflict $ solveWithAssumps (solver (getFrameWith [map prime prop] m)) psc ))
     getVarsFrom [] _ = []
     getVarsFrom (Var p:ps) ls = if Var p `elem` ls
-                                  then Var p:(getVarsFrom ps ls)
-                                  else Neg p:(getVarsFrom ps ls)
+                                  then Var p:getVarsFrom ps ls
+                                  else Neg p:getVarsFrom ps ls
     getVarsFrom (Neg p:ps) ls = if Var p `elem` ls
-                                  then Var p:(getVarsFrom ps ls)
-                                  else Neg p:(getVarsFrom ps ls)
+                                  then Var p:getVarsFrom ps ls
+                                  else Neg p:getVarsFrom ps ls
     getVarsFrom (p:ps) ls = getVarsFrom ps ls
    
 removeSubsumed :: [Clause] -> [Clause]
@@ -204,7 +198,7 @@ removeSubsumed cs =
       removeSubsumed' (reverse $ remove c cs []) (c:acc)
     removeSubsumed' _ acc = acc
     remove cls (c:cs) acc =
-      if (cls \\ c) == []
+      if null (cls \\ c)
         then remove cls cs acc
         else remove cls cs (c:acc)
     remove _ _ acc = acc
@@ -215,7 +209,7 @@ push f model f' =
   pusher (cleaned \\ clauses f') True f'
   where
     cleaned = removeSubsumed (clauses f)
-    newF = if (length (cleaned) == length (clauses f))
+    newF = if length cleaned == length (clauses f)
              then f
              else getFrameWith cleaned model
     pusher (c:cs) b f' = 
