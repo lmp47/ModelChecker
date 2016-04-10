@@ -1600,7 +1600,7 @@ it is assigned a priority higher than any proof obligation in the queue $(t,j)$ 
 and lower than any proof obligation in the queue $(u,k)$ with $k \leq i$. The
 way that the implementation achieves this priority ordering is discussed later.
 
-Unlike in the other variations of the algorithm, there is
+Unlike in the other implementations, in the {\it PriorityQueue} implementation, there is
 no distinction between the negation of the safety property $P$ and any other property that needs
 to be proved. The priority queue maintains all the information about which properties need to be proven,
 and the main recursive {\it fulfillObligations} function attempts proves whichever property has the highest
@@ -1609,14 +1609,10 @@ attempts to fulfill the proof obligation with the highest priority in the queue 
 is the one returned by ${\it dequeue(queue)}$ in line \ref{dequeue} of \ref{pqueuestr}).
 
 Whenever a proof obligation $(s,i)$ is fulfilled at a certain depth $i$, the proof obligation
-$(s, i + 1)$ is added to the queue, which is what particularly distinguishes this variant of
-the IC3 algorithm from the others: if $s$ is a CTI, then it will never need to be rediscovered.
-Assume that $s$ is a CTI for proving that a property $P$ holds for all $F_j$ states. After
-having fulfilled the proof obligation $(s,j-1)$, the proof obligation $(s,j)$ is enqueued,
-so if the algorithm reaches the point of needing to prove the property $P$ at some
-depth $k$ that is greater than $j$, the CTI $s$ must already have been eliminated at
-depth $k - 1$ by the time that {\it fulfillObligations} encounters the proof obligation $(P,k)$
-because a proof obligation at depth $k - 1$ has a higher priority than one at depth $k$.
+$(s, i + 1)$ is added to the queue. Enqueueing the new proof obligation is valid
+because $s$ states can reach $\neg P$ states in some
+number of steps of the transition relation and should therefore
+not be reachable in any number of steps of the transition relation from the initial state.
 
 In attempting to fulfill a proof obligation $(s,i)$, {\it fulfillObligations} proceeds
 generally in the same way as the other variants: if a consecution query succeeds,
@@ -1716,7 +1712,7 @@ better with CTG-handling disabled.
 
 \subsection{Priority Queues}
 
-The advantage of using a priority queue rather than the basic recursive structure is that CTIs do not need
+The advantage of the priority queue implementation is that CTIs do not need
 to be rediscovered: after a proof obligation $(s,i)$ is enqueued, until the algorithm fails or finds a fixed point,
 the queue will always contain a proof obligation $(s,j)$ for $j \geq i$. When the proof obligation $(s,i)$
 fulfilled at a certain depth $i$, $(s,i + 1)$ is then enqueued, If $s$ is a CTI for proving a property
@@ -1763,7 +1759,6 @@ without further SAT-solver queries.
 The Haskell implementation instead uses several SAT-solver queries to extract the necessary literals
 from $s$.
 
-
 \subsubsection{MiniSat}
 The reference implementation is more closely coupled to MiniSat's implementation. Because both the reference
 implementation and MiniSat are in C++, the reference implementation can and does call MiniSat functions
@@ -1780,6 +1775,19 @@ to an ordering of that was found to be the best choice empirically.
 \subsubsection{Memory Management}
 %The reference implementation can and does manage memory carefully.
 %Haskell is garbage collected.
+
+\subsubsection{Overall Structure}
+
+The reference implementation uses a priority queue, but handles proof obligations differently
+than the {\it PriorityQueue} implementation does. For a CTI $s$ that prevents the fulfillment
+of a proof obligation at depth $i$, the reference implementation enqueues a CTI $(s,i - 1)$
+and performs generalization relative to the frame $F_{i - 1}$ each time $\neg s$ has been shown
+to be inductive relative to frame $F_{i - 1}$ (generalization does not seem
+to be as expensive for the reference implementation). The reference implementation also does not
+enqueue a new proof obligation $(s, i+1)$ each time a proof obligation $(s, i)$ has been
+fulfilled as the {\it priorityQueue} implementation does. The safety property is maintained and
+handled separately from CTIs; its negation is not included as part of a proof obligation
+placed in the priority queue.
 
 \chapter{Conclusion}
 
