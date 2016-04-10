@@ -19,6 +19,7 @@ import System.IO.Unsafe
 import Data.List
 import Data.IORef
 import Debug.Trace
+import Data.Ord
 
 ctiCount :: IORef Int
 {-# NOINLINE ctiCount #-}
@@ -129,13 +130,13 @@ prove' m prop frame acc =
     -- Push all possible clauses from frame f to frame f'
     pushFrame f f' acc =
       case push f m f' of
-        (True, _) -> stats (frame:acc) ctiCount ctgCount queryCount True
-        (False, f'') -> prove' m prop f'' (acc ++ [f])
+        (_, True, _) -> stats (frame:acc) ctiCount ctgCount queryCount True
+        (f, False, f'') -> prove' m prop f'' (acc ++ [f])
     -- Push all clauses and see if fixed point has been reached (resulting in Nothing)
     propagate (f:f':frames) =
       case push f m f' of
-        (True, f'') -> Nothing
-        (False, f'') -> case propagate (f'':frames) of
+        (_, True, f'') -> Nothing
+        (f, False, f'') -> case propagate (f'':frames) of
                           Just fs -> Just (f:fs)
                           Nothing -> Nothing
     propagate frames = Just frames
@@ -215,24 +216,52 @@ inductiveGeneralization clause bfs fc afs m w w' = generalize clause bfs fc afs 
                       else down (ls `intersect` map neg s) (f0:fs) (fc:afs) ( r - 1 )
                 _ -> error "Could not find predecessor when finding MIC"
                    
-
 -- | Finds a CTI given a safety property clause
 nextCTI :: Frame -> Clause -> Model -> [Lit]
 nextCTI frame prop m =
   case unsafePerformIO (increment ctiCount >> return res) of
-    Just ls -> ls
+    Just ls -> case pred ls of
+                 Just ps -> getVarsFrom ps ls
+                 _       -> error "Should be UNSAT."
     _       -> error "No CTI found."
   where
     res = unsafePerformIO (increment queryCount >> return (
-            model $ solveWithAssumps (solver (getFrameWith (clauses frame) m)) (map (prime.neg) prop)) )
+            model $ solveWithAssumps (solver frame) (map (prime.neg) prop) ))
+    pred psc = unsafePerformIO (increment queryCount >> return (
+                 conflict $ solveWithAssumps (solver (getFrameWith [map prime prop] m)) psc ))
+    getVarsFrom [] _ = []
+    getVarsFrom (Var p:ps) ls = if Var p `elem` ls
+                                  then Var p:getVarsFrom ps ls
+                                  else Neg p:getVarsFrom ps ls
+    getVarsFrom (Neg p:ps) ls = if Var p `elem` ls
+                                  then Var p:getVarsFrom ps ls
+                                  else Neg p:getVarsFrom ps ls
+    getVarsFrom (p:ps) ls = getVarsFrom ps ls
+   
+removeSubsumed :: [Clause] -> [Clause]
+removeSubsumed cs =
+  removeSubsumed' (sortBy (comparing length) cs) []
+  where
+    removeSubsumed' (c:cs) acc =
+      removeSubsumed' (reverse $ remove c cs []) (c:acc)
+    removeSubsumed' _ acc = acc
+    remove cls (c:cs) acc =
+      if null (cls \\ c)
+        then remove cls cs acc
+        else remove cls cs (c:acc)
+    remove _ _ acc = acc
 
 -- | Push clauses to next frame
-push :: Frame -> Model -> Frame -> (Bool, Frame)
+push :: Frame -> Model -> Frame -> (Frame, Bool, Frame)
 push f model f' =
-  pusher (clauses f \\ clauses f') True f'
+  pusher (cleaned \\ clauses f') True f'
   where
+    cleaned = removeSubsumed (clauses f)
+    newF = if length cleaned == length (clauses f)
+             then f
+             else getFrameWith cleaned model
     pusher (c:cs) b f' = 
-      if consecution f c
+      if consecution newF c
       then pusher cs b (addClauseToFrame f' c)
       else pusher cs False f'
-    pusher _ b f' = (b, addTransitionToFrame f' model)
+    pusher _ b f' = (newF, b, addTransitionToFrame f' model)

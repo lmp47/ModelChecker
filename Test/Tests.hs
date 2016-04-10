@@ -20,7 +20,6 @@ tests = do
         return $ map (uncurry HUnit.test) [ ("IC3 algorithm tests", ic3Test)
                                           , ("IC3 initiation tests", initiationTest)
                                           , ("IC3 consecution tests", consecutionTest)
-                                          , ("IC3 nextCTI tests", nextCTITest)
                                           , ("IC3 push tests", pushTest)
                                           , ("Parser test", pTest)
                                           , ("Minisat test", minisatTest) ]
@@ -75,29 +74,6 @@ consecutionTest = TestList (map (TestCase.(uncurry assertBool))
                                          , [Neg' 1, Neg' 2, Var' 0]
                                          , [Var 0, Neg' 0], [Neg 0, Var' 0]
                                          , [Var 0] ]) [Var 1]
-
--- IC3 NextCTI Tests
-nextCTITest :: Test
-nextCTITest = TestList (map (TestCase.(uncurry assertBool))
-                [ ("nextCTI1", nextCTI1), ("nextCTI2", nextCTI2)
-                , ("nextCTI3", nextCTI3), ("nextCTI4", nextCTI4) ])
-  where
-  model1 = Model { vars = 2
-                 , initial = []
-                 , transition = [[Neg 0, Neg' 0], [Var 0, Var' 0]]
-                 , safe = Neg 0 }
-  model2 = Model { vars = 6
-                 , initial = []
-                 , transition = [ [Neg 0, Var 1], [Neg 0, Var 2]
-                                , [Neg 1, Neg 2, Var 0]
-                                , [Neg' 0, Var' 1], [Neg' 0, Var' 2]
-                                , [Neg' 1, Neg' 2, Var' 0]
-                                , [Neg 0, Neg' 0], [Var 0, Var' 0] ]
-                 , safe = Neg 0 }
-  nextCTI1 = (Neg 0) `elem` (nextCTI (getFrame 2 []) [Neg 0] model1)
-  nextCTI2 = (Var 0) `elem` (nextCTI (getFrame 2 []) [Var 0] model1)
-  nextCTI3 = (Var 1) `elem` (nextCTI (getFrame 6 []) [Var 0] model2)
-  nextCTI4 = (Var 0) `elem` (nextCTI (getFrame 6 []) [Var 0] model2)
   
 -- IC3 Push Tests
 pushTest :: Test
@@ -117,10 +93,11 @@ pushTest = TestList (map (TestCase.(uncurry assertBool))
                                 , [Neg' 1, Neg' 2, Var' 0]
                                 , [Neg 0, Var' 0], [Var 0, Neg' 0] ]
                  , safe = Neg 0 }
-  pushTest1 = not $ fst $ push (getFrameWith [[Neg 0]] model1) model1 (getFrame 2 [])
-  pushTest2 = fst $ push (getFrameWith [[Neg 0, Var 0]] model1) model1 (getFrame 2 [])
-  pushTest3 = fst $ push (getFrameWith [[Var 0]] model2)  model2 (getFrame 6 [])
-  pushTest4 = fst $ push (getFrameWith [[Neg 0], [Neg 1, Neg 2]] model2) model2 (getFrame 6 [])
+  pushTest1 = not $ snd' $ push (getFrameWith [[Neg 0]] model1) model1 (getFrame 2 [])
+  pushTest2 = snd' $ push (getFrameWith [[Neg 0, Var 0]] model1) model1 (getFrame 2 [])
+  pushTest3 = snd' $ push (getFrameWith [[Var 0]] model2)  model2 (getFrame 6 [])
+  pushTest4 = snd' $ push (getFrameWith [[Neg 0], [Neg 1, Neg 2]] model2) model2 (getFrame 6 [])
+  snd' (_, s, _) = s
 
 -- Parse tests
 parseTests :: IO (Test)
