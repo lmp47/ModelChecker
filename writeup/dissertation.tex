@@ -679,7 +679,9 @@ Components are specified after the header in the same order that their
 counts are given in the header with the exception of AND gates, which
 occur at the end of the file. Latches' initial values can also be specified
 now with an additional \verb,0, or \verb,1, after the next-state literal's
-index. If the initial value is omitted, the initial value is assumed to be
+index. The initial value may also be given as the index of the latch itself,
+in which case the lathc is considered to be uninitialized.
+If the initial value is omitted, the initial value is assumed to be
 0 as in the old version of the format. The header can also be truncated
 after giving the number of AND-gates if the remaining counts are all
 zero, allowing any parser for the new AIGER format to be
@@ -1091,12 +1093,14 @@ literals was necessary.
 
 \section{Hardware Models}
 \subsection{Representation}
-\subsubsection{Literals}
+\subsubsection{Literals and Clauses}
 The \verb,Lit, data structure in \verb,Model.Model, gives the representation for literals in
 the model checker.
 The \verb,Var, constructor gives positive current-state (unprimed) literals, the \verb,Neg,
 constructor gives negative current-state literals, and the \verb,Var', and \verb,Neg', constructors
 respectively give positive and negative next-state (primed) literals.
+A clause is represented with type \verb,Clause,, where each \verb,Clause, is a
+list of the \verb,Lit,s in the clause.
 
 \subsubsection{Transition Systems and Safety Properties}
 % Describe how transition systems and safety properties are represented.
@@ -1125,7 +1129,7 @@ data Model = Model { vars :: Word
 % Describe how transition systems are constructed given AIG models.
 
 The \verb,Model.Model, module contains functions to convert the \verb,Model, data
-structure in \verb,Parser.AigModel, into the hardware model representation used by
+structure from the \verb,Parser.AigModel, module into the hardware model representation used by
 the model checker. In particular, the \verb,toModel, function takes an \verb,Parser.AigModel.Model,
 and outputs a \verb,Model.Model.Model,. The \verb,Model.Model, module has its own \verb,Lit,
 data structure that only has constructors for positive and negative literals; \verb,Lit,s from
@@ -1133,34 +1137,42 @@ the \verb,Parser.AigModel, module are either converted to \verb,Model.Model.Lit,
 that they use the \verb,Boolean, constructor, are removed from the model during the conversion of
 the \verb,Latch, and \verb,And, components to \verb,Clause,s in \verb,Model.Model,.
 
+\subsubsection{Latches}
 The \verb,makeLatches, function generates a pair of \verb,Clause, lists
 for a list of \verb,Parser.AigModel.Latch,es, where the first \verb,Clause, list contains
-clauses that describe the latches' initial values, and the second \verb,Clause, list
-contains a clauses that describe the latches' next-state values. For a given
-\verb,Parser.AigModel.Latch, \verb.[latchVar, next, init]., if \verb,init, is \verb,Boolean True,,
-then the singleton clause containing only the positive literal for \verb,latchVar, is generated for
-the initial value list, and if \verb,init, is \verb,Boolean False, then the negative literal for \verb,latchVar,
-is generated.
-Similarly, if \verb,next, is \verb,Boolean True,, then the singleton clause containing only the positive primed
-literal for \verb,latchVar, is generated for the next-state list because the next-state value for the variable
-is a constant-{\it True} value, and similarly, if \verb,next, is \verb,Boolean False,,
-the singleton clause containing only the negative primed literal for \verb,latchVar, is generated.
-Otherwise, the next-value clauses generated for \verb,latchVar, are $\{\verb,latchVar',, \neg \verb,next,\}$
-and $\{\neg\verb,latchVar',, \verb,next,\}$. The conjunction of these clauses are, as needed, logically equivalent
-to ${\tt next} \Longrightarrow {\tt latchVar}'$, i.e., where $\simeq$ denotes logical equivalence,
+clauses whose conjunction describes the latches' initial values, and the second \verb,Clause, list
+contains a clauses whose conjunction describes the latches' next-state values.
+
+Consider a given \verb,Parser.AigModel.Latch, \verb.[latchVar, next, init]. representing the latch with
+output variable $l$ (represented by \verb,latchVar,), next-state $n$ (represented
+by \verb,next,) taken from the set of booleans and literals, and initial value (represented by \verb,init,)
+also taken from the set of booleans and literals. The values of $l$, $n$, and $i$ can be used to generate
+clauses that describe the latches' initial values and next-state values.
+
+The generation of the initial value clause of the latch proceeds as follows: if $i = {\it True}$,
+then the singleton clause $\{l\}$ is generated for the initial value list, and if $i = {\it False}$,
+then the singleton clause $\{\neg l\}$ is generated.
+If $i$ is a literal rather than a boolean value, then the latch is
+uninitialized and no clauses are generated for its initial value.
+
+The generation of next-state clauses proceeds similarly: if $n = {\it True}$, then the singleton clause
+$\{l'\}$ is generated because the next-state value for the variable is a constaint-{\it True} value,
+and if $n = {\it False}$, then the singleton clause $\{\neg l'\}$ is generated.
+Otherwise, the next-value clauses generated for $l$, are $\{l', \neg n\}$
+and $\{\neg l,, n\}$. The conjunction of these clauses are, as needed, logically equivalent
+to $n \Rightarrow l'$, i.e., where $\simeq$ denotes logical equivalence,
 the following hold:
 \begin{align*}
-{\tt latchVar}' \Longleftrightarrow {\tt next} &\simeq ({\tt latchVar}' \Longrightarrow {\tt next}) \wedge
-({\tt next} \Longrightarrow {\tt latchVar}')\\
-{\tt latchVar}' \Longrightarrow {\tt next} &\simeq \neg {\tt latchVar}' \vee {\tt next}\\
-{\tt next} \Longrightarrow {\tt latchVar}' &\simeq {\tt latchVar}' \vee \neg {\tt next}.
+l' \Leftrightarrow n &\simeq (l' \Rightarrow n) \wedge (n \Rightarrow l')\\
+l' \Rightarrow n &\simeq \neg l' \vee n\\
+n \Rightarrow l' &\simeq l' \vee \neg n.
 \end{align*}
 It follows that the original double implication is equivalent to the 
 the CNF formula that corresponds to the generated clauses:
-$${\tt latchVar}' \Longrightarrow {\tt next} \simeq
-(\neg {\tt latchVar}' \vee {\tt next}) \wedge ({\tt latchVar}' \vee \neg {\tt next}).$$
+$$l' \Rightarrow n \simeq (\neg l' \vee n) \wedge l' \vee \neg n.$$
 
-The \verb,makeAnds, function generates a single \verb,Clausse, list for a list of \verb,Parser.AigModel.And,s,
+\subsubsection{AND gates}
+The \verb,makeAnds, function generates a single \verb,Clause, list for a list of \verb,Parser.AigModel.And,s,
 where for each \verb,And,, of the form \verb.[andVar, in1, in2]., if both \verb,in1, and \verb,in2, use
 the \verb,Boolean, constructor for \verb,Parser.AigModel.Lit,s, then \verb,makeAnds, generates a singleton
 clause containing the positive unprimed variable for \verb,andVar, if both \verb,in1, and \verb,in2, are
@@ -1217,7 +1229,7 @@ variation that uses CTGs to improve generalization (\emph{CTG}).
 \emph{Basic} & & & & \checkmark & \\
 \emph{BetterCTI} & & \checkmark & & \checkmark & \\
 \emph{BetterPropagation} & & \checkmark & \checkmark & \checkmark &\\
-\emph{PriorityQueue} & \checkmark & \checkmark & \checkmark & & \\
+\emph{PriorityQueue} & \checkmark & \checkmark & \checkmark & \checkmark & \\
 \emph{CTG} & & \checkmark & \checkmark & & \checkmark
 \end{tabular}
 \caption{A summary of the different model-checker versions implemented.}
@@ -1366,21 +1378,21 @@ consecution f prop =
 %Describe how the implementation discovers counterexamples
 %to induction and proves them unreachable.
 
-Counterexamples to induction are found by the \verb,negCTI, function, which
+Counterexamples to induction are found by the \verb,nextCTI, function, which
 uses results from SAT queries to find a full or partial assignment to
 the variables in the \verb,Model, from which the CTI can be extracted.
 
 \subsubsection{Basic}
-In the \emph{Basic} implementation of the IC3 algorithm, \verb,negCTI, asks for a model
+In the \emph{Basic} implementation of the IC3 algorithm, \verb,nextCTI, asks for a model
 (i.e. the set of true literals) for the satisfiable query $\neg P' \wedge F_k \wedge T$.
 The current-state literals then give a predecessor state (a state from which
 a $\neg P$ state can be reached in one step of the transition relation) for $\neg P$,
 i.e., the current-state literals give the CTI.
 These current-state literals are extracted from the model in the function that
-called \verb,negCTI,.
+called \verb,nextCTI,.
 
 \subsubsection{Smaller Counterexamples to Induction}
-In the other implementations of the algorithm, \verb,negCTI, again asks for a model $m$
+In the other implementations of the algorithm, \verb,nextCTI, again asks for a model $m$
 for the satisfiable query $\neg P' \wedge F_k \wedge T$. The only literals in $m$ that
 must necessarily be included in the CTI are those current-state literals that result in
 the unsatisfiability of $m \wedge P' \wedge T$. That is, the current-state literals of any
@@ -1528,7 +1540,7 @@ with $0 \leq j < i$, $(s, j)$ has already been fulfilled.
       \If{$I \Rightarrow \neg {\it cti}$}{
         \Let{${\it (fixed, [G_0, \ldots, G_k], d) = propagate([F_0 \cup \{\neg cti\}, F_1, \ldots, F_k], {\it \neg cti})}$}{
           \lIf{\it fixed}{\Return{True}}
-          \Return{${\it fulfillObligation(M, [G_0 , \ldots, G_k], (\neg cti,d))}$}
+          \Return{${\it fulfillObligation(M, [G_0 , \ldots, G_k], (generalize(\neg cti, d),d))}$}
         }
       }
       \lElse{\Return{False}}}}
@@ -1594,8 +1606,11 @@ that $I \Rightarrow \neg c$, adds $\neg c$ to $F_0$, and then uses a modified
 version of {\it propagate} to push clauses and check for fixed points up to
 depth $j \leq i$, where $j$ is the greatest value that is less than $i$
 such that $\neg c$ is inductive relative to $F_{j - 1}$. If a fixed point is
-found, then the algorithm can terminate. Otherwise, the proof obligation
-$(c,j)$ is enqueued, and {\it fulfillObligations} calls itself recursively.
+found, then the algorithm can terminate. Otherwise, the clause
+$\neg c$ is generalized relative to frame $F_{j - 1}$
+using the simpler approximation for finding MICs, giving clause
+$\neg d \subseteq c$. The proof obligation $(d,j)$ is then enqueued, and
+{\it fulfillObligations} calls itself recursively.
 
 \subsubsection{Proof Obligations and Priority Queues}
 
@@ -1609,6 +1624,7 @@ a \verb,MinQueue, (the minimal element has the highest
 priority) of \verb,Obligation,s containing the priority queue with only \verb,Obligation,
 \verb.(1, 0, [prop]). in it, and the initial frame. The function \verb,prove', then invokes \verb,proveObligations,,
 the main function for the \emph{PriorityQueue} implementation.
+
 \chapter{Evaluation}
 
 \section{Benchmarking}
