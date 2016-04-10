@@ -13,7 +13,7 @@ import Data.List hiding (insert)
 import Data.IORef
 import Debug.Trace
 import Data.Ord
-import Data.PQueue.Min hiding (map, drop, take, (!!))
+import Data.PQueue.Min hiding (map, drop, take, (!!), null)
 
 -- Debug output / stats
 
@@ -35,7 +35,7 @@ zero x = atomicModifyIORef' x zero'
   where
     zero' y = (0, ())
 
-readR :: IORef Int -> IO (Int)
+readR :: IORef Int -> IO Int
 readR x = atomicModifyIORef' x read'
   where
     read' x = (x, x)
@@ -90,19 +90,19 @@ printFrames [] = print "No frames in list."
 -- | Calculate the average number of literals per clause in each frame
 calcAvgLitsPerCls :: [Frame] -> Double
 calcAvgLitsPerCls frames =
-  (sum (map calcAvgPerFrame frames)) / (fromIntegral (length frames))
+  sum (map calcAvgPerFrame frames) / fromIntegral (length frames)
   where
   calcAvgPerFrame f =
     let cls = clauses f in
-      (fromIntegral (sum (map length cls))) / (fromIntegral (length cls))
+      fromIntegral (sum (map length cls)) / fromIntegral (length cls)
 
 -- | Trace stat output
 stats :: [Frame] -> IORef Int -> IORef Int -> a -> a
 stats frames cc qc = trace ("Number of frames: " ++ show (length frames) ++
                             "\nAverage number of literals/clause (not counting transition relation): "
-                            ++ show(calcAvgLitsPerCls frames) ++
-                            "\nNumber of ctis: " ++ (show $ unsafePerformIO $ readR cc) ++ 
-                            "\nNumber of queries: " ++ (show $ unsafePerformIO $ readR qc) )
+                            ++ show (calcAvgLitsPerCls frames) ++
+                            "\nNumber of ctis: " ++ show (unsafePerformIO $ readR cc) ++ 
+                            "\nNumber of queries: " ++ show (unsafePerformIO $ readR qc) )
 
 proveObligations :: Model -> MinQueue Obligation -> [Frame] -> Int -> Bool
 proveObligations m queue frames rank =
@@ -110,13 +110,13 @@ proveObligations m queue frames rank =
     then pushFrame frame nextFrame
     else
       let negCTI = (map neg $ fst $ currentNext $ nextCTI frame prop m) in
-        case initiation (head frames) negCTI of
-          True -> case propagate (head frames) (addClauseToFrame (head frames) negCTI:tail frames) negCTI 1 of
-                    Just (frames', d) -> proveObligations m
-                                           (insert (d, rank, inductiveGeneralization negCTI (head frames) (head $ drop (d - 1) frames) m 3) queue)
-                                           frames' (rank + 1)
-                    Nothing -> stats frames ctiCount queryCount True
-          _ -> stats frames ctiCount queryCount False
+        if initiation (head frames) negCTI
+          then case propagate (head frames) (addClauseToFrame (head frames) negCTI:tail frames) negCTI 1 of
+                 Just (frames', d) -> proveObligations m
+                                        (insert (d, rank, inductiveGeneralization negCTI (head frames) (frames !! (d - 1)) m 3) queue)
+                                        frames' (rank + 1)
+                 Nothing -> stats frames ctiCount queryCount True
+          else stats frames ctiCount queryCount False
   where
     ((depth, r, prop), queue') = deleteFindMin queue
     pre = take (depth - 1) frames
@@ -137,12 +137,12 @@ proveObligations m queue frames rank =
           (_, True, f'') -> Nothing
           (f, False, f'') -> if checkSubsumed negCTI (clauses f'')
                                then case propagate f0 (f'':frames) negCTI (d + 1) of
-                                 Just (fs, d) -> Just ((f:fs), d)
+                                 Just (fs, d) -> Just (f:fs, d)
                                  Nothing -> Nothing
-                               else Just ((f:f'':frames), d)
-      | otherwise = Just ((f:f':frames), d)
+                               else Just (f:f'':frames, d)
+      | otherwise = Just (f:f':frames, d)
     propagate _ frames _ d = Just (frames, d)
-    checkSubsumed p (c:cs) = (c \\ p == []) || checkSubsumed p cs
+    checkSubsumed p (c:cs) = null (c \\ p) || checkSubsumed p cs
     checkSubsumed _ [] = False
 
 -- | Find an approximate minimal subclause of the provided clause that satisfies initiation
@@ -154,7 +154,7 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
     generalize [] _ _ needed _ = needed
     generalize (c:cs) f0 fk needed k =
       let res = unsafePerformIO (increment queryCount >> return (
-                  solveWithAssumps (solver (getFrameWith (cs:(clauses fk)) m)) (map (prime.neg) cs)
+                  solveWithAssumps (solver (getFrameWith (cs:clauses fk) m)) (map (prime.neg) cs)
                 )) in
         if not (satisfiable res) && initiation f0 cs
           then generalize cs f0 fk needed k
@@ -172,14 +172,14 @@ nextCTI frame prop m =
     res = unsafePerformIO (increment queryCount >> return (
             model $ solveWithAssumps (solver frame) (map (prime.neg) prop) ))
     pred psc = unsafePerformIO (increment queryCount >> return (
-                 conflict $ solveWithAssumps (solver (getFrameWith [map prime prop] m)) (psc) ))
+                 conflict $ solveWithAssumps (solver (getFrameWith [map prime prop] m)) psc ))
     getVarsFrom [] _ = []
     getVarsFrom (Var p:ps) ls = if Var p `elem` ls
-                                  then Var p:(getVarsFrom ps ls)
-                                  else Neg p:(getVarsFrom ps ls)
+                                  then Var p:getVarsFrom ps ls
+                                  else Neg p:getVarsFrom ps ls
     getVarsFrom (Neg p:ps) ls = if Var p `elem` ls
-                                  then Var p:(getVarsFrom ps ls)
-                                  else Neg p:(getVarsFrom ps ls)
+                                  then Var p:getVarsFrom ps ls
+                                  else Neg p:getVarsFrom ps ls
     getVarsFrom (p:ps) ls = getVarsFrom ps ls
    
 removeSubsumed :: [Clause] -> [Clause]
@@ -190,7 +190,7 @@ removeSubsumed cs =
       removeSubsumed' (reverse $ remove c cs []) (c:acc)
     removeSubsumed' _ acc = acc
     remove cls (c:cs) acc =
-      if (cls \\ c) == []
+      if null (cls \\ c)
         then remove cls cs acc
         else remove cls cs (c:acc)
     remove _ _ acc = acc
@@ -201,7 +201,7 @@ push f0 f model f' =
   pusher (cleaned \\ clauses f') True f'
   where
     cleaned = removeSubsumed (clauses f)
-    newF = if (length (cleaned) == length (clauses f))
+    newF = if length cleaned == length (clauses f)
              then f
              else getFrameWith cleaned model
     pusher (c:cs) b f' = 
