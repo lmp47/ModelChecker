@@ -1559,8 +1559,6 @@ or a counterexample to induction and a depth $i$. When the model checker encount
 $(s,i)$ as the highest-priority element of the queue, it must prove $\neg s$ holds for all states
 reachable in at most $i$ steps of the transition relation to fulfill
 $(s, i)$.
-The presence of proof obligation $(s,i)$ on the priority queue also indicates that for all values $j$
-with $0 \leq j < i$, $(s, j)$ has already been fulfilled.
 
 \subsubsection{Overall Structure}
 \begin{algorithm}[!Ht]
@@ -1635,11 +1633,13 @@ $${\it fulfillObligations}(M,[F_0,\ldots,F_{i - 1},G_i,F_{i + 1}, \ldots, F_k], 
 where $q = {\it enqueue((s, i+1), queue)}$, the result of enqueueing the proof obligation
 for property $s$ at the next depth $i + 1$ in the priority queue {\it queue}.
 
-When a CTI $c$ for proof obligation $(s,i)$ is discovered, it is sufficient to 
-check that $I \Rightarrow \neg c$ holds and enqueue proof obligation $(c,1)$ before
-calling {\it fulfillObligations} recursively, since then the proof obligation
-$(c,i - 1)$ must be fulfilled before attempting to fulfill proof obligation $(s,i)$
-again.
+When a CTI $c$ for proof obligation $(s,i)$ is discovered the proof obligation $(c,i - 1)$
+for proving the negation of the CTI could enqueued before calling
+calling {\it fulfillObligations} recursively again,
+but the implementation employs a different approach that keeps the number of
+generalization attempts low by generalizing once when the proof obligation
+for the CTI is enqueued rather than generalizing each time a proof obligation
+is fulfilled.
 
 The approach employed by the {\it PriorityQueue} implementation checks
 that $I \Rightarrow \neg c$, adds $\neg c$ to $F_0$, and then uses a modified
@@ -1687,19 +1687,23 @@ for the \emph{CTG} implementation, the number of CTGs discovered.
 %model checker and the final implementation of the model checker.
 
 The overall performance of the model checker is heavily dependent on the size and number of SAT-solver queries;
-profiling consistently reveals that functions in the Minisat module consume the most time when solving examples.
+profiling has consistently revealed that functions in the Minisat module consume the most time when solving examples.
 
 \subsection{Smaller Counterexamples to Induction}
 
 Discovering smaller CTIs leads, as expected, to a smaller number of literals per clause and smaller SAT queries,
 giving consistent performance improvements over the basic CTI-finding implementation for nontrivial
-examples (i.e. examples that require finding counterexamples). The \emph{BetterCTI} version of the implementation
+examples (i.e. examples that require finding at least one CTI). The \emph{BetterCTI} version of the implementation
+(and all other implementations that include finding smaller CTIs)
 can solve seven more examples than the \emph{Basic} version without timing out.
 
 \subsection{Propagation}
 
 Also as expected, removing subsumed clauses results in a smaller number of literals per clause, resulting in
 the \emph{BetterPropagation} version having slightly better performance than the \emph{BetterCTI} version.
+While the performance impact that the improvement has is less dramatic than the improvement of \emph{BetterCTI}
+over \emph{Basic} finding smaller CTIs, there is still a consistent improvement of benchmarked times for all
+nontrivial examples.
 
 \subsection{Counterexamples to Generalization}
 
@@ -1736,11 +1740,12 @@ involving CTGs enabled).
 \subsection{Implementation Differences}
 
 \subsubsection{Model Representation}
-The reference implementation differs from this project's implementation in representing the hardware model.
+The reference implementation differs from this project's implementation in representing the hardware model,
+which may account for some of the performance difference.
 
 The reference implementation keeps track of which variables are inputs, latches, and AND gates.
 Each \verb,Model, maintains both the the primed and current values for inputs and latches and keeps a
-table of values for variables that are the outputs of AND gates.
+table to memoize the values of AND gates.
 
 %The next-state value for an unprimed variable is provided by a call to the \verb,primeVar, function in the
 %\verb,Model, class, which returns the stored value for the corresponding primed variable
@@ -1752,7 +1757,7 @@ As mentioned earlier, when the consecution query $F_k \wedge T \Rightarrow P'$ f
 to the CNF query $F_k \wedge T \wedge \neg P'$ being satisfiable, and while a full satisfying assignment
 $s$ gives a CTI state, it is better to use a set of states $c \subset s$ as a CTI cube, so that several
 CTI states can be eliminated at once.
-The \verb,stateOf, function uses the information it keeps in \verb,Model,s to extract the smaller
+The \verb,stateOf, function uses the information kept in \verb,Model,s to extract the smaller
 cube from the model $s$ giving the satisfying assignment for a failed consecution query directly,
 without further SAT-solver queries.
 The Haskell implementation instead uses several SAT-solver queries to extract the necessary literals
