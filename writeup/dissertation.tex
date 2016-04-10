@@ -380,7 +380,7 @@ module and for specifying other Haskell files used by the program.
 The \verb,.cabal, file for this project also uses the \verb,Test-Suite, section
 to allow the HUnit test for the project to be run in a standard way (by running
 \verb,cabal test, in the root directory of the package) and the \verb,Benchmark,
-section to allow the benchmarking program to be run in a standard way also
+section to allow the benchmarking program to be run in a standard way as well
 (by running \verb,cabal bench, in the root directory of the package).
 
 Cabal also uses a Haskell file \verb,Setup.hs, to give further information
@@ -399,6 +399,12 @@ code by enabling the programmer to write a \verb,.hsc, file containing
 macros that the preprocessor can expand to, e.g., pointer offsets. The
 \verb,hsc2hs, expands the macros in a \verb,.hsc, file to produce a
 \verb,.hs, file that can then be compiled with a Haskell compiler and run.
+}
+
+\paragraph{HLint}{
+The HLint tool suggests improvements for Haskell source code to improve
+the style of the code. The incorporation of HLint suggestions in
+the project resulted in simpler, more readable code.
 }
 
 \paragraph{Aiger Utilities}{
@@ -440,7 +446,7 @@ A \emph{cube} is defined to be a conjunction of literals and may be represented 
 of literals that occur in it. Similarly, a \emph{clause} is a disjunction of literals that
 may also be represented as the set of literals that occur in it.
 
-Given a cube $c$, a $d$ is a i\emph{subcube} of $c$ (written $d \subset c$)
+Given a cube $c$, a $d$ is a \emph{subcube} of $c$ (written $d \subset c$)
 iff the set of literals in $d$ are a subset of the set of literals in $c$.
 Similarly, given a clause $c$, a clause $d$ is a \emph{subclause} of $c$ (also
 denoted $d \subset c$) iff the set of literals in $d$ are a subset of
@@ -474,7 +480,7 @@ currently {\it True} should become {\it False} in the next state is as follows:
 $$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$
 
 Given transition relation $(i,x,I,T)$, a boolean formula $C$ is, by definition,
-be inductive relative to another boolean formula $F$ if both
+inductive relative to another boolean formula $F$ if both
 $I \Rightarrow C$ and $F \wedge C \wedge T \Rightarrow C'$ hold.
 }
 
@@ -544,7 +550,7 @@ format.
 \paragraph{AIGER Variables}{
 A variable's name in AIGER format is a positive integer. Variables themselves
 are not represented directly in AIGER format; instead, nonnegative numbers
-are used to represent literals and boolean valies.
+are used to represent literals.
 I will refer to these nonnegative numbers as indices.
 
 For any variable named $x$, the index for positive literal $x$ is given by
@@ -680,7 +686,7 @@ counts are given in the header with the exception of AND gates, which
 occur at the end of the file. Latches' initial values can also be specified
 now with an additional \verb,0, or \verb,1, after the next-state literal's
 index. The initial value may also be given as the index of the latch itself,
-in which case the lathc is considered to be uninitialized.
+in which case the latch is considered to be uninitialized.
 If the initial value is omitted, the initial value is assumed to be
 0 as in the old version of the format. The header can also be truncated
 after giving the number of AND-gates if the remaining counts are all
@@ -1131,8 +1137,8 @@ data Model = Model { vars :: Word
 The \verb,Model.Model, module contains functions to convert the \verb,Model, data
 structure from the \verb,Parser.AigModel, module into the hardware model representation used by
 the model checker. In particular, the \verb,toModel, function takes an \verb,Parser.AigModel.Model,
-and outputs a \verb,Model.Model.Model,. The \verb,Model.Model, module has its own \verb,Lit,
-data structure that only has constructors for positive and negative literals; \verb,Lit,s from
+and outputs a \verb,Model.Model.Model,. As mentioned before, the \verb,Model.ModelLit,
+data structure only has constructors for variables and their negations; \verb,Lit,s from
 the \verb,Parser.AigModel, module are either converted to \verb,Model.Model.Lit,s or, in the case
 that they use the \verb,Boolean, constructor, are removed from the model during the conversion of
 the \verb,Latch, and \verb,And, components to \verb,Clause,s in \verb,Model.Model,.
@@ -1146,8 +1152,9 @@ contains a clauses whose conjunction describes the latches' next-state values.
 Consider a given \verb,Parser.AigModel.Latch, \verb.[latchVar, next, init]. representing the latch with
 output variable $l$ (represented by \verb,latchVar,), next-state $n$ (represented
 by \verb,next,) taken from the set of booleans and literals, and initial value (represented by \verb,init,)
-also taken from the set of booleans and literals. The values of $l$, $n$, and $i$ can be used to generate
-clauses that describe the latches' initial values and next-state values.
+also taken from the set of booleans and literals. The \verb,makeLatches, function uses the
+values of $l$, $n$, and $i$ to generate \verb,Clause,s that describe the latches' initial values and
+next-state values.
 
 The generation of the initial value clause of the latch proceeds as follows: if $i = {\it True}$,
 then the singleton clause $\{l\}$ is generated for the initial value list, and if $i = {\it False}$,
@@ -1156,7 +1163,7 @@ If $i$ is a literal rather than a boolean value, then the latch is
 uninitialized and no clauses are generated for its initial value.
 
 The generation of next-state clauses proceeds similarly: if $n = {\it True}$, then the singleton clause
-$\{l'\}$ is generated because the next-state value for the variable is a constaint-{\it True} value,
+$\{l'\}$ is generated because the next-state value for the variable is a constant-{\it True} value,
 and if $n = {\it False}$, then the singleton clause $\{\neg l'\}$ is generated.
 Otherwise, the next-value clauses generated for $l$, are $\{l', \neg n\}$
 and $\{\neg l,, n\}$. The conjunction of these clauses are, as needed, logically equivalent
@@ -1173,41 +1180,43 @@ $$l' \Rightarrow n \simeq (\neg l' \vee n) \wedge l' \vee \neg n.$$
 
 \subsubsection{AND gates}
 The \verb,makeAnds, function generates a single \verb,Clause, list for a list of \verb,Parser.AigModel.And,s,
-where for each \verb,And,, of the form \verb.[andVar, in1, in2]., if both \verb,in1, and \verb,in2, use
-the \verb,Boolean, constructor for \verb,Parser.AigModel.Lit,s, then \verb,makeAnds, generates a singleton
-clause containing the positive unprimed variable for \verb,andVar, if both \verb,in1, and \verb,in2, are
-\verb,Boolean True,, since theit conjunction gives a constant-{\it True} value for the current state of
-\verb,andVar, and generates a singleton clause containing the negative unprimed variable for \verb,andVar,
-otherwise, since if either input to an AND gate is {\it False}, the output of the AND gate is also {\it False}.
-If only one of \verb,in1, or \verb,in2, is a \verb,Boolean,, then if it is \verb,Boolean False, clauses equivalent
-to ${\tt makeAnds} \Longleftrightarrow {\it in}$, where ${\it in}$ is the non-\verb,Boolean, variable
-are generated using the logical equivalence employed in generating the \verb,Latch, next-state clauses, i.e.
-the clauses $\{\verb,andVar,, \neg {\it in}\}$ and $\{\neg\verb,andVar,, {\it in}\}$ are generated.
-If neither of \verb,in1, or \verb,in2, are \verb,Boolean,s, then the clauses generated are
-$\{\neg\verb,andVar,, \verb,in1,\}$, $\{\neg\verb,andVar,, \verb,in1,\}$, and
-$\{\neg\verb,in1,,\neg\verb,in2,,\verb,andVar,\}$. The conjunction of these clauses are, as needed,
-logically equivalent to $\verb,andVar, \Longleftrightarrow \verb,in1, \wedge \verb,in2,$:
+where the conjunction of the clauses in the list describes the relationship between the AND-gate output
+and the AND-gate inputs.
+
+Consider a \verb,Parser.AigModel.And,, of the form \verb.[andVar, in1, in2]., representing the AND gate
+with output variable $a$ (represented by \verb,andVar,), and inputs $i_1$ and $i_2$ (represented by \verb,in1,
+and \verb,in2,). The \verb,makeAnds, function uses the values of $a$, $i_1$, and $i_2$ to generate the appropriate
+\verb,Clause,s that describe the AND gates' values.
+
+If both $i_1$ and $i_2$ are booleans (corresponding to both \verb,in1, and \verb,in2, using the \verb,Boolean,
+constructor for \verb,Parser.AigModel.Lit,s), then a singleton clause suffices to describe the AND gate.
+If $i_1 \wedge i_2$ holds, then the singleton clause $\{a\}$ describes the constantly {\it True} AND gate,
+and if not, then the singleton clause $\{\neg a\}$ describes the constantly {\it False} AND gate.
+
+If only one of the inputs ($i_1$ and $i_2$) is a boolean value, then the clauses equivalent to $a \Leftrightarrow i$
+are generated, where $i$ is the input that is not a boolean value and the clauses to generate for $a \Leftrightarrow i$ 
+are described above in the explanation for generating clauses for latches.
+
+If neither of $i_1$ or $i_2$ are boolean values, then the clauses generated are
+$\{\neg a, i_1\}$, $\{\neg a, i_1\}$, and
+$\{\neg i_1,\neg i_2, a\}$. The conjunction of these clauses are, as needed,
+logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$:
 \begin{align*}
-{\tt andVar} \Longleftrightarrow {\tt in1} \wedge {\tt in2} &\simeq
-({\tt andVar} \Longrightarrow {\tt in1} \wedge {\tt in2}) \wedge
-({\tt in1} \wedge {\tt in2} \Longrightarrow {\tt andVar})\\
-{\tt andVar} \Longrightarrow {\tt in1} \wedge {\tt in2} &\simeq
-\neg {\tt andVar} \vee ({\tt in1} \wedge {\tt in2})\\
-{\tt in1} \wedge {\tt in2} \Longrightarrow {\tt andVar} &\simeq
-\neg ({\tt in1} \wedge {\tt in2}) \vee {\tt andVar}
+a \Leftrightarrow i_1 \wedge i_2 &\simeq (a \Rightarrow i_1 \wedge i_2) \wedge (i_1 \wedge i_2 \Rightarrow a)\\
+a \Rightarrow i_1 \wedge i_2 &\simeq \neg a \vee (i_1 \wedge i_2)\\
+i_1 \wedge i_2 \Rightarrow a &\simeq \neg (i_1 \wedge i_2) \vee a
 \end{align*}
 Distributing $\vee$ over $\wedge$ gives further equivalence
-$$\neg {\tt andVar} \vee ({\tt in1} \wedge {\tt in2}) \simeq
-(\neg {\tt andVar} \vee {\tt in1}) \wedge (\neg {\tt andVar} \vee {\tt in2}),$$
+$$\neg a \vee (i_1 \wedge i_2) \simeq
+(\neg a \vee i_1) \wedge (\neg a \vee i_2),$$
 and using deMorgan's laws gives equivalence
-$$\neg ({\tt in1} \wedge {\tt in2}) \vee {\tt andVar} \simeq
-\neg {\tt in1} \vee \neg {\tt in2} \vee {\tt andVar}.$$
+$$\neg (i_1 \wedge i_2) \vee a \simeq
+\neg i_1 \vee \neg i_2 \vee a.$$
 
 It follows that the original double implication is equivalent to the CNF
 formula that corresponds to the generated clauses:
-$$ {\tt andVar} \Longleftrightarrow {\tt in1} \wedge {\tt in2} \simeq
-(\neg {\tt andVar} \vee {\tt in1}) \wedge (\neg {\tt andVar} \vee {\tt in2}) \wedge
-(\neg {\tt in1} \vee \neg {\tt in2} \vee {\tt andVar}).$$
+$$a \Leftrightarrow i_1 \wedge i_2 \simeq
+(\neg a \vee i_1) \wedge (\neg a \vee i_2) \wedge (\neg i_1 \vee \neg i_2 \vee a).$$
 
 
 \section{Model Checking}
@@ -1427,8 +1436,8 @@ The basic implementation's \verb,push, function avoids unnecessary consecution q
 considering clauses in \verb,f, that are not in \verb,f',. Further consecution queries may be
 eliminated by considering the clauses in \verb,f, that are subsumed by other clauses.
 
-A clause $c$ subsumes a clause $c'$ if the literals in $c$ are a subset of the literals in $c'$.
-In this case, $c \Rightarrow c'$ holds, so $c'$ can be removed from the set of clauses. By
+A clause $c$ \emph{subsumes} a clause $c'$ if the literals in $c$ are a subset of the literals
+in $c'$. In this case, $c \Rightarrow c'$ holds, so $c'$ can be removed from the set of clauses. By
 removing all subsumed clauses $c'$ from a frame before trying to push clauses, the model
 checker can avoid making the consecution queries that arise from attempts to push those clauses.
 
@@ -1455,9 +1464,30 @@ does result in satisfiable results for both the queries, then the literal can be
 but if not, the literal is added to a list \verb,needed, of necessary literals.
 After a parameterizable number of failed attempts at dropping a literal from the clause or after
 having attempted dropping all the literals, the
-\verb,inductiveGeneralization, function returns the clause resulting from appending the remaining
-literals in the clause (i.e. the literals that \verb,generalize, has not tried to drop)
+\verb,inductiveGeneralization, function that implements this approximation
+returns the clause resulting from appending the remaining
+literals in the clause (i.e. the literals that the \verb,generalize, has not tried to drop)
 with the literals in \verb,needed,.
+
+\begin{figure}[!Ht]
+\centering
+\begin{verbatim}
+inductiveGeneralization :: Clause -> Frame -> Frame -> Model -> Word
+                        -> Clause
+inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
+  where
+    generalize cs _ _ needed 0 = cs ++ needed
+    generalize [] _ _ needed _ = needed
+    generalize (c:cs) f0 fk needed k = 
+      let res = solveWithAssumps
+                  (solver (getFrameWith ((cs ++ needed):clauses fk) m))
+                  (map (prime.neg) (cs ++ needed))
+        if not (satisfiable res) && initiation f0 cs
+          then generalize cs f0 fk needed k
+          else generalize cs f0 fk (c:needed) ( k - 1 ) 
+\end{verbatim}
+\caption{The {\it inductiveGeneralization} function that approximates the {\it mic} algorithm.}
+\end{figure}
 
 This corresponds to the algorithm described in figure \ref{mic}, but where {\it down} simply
 checks for the relative inductiveness of the subclause and does not attempt to expand it.
@@ -1467,7 +1497,7 @@ The more elaborate implementation of generalization implements the full
 (but limited in number of attempts) MIC algorithm with the {\it down} function modified
 so that it deals with CTGs.
 
-\begin{algorithm}[H]
+\begin{algorithm}[!Ht]
 \DontPrintSemicolon
 \Fn{down$(cls, i)$}{
   \lIf{$\neg (I \Rightarrow {\it cls})$}{\Return{False}}
@@ -1493,13 +1523,17 @@ $I \Rightarrow c$ and $F_k \wedge c \wedge T \Rightarrow c'$, where $c$ is the s
 the algorithm.
 The difference is that {\it down} does not immediately attempt to expand $c$
 if $I \Rightarrow c$ is true and $F_k \wedge c \wedge T \Rightarrow c'$ is
-not; in this case, the negated CTG \verb,negCTG, is acquired by taking and negating the current literals in
+not; in this case, the CTG {\it ctg} is acquired by taking the current literals in
 the model the SAT solver gives for $\neg c' \wedge c \wedge T \wedge F_k$.
 
-The \verb,down, function then finds the deepest frame $F_{j - 1}$ for which \verb,negCTG, is inductive, and attempts to generalize
-\verb,negCTG, relative to that frame with a recursive call to \verb,generalize, with a decremented value of \verb,r,.
-The generalization of \verb,negCTG, can then be added to frame $F_j$,
-and \verb,down, is called recursively on the updated set of frames.
+The {\it down} algorithm then finds the deepest frame $F_{j - 1}$ for which $\neg {\it ctg}$ is inductive,
+and attempts to generalize $\neg {\it ctg}$ relative to that frame with a recursive call to the
+{\it mic} algorithm. The generalization of $\neg {\it ctg}$ can then be added to frame $F_j$,
+and {\it down} is called recursively using the updated set of frames.
+
+The implementation of {\it down} is approximate, the Haskell function \verb,down, that implements
+the algorithm takes a parameter \verb,r, that limits the number of CTGs that it will handle for
+each non-recursive call to the implementation of the approximation of the {\it mic} algorithm.
 
 \subsection{Priority Queue Variant}
 \label{pqueue}
