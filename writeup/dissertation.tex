@@ -165,11 +165,11 @@ as opposed to an explicit list of each individual state in the set
 
 Symbolic model checking was originally invented for use with ordered
 binary decision diagrams (BDDs), data structures that provide an efficient
-representation of boolean formulas. A unique BDD represents each logical
+representation of propositional formulas. A unique BDD represents each logical
 formula given a particular variable ordering, and an implementation that
 only stores each BDD once and uses pointers appropriately can result in
 less space being used.
-The efficiency of BDDs in storing boolean formulas allowed for the model
+The efficiency of BDDs in storing propositional formulas allowed for the model
 checking of systems with larger numbers of states than could be handled
 by explicit-state model checking \cite{mcmillan92}.
 
@@ -180,7 +180,7 @@ there is no such ordering that results in a space-efficient BDD
 \cite{biere99a}.
 
 An alternative to BDD-based symbolic model-checking techniques are SAT-based
-techniques, which do not use the canonical representations of boolean
+techniques, which do not use the canonical representations of propositional
 formulas as BDDs and make use of procedures for solving the boolean
 satisfiability problem.
 Such techniques include bounded model checking (BMC),
@@ -188,7 +188,6 @@ which proves properties by finding counterexamples of certain lengths
 \cite{biere99a};
 $k$-induction, which proves properties inductively \cite{sheeran00};
 and the IC3 algorithm that is the focus of this project.
-A brief description and comparison of these techniques follows.
 % Mention FSIS?
 % Mention ITP?
 
@@ -432,8 +431,13 @@ posed in conjunctive normal form. Further details are given in section \ref{Mini
 \section{Symbolic Representation}
 \label{logic}
 
-I give a brief review of concepts in logic, and introduce transition systems and the
-representation of states using boolean formulas.
+Symbolic model checkers rely on the representation of the underlying system as a
+transition system, which describes the behavior of the system as one-step transitions
+between states. Transition systems and states are themselves defined using
+propositional logic formulas.
+
+I give a brief review of concepts in logic before formally defining transition systems
+and explaining how propositional logic formulas represent states.
 
 \paragraph{Logic}{
 Unless otherwise specified, a variable is a propositional symbol,
@@ -441,7 +445,7 @@ and can be assigned to boolean values {\it True} or {\it False}.
 A \emph{literal} is defined as being either a variable $v$ or its negation $\neg v$.
 
 The concepts of a cube and a clause are useful in describing the
-representation of states as boolean formulas.
+representation of states as logical formulas.
 A \emph{cube} is defined to be a conjunction of literals and may be represented as the set
 of literals that occur in it. Similarly, a \emph{clause} is a disjunction of literals that
 may also be represented as the set of literals that occur in it.
@@ -462,16 +466,16 @@ that the clause obtained by negating a cube is specified by the set obtained
 by negating each literal in the cube set and that the cube obtained by negating
 a clause is specified by the set obtained by negating each literal in the clause.
 
-A boolean formula is in \emph{conjunctive normal form} (CNF) if it is a conjunction 
+A propositional formula is in \emph{conjunctive normal form} (CNF) iff it is a conjunction 
 $\bigwedge_i D_i$ of disjunctions $D_i$ of literals (i.e. clauses). A set of clauses
-can and often will be interpreted as the CNF formula resulting from the conjunction
+can be interpreted as the CNF formula resulting from the conjunction
 of the clauses.}
 
 \paragraph{Transition Systems}{
 A \emph{transition system} is a tuple $(i,x,I,T)$ consisting of a set of input
 variables $i$, state variables $x$, an initial
-set of states represented by the boolean expression $I(x)$ and
-a transition relation represented by the boolean expression $T(i,x,x')$,
+set of states represented by the logical formula $I(x)$ and
+a transition relation represented by the logical formula $T(i,x,x')$,
 where $x'$ is the set of next-state variables.
 
 For each state variable $v$, $v'$ denotes the corresponding next-state variable.
@@ -479,8 +483,8 @@ For example, a transition relation that states that all variables that are
 currently {\it True} should become {\it False} in the next state is as follows:
 $$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$
 
-Given transition relation $(i,x,I,T)$, a boolean formula $C$ is, by definition,
-inductive relative to another boolean formula $F$ if both
+Given transition relation $(i,x,I,T)$, a logical formula $C$ is, by definition,
+\emph{inductive relative} to another logical formula $F$ if both
 $I \Rightarrow C$ and $F \wedge C \wedge T \Rightarrow C'$ hold.
 }
 
@@ -494,11 +498,11 @@ at least one variable in the transition system does not appear in the cube. Such
 assignment $c$ specifies the set of cubes $\{a \in{\it Full~Assignment}|c \subset a\}$,
 where ${\it Full Assignment}$ is the set of complete assignments to the variables in the
 transition system.
-More generally, any boolean expression $b$ involving the variables in the transition
+More generally, any logical formula $b$ involving the variables in the transition
 system gives the set of states
 $\{a \in {\it Full~Assignment} | a \wedge b~{\rm is~satisfiable}\}$.
 
-A state that is in the set of states represented by a boolean formula $B$ is referred to
+A state that is in the set of states represented by a logical formula $B$ is referred to
 as a $B$ state. A set of states $s$ is said to be reachable
 in $k$ steps of the transition relation iff there exist states $s_0, \ldots, s_k$ such that
 $s_0$ is an $I$ state and $s_i \wedge T \Rightarrow s_{i + 1}$ for $1 \leq i < k$.
@@ -522,12 +526,13 @@ so such models were specified using BLIF and converted to AIGER format
 using the Aiger Utilities' \verb,bliftoaig, tool.
 
 Inputs to model checker are models formatted using either the ASCII or
-binary AIGER formats described below.
-
+binary versions of the AIGER format.
 The AIGER format provides a method of specifying hardware modeled as
 And-Inverter Graphs with latch elements providing single clock-tick
 delays: all circuits are modeled as a graph of nodes consisting only of
-AND gates, inverters, and latches.
+AND gates, inverters, and latches, where the latches behave like D
+flip-flops, outputting the value of the current input at the next
+clock tick.
 
 The AIGER format has both an ASCII and a binary version. The ASCII
 format is more flexible and human readable, imposing fewer constraints
@@ -703,9 +708,10 @@ Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
 safety property $P$, IC3 aims either to prove inductively that $P$ holds
 at all reachable states from the initial state or
 to find a $\neg P$ state that can be reached.
-The following pseudocode gives an overview of the basic IC3 algorithm:
+The pseudocode in \ref{overview} gives an overview of the basic IC3 algorithm,
+which I will refer to in my explanation of the algorithm.
 
-\begin{algorithm}[H]
+\begin{algorithm}[!Ht]
 \DontPrintSemicolon
 \Fn{prove$((i,x,I,T),P)$}{
   \lIf{$\neg (I \Rightarrow P)$ \label{initiation}}{
@@ -839,7 +845,7 @@ $s$ to a set of several states $c$ rather than a single state, and treating
 $c$ as the CTI. If $\neg c$ is successfully proven to be relatively inductive
 to $F_i$, then adding it to frame $F_{i + 1}$ eliminates several states (i.e.,
 all $c$ states) at once rather than only $s$. Because the cube $c$
-is chosen so that $\neg c \Longrightarrow \neg s$, at least one CTI state
+is chosen so that $\neg c \Rightarrow \neg s$, at least one CTI state
 has been removed from $F_{i + 1}$, and because $c$ contains several states,
 it is possible that several CTIs may have been removed from $F_{i + 1}$
 by adding the clause $\neg c$ to it. The process of finding such a cube $c$
@@ -1651,13 +1657,17 @@ $\neg d \subseteq c$. The proof obligation $(d,j)$ is then enqueued, and
 The {\it PriorityQueue} implementation represents proof obligations $(s,i)$ using the
 \verb,Obligation, type, which is a triple \verb.(Int, Int, Clause). of the depth $i$, a
 rank for deciding the ordering of proof obligations at the same depth within the priority
-queue, and the clause $\neg s$.
+queue, and the clause $\neg s$. Because of this representation of obligations, the
+function implementing {\it fulfillObligations} is named \verb,proveObligations,.
 
 In the \emph{PriorityQueue} implementation, the priority queue is represented by
 a \verb,MinQueue, (the minimal element has the highest
-priority) of \verb,Obligation,s containing the priority queue with only \verb,Obligation,
-\verb.(1, 0, [prop]). in it, and the initial frame. The function \verb,prove', then invokes \verb,proveObligations,,
-the main function for the \emph{PriorityQueue} implementation.
+priority) of \verb,Obligation,s.
+
+For example, the initial \verb,MinQueue, created after the successful initiation query
+is given by \verb.singleton (1, 0, [prop])., which represents the priority queue that
+contains only \verb,Obligation, \verb.(1, 0, [prop])., representing the proof obligation
+$(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
 
 \chapter{Evaluation}
 
