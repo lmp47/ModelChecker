@@ -282,22 +282,54 @@ to check, but also several variants of the algorithm.
 
 \chapter{Preparation}
 
-The preparation for the project involved distinguishing the main components
-of the project, choosing the necessary tools for implementing the components
-and developing the code for the project, and gaining the necessary knowledge
-about Haskell and the IC3 algorithm.
+The preparation for the project involved learning Haskell, distinguishing
+the main components of the project, choosing and learning how to use
+the necessary tools for implementing the components of the project,
+and gaining the necessary knowledge about the IC3 algorithm.
 
 \section{Haskell}
 
 I provide a brief introduction to Haskell, the language used to implement the
-majority of the code for the project.
+majority of the code for the project. I explain many of the features of the
+language by comparison with Standard ML.
 
 %Type signature syntax
+\paragraph{Types}{
+Similarly to Standard ML, Haskell compilers perform type inference, but type
+signatures can be (and, in some cases where type inference cannot resolve
+ambiguities, must be) provided. For example, the type signature for the
+\verb,prove, function in the model checker, which is a curried function
+that takes a \verb,Model, and a \verb,Lit, and returns a \verb,Bool,,
+implementation is given in figure \ref{typesigexample}.
 
-%List syntax
+\begin{figure}[ht!]
+\begin{verbatim}
+prove :: Model -> Lit -> Bool
+\end{verbatim}
+\caption{The type signature for the {\tt prove} function.}
+\label{typesigexample}
+\end{figure}
 
 % Type constructors, structs
 Haskell type constructors work similarly to Standard ML type constructors.
+}
+
+%List syntax
+\paragraph{Lists}{
+The model checker implemented as part of this project makes extensive use
+of lists. List types in Haskell are denoted using square brackets, i.e.
+a list of \verb,Lit,s has type \verb,[Lit],.
+Lists can be appended using the \verb,++, infix operator, and elements
+can be prepended to lists using the infix operator \verb,:,. For
+example, the Haskell equivalent to the Standard ML expression \verb.1::[2,3,4] @ [5,6].
+is \verb.1:[2,3,4] ++ [5,6]..}
+
+%Modules
+\paragraph{Modules}{
+A Haskell program consists of modules, which are used to organize code.
+Modules (or just selected functions from modules) can be imported into other
+modules, which is how library functions can be used.
+}
 
 \section{Requirements Analysis}
 
@@ -730,6 +762,42 @@ backwards-compatible.
 The new version of the format is otherwise
 the same as the old format.}
 
+\section{MiniSat}
+\label{MiniSat}
+
+To solve a SAT query, MiniSat creates an instance of a \verb,Solver, object,
+which contains a set of variables, sets of clauses, and possibly a model or a conflict vector.
+The set of variables in the \verb,Solver, gives all the variables that may appear in
+a SAT query, the set of clauses forms the SAT query, and the model or conflict vector
+gives further information about the last SAT query made.
+
+In addition to a \verb,Var, type for representing variables, MiniSat has a \verb,Lit, type for
+representing literals, and MiniSat represents sets of clauses as \verb,vec<Lit>,s,
+vectors of literals. The set of clauses in a \verb,Solver, together represent a CNF query,
+so that if the \verb,Solver,'s \verb,solve(), function is called,
+the resulting \verb,bool, indicates whether the query is satisfiable or not. The
+\verb,solve(), function is overloaded so that it may also take an assumption \verb,vec<Lit>*, as
+an argument. The literals in the assumption vector must hold in addition to the CNF query formed
+by the \verb,Solver,'s clauses: if the \verb,Solver,'s clauses form some CNF query $C$ and
+\verb,solve(assumps), is called, where \verb,assumps, points to the the assumption vector
+containing all the literals in some set $A$, then the SAT query is $C \wedge \bigwedge_{l \in A} l$.
+
+If at least one query to a \verb,Solver, has been made, then if the last query to the
+\verb,Solver, was satisfiable, the \verb Solver, provides a \verb,model, pointer
+to a set of satisfying variable assignments for that query, or, if the last query to the solver
+was not satisfiable, the \verb,conflict, pointer to a set of literals from the assumption
+vector provided in the query that contributed to the query being unsatisfiable.
+
+If there has been at least one query made of the \verb,Solver, object, and the query was
+satisfiable, the \verb,Solver,'s \verb,model, variable points to a set of variable assignments
+for that SAT query.
+If there has been at least one query made of the \verb,Solver, object, and the query was
+unsatisfiable, the \verb,Solver,'s \verb,conflict, variable points to a set of literals that
+contains the assumed literals that caused the query to be unsatisfiable.
+
+This model checker uses instances of \verb,SimpSolver,, a subclass of the \verb,Solver, class
+that does simplification and returns full assignments.
+
 \section{The IC3 Algorithm}
 %Describe how the IC3 algorithm works when trying to prove a model has a property
 %$P$.
@@ -1056,49 +1124,11 @@ Because the Haskell Foreign Function Interface cannot interface with C++ directl
 the interface to the MiniSat SAT solver is composed of a C wrapper for the relevant
 MiniSat functions and classes and a Haskell interface to the C wrapper.
 
-\subsection{MiniSat Overview}
-\label{MiniSat}
-
-To solve a SAT query, MiniSat creates an instance of a \verb,Solver, object,
-which contains a set of variables, sets of clauses, and possibly a model or a conflict vector.
-The set of variables in the \verb,Solver, gives all the variables that may appear in
-a SAT query, the set of clauses forms the SAT query, and the model or conflict vector
-gives further information about the last SAT query made.
-
-In addition to a \verb,Var, type for representing variables, MiniSat has a \verb,Lit, type for
-representing literals, and MiniSat represents sets of clauses as \verb,vec<Lit>,s,
-vectors of literals. The set of clauses in a \verb,Solver, together represent a CNF query,
-so that if the \verb,Solver,'s \verb,solve(), function is called,
-the resulting \verb,bool, indicates whether the query is satisfiable or not. The
-\verb,solve(), function is overloaded so that it may also take an assumption \verb,vec<Lit>*, as
-an argument. The literals in the assumption vector must hold in addition to the CNF query formed
-by the \verb,Solver,'s clauses: if the \verb,Solver,'s clauses form some CNF query $C$ and
-\verb,solve(assumps), is called, where \verb,assumps, points to the the assumption vector
-containing all the literals in some set $A$, then the SAT query is $C \wedge \bigwedge_{l \in A} l$.
-
-If at least one query to a \verb,Solver, has been made, then if the last query to the
-\verb,Solver, was satisfiable, the \verb Solver, provides a \verb,model, pointer
-to a set of satisfying variable assignments for that query, or, if the last query to the solver
-was not satisfiable, the \verb,conflict, pointer to a set of literals from the assumption
-vector provided in the query that contributed to the query being unsatisfiable.
-
-If there has been at least one query made of the \verb,Solver, object, and the query was
-satisfiable, the \verb,Solver,'s \verb,model, variable points to a set of variable assignments
-for that SAT query.
-If there has been at least one query made of the \verb,Solver, object, and the query was
-unsatisfiable, the \verb,Solver,'s \verb,conflict, variable points to a set of literals that
-contains the assumed literals that caused the query to be unsatisfiable.
-
-This model checker uses instances of \verb,SimpSolver,, a subclass of the \verb,Solver, class
-that does simplification and returns full assignments.
-
-\subsection{C Wrapper}
-
 Much of the C wrapper is straightforwardly as follows: every MiniSat class is replaced with a C
 type, and every MiniSat function is replaced with a function with an \verb,extern C, function that
 calls the MiniSat C++ function, as in figure \ref{addClause}.
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \begin{verbatim}
 extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
                                  Minisat::vec<Minisat::Lit>* ps) {
@@ -1116,7 +1146,7 @@ The wrapper function \verb,solveWithAssumps, for the version of \verb,solve(), t
 vector as an argument and returns a pointer to a \verb,result, struct
 rather than just whether or not the query was satisfiable.
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \begin{verbatim}
 struct result {
   unsigned solved;
@@ -1128,8 +1158,6 @@ struct result {
 \end{verbatim}
 \caption{The {\tt result} struct from {\tt CSolver.h}}
 \end{figure}
-
-\subsection{Haskell Interface}
 
 The Haskell interface makes use of the Haskell FFI as well as the \verb,hsc2hs, preprocessor
 for handling the \verb,result, struct.
@@ -1711,37 +1739,47 @@ $(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
 
 The different versions of the model checker were run on fifteen handwritten examples,
 fifty (sixty) examples from HWMCC'10, eleven (twenty) examples from HWMCC'11, and
-two (ten) examples from HWMCC'13. The solutions given by the model checker implementations
-were compared against the solutions given by Aaron Bradley's reference implementation,
-and the performance of the model checker implementations were compared with each other
-and with the reference implementation.
+two (ten) examples from HWMCC'13.
+If the elapsed time for attempting to solve an example took longer than ten minutes, the
+attempt was considered to have timed out. 
 
 The largest (in terms of number of variables) unsafe example that the model checker gave a solution
 for was \verb,bj08goodbakerycyclef7.aig, from HWMCC'10, which has 19900 variables.
 The largest example for which the safety property holds that the model checker gave a solution
 to was \verb,,.
 
+I compare solutions given by the model checker implementations
+against the solutions given by Aaron Bradley's reference implementation and compare
+the performance of the model checker implementations were compared with each other
+and with the reference implementation, discussing the possible causes of the
+differences among implementations.
+
+
 \section{Solving}
 
 The solutions for all examples that the model checker implementations solved without timing out
-agreed with the solutions given by Aaron Bradley's reference implementation.
+agreed with the solutions given by Aaron Bradley's reference implementation, providing evidence
+for the correctness of the solutions given by the model checker.
 
 \section{Benchmarking}
 %figure out how to indicate nontimeout/timeouts better
 Benchmarks were taken for the performance of the different versions of the model checker and the reference
-implementation. For each example, forty benchmarking samples were taken, and if the elapsed time for
-attempting to solve an example took longer than ten minutes, the attempt was considered to have timed out.
+implementation. For each example, forty benchmarking samples were taken.
 
 Other than timing data, I also collected data about the number of frames needed to solve an example,
 the average number of literals per clause, the number of CTIs discovered, the number of SAT-solver queries, and,
 for the \emph{CTG} implementation, the number of CTGs discovered.
+
+The majority of examples for which the implementations did not time out did not require
+CTIs.
 
 \section{Performance Impact of Variations}
 %Discuss performance comparison of the naive implementation of the
 %model checker and the final implementation of the model checker.
 
 The overall performance of the model checker is heavily dependent on the size and number of SAT-solver queries;
-profiling has consistently revealed that functions in the Minisat module consume the most time when solving examples.
+profiling has consistently revealed that functions in the \verb,MiniSat.Minisat, module consume the most time
+when solving examples.
 
 \subsection{Smaller Counterexamples to Induction}
 
