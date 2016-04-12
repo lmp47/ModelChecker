@@ -1046,7 +1046,7 @@ in overall structure, the finding of CTIs, the way that propagation is performed
 the way that CTIs are inductively generalized. The different variants and the
 differences among them are given in figure \ref{implementationSummary}.
 
-\begin{figure}[ht]
+\begin{figure}[!ht]
 \centering
 \begin{tabular}{l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em}}
 & Priority Queue & Smaller CTIs & Subsumed Clauses & Basic Generalization & Generalization with CTGs\\
@@ -1057,12 +1057,12 @@ differences among them are given in figure \ref{implementationSummary}.
 \emph{PriorityQueue} & \checkmark & \checkmark & \checkmark & \checkmark & \\
 \emph{CTG} & & \checkmark & \checkmark & & \checkmark
 \end{tabular}
-\caption{A summary of the different model-checker versions implemented.}
+\caption{A summary of the different model-checker variants implemented.}
 \label{implementationSummary}
 \end{figure}
 
 I provide an explanation of the implementation of each of the four main components
-in turn.
+in turn. 
 
 \section{Parser}
 %Discuss the implementation of the AIGER parser. In particular, mention
@@ -1494,7 +1494,7 @@ rely on the implementation of the
 {\it push} function, which has two variants described below.
 
 \subsubsection{Basic}
-The {\it Basic} and {\it betterCTI} implementations' \verb,push, function,
+The {\it Basic} and {\it BetterCTI} implementations' \verb,push, function,
 when invoked as \verb,push f model f', tries to push all clauses in \verb,Frame, \verb,f,
 that are not in \verb,Frame, \verb,f', to \verb,f', and
 results in a pair containing a \verb,Bool, indicating whether a fixed point has been reached
@@ -1506,7 +1506,7 @@ the clause can be conjoined to the frame represented by \verb,f',, and if it is 
 function must have \verb,False, as the first element in the pair it returns.
 
 \subsubsection{Subsumed clauses}
-The {\it Basic} and {\it betterCTI} implementations' \verb,push, function avoids unnecessary
+The {\it Basic} and {\it BetterCTI} implementations' \verb,push, function avoids unnecessary
 consecution queries by only considering clauses in \verb,f, that are not in \verb,f',.
 Further consecution queries may be eliminated by considering the clauses in \verb,f, that are
 subsumed by other clauses, which is done by all implementation variants other than {\it Basic}
@@ -1562,7 +1562,7 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
           then generalize cs f0 fk needed k
           else generalize cs f0 fk (c:needed) ( k - 1 ) 
 \end{verbatim}
-\caption{The {\it inductiveGeneralization} function that approximates the {\it mic} algorithm.}
+\caption{The {\tt inductiveGeneralization} function that approximates the {\it mic} algorithm.}
 \end{figure}
 
 This corresponds to the algorithm described in figure \ref{mic}, but where {\it down} simply
@@ -1737,16 +1737,16 @@ $(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
 
 \chapter{Evaluation}
 
-The different versions of the model checker were run on fifteen handwritten examples,
+The different variants of the model checker were run on fifteen handwritten examples,
 fifty (sixty) examples from HWMCC'10, eleven (twenty) examples from HWMCC'11, and
 two (ten) examples from HWMCC'13.
 If the elapsed time for attempting to solve an example took longer than ten minutes, the
 attempt was considered to have timed out. 
 
-The largest (in terms of number of variables) unsafe example that the model checker gave a solution
-for was \verb,bj08goodbakerycyclef7.aig, from HWMCC'10, which has 19900 variables.
-The largest example for which the safety property holds that the model checker gave a solution
-to was \verb,,.
+The handwritten examples served as the ``small examples'' that the model checker
+was meant to correctly solve as part of the aims of the project. The model checker 
+was not only able to solve all the handwritten examples correctly, but to solve
+several examples taken from the Hardware Model Checking Competition as well.
 
 I compare solutions given by the model checker implementations
 against the solutions given by Aaron Bradley's reference implementation and compare
@@ -1757,9 +1757,15 @@ differences among implementations.
 
 \section{Solving}
 
-The solutions for all examples that the model checker implementations solved without timing out
-agreed with the solutions given by Aaron Bradley's reference implementation, providing evidence
-for the correctness of the solutions given by the model checker.
+For all examples that the model checker implementations solved without timing out, the
+implementations' solutions agree with the solutions given by Aaron Bradley's reference
+implementation, providing evidence for the correctness of the solutions given by the model checker
+implementations.
+
+The largest (in terms of number of variables) unsafe example that the model checker gave a solution
+for was \verb,bj08goodbakerycyclef7.aig, from HWMCC'10, which has 19900 variables.
+The largest example for which the safety property holds that the model checker gave a solution
+to was \verb,,.
 
 \section{Benchmarking}
 %figure out how to indicate nontimeout/timeouts better
@@ -1770,7 +1776,7 @@ Other than timing data, I also collected data about the number of frames needed 
 the average number of literals per clause, the number of CTIs discovered, the number of SAT-solver queries, and,
 for the \emph{CTG} implementation, the number of CTGs discovered.
 
-The majority of examples for which the implementations did not time out did not require
+The majority of examples for which the implementations did not time out did not require finding any
 CTIs.
 
 \section{Performance Impact of Variations}
