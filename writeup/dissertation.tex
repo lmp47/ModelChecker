@@ -110,6 +110,13 @@ extent for a comparable purpose.
 
 \chapter{Introduction}
 
+This project focuses on implementing the IC3 algorithm, a SAT-based model checker. 
+To provide context for the project,
+I provide a brief introduction to formal verification and model checking, followed
+by a discussion of symbolic model checking and SAT-based model checking.
+I then highlight some of the important features of the IC3 algorithm and its more
+recent uses.
+
 %Provide a brief description of model checking in general.
 
 Formal verification is the use of mathematics and logic to prove properties of
@@ -138,10 +145,6 @@ necessarily discovered a reachable state that violates the property.
 A counterexample trace can, in such cases, be provided, giving
 greater insight into why the property does not hold for that
 model.
-
-A brief description of symbolic model-checking and SAT-based model-checking
-follows to provide further context for this project, which focuses on
-implementing the IC3 algorithm, a SAT-based model-checking algorithm.
 
 
 \section{Symbolic Model Checking}
@@ -278,6 +281,23 @@ competition in addition to the small hardware models I initially set out
 to check, but also several variants of the algorithm.
 
 \chapter{Preparation}
+
+The preparation for the project involved distinguishing the main components
+of the project, choosing the necessary tools for implementing the components
+and developing the code for the project, and gaining the necessary knowledge
+about Haskell and the IC3 algorithm.
+
+\section{Haskell}
+
+I provide a brief introduction to Haskell, the language used to implement the
+majority of the code for the project.
+
+%Type signature syntax
+
+%List syntax
+
+% Type constructors, structs
+Haskell type constructors work similarly to Standard ML type constructors.
 
 \section{Requirements Analysis}
 
@@ -686,6 +706,15 @@ in the old format, and
 \item \verb,F, gives the number of fairness constraints
 \end{itemize}
 
+The ``bad state'' properties allow for the specification of properties for
+a model checker to prove are unreachable separately from the outputs; in
+the old AIGER format, such properties had to be specified as outputs.
+The invariant constraints allow for the specification of properties that
+are true at all states up to and including the state where the ``bad state''
+is found.
+Justice and fairness constraints are not included in the model used by
+the model checker and will not be explained further.
+
 Components are specified after the header in the same order that their
 counts are given in the header with the exception of AND gates, which
 occur at the end of the file. Latches' initial values can also be specified
@@ -944,7 +973,28 @@ frame $F_k$ allows $s$ to be generalized to $c$.
 
 The implementation can be broken up into four main components: the AIGER parser, the
 MiniSat interface, the hardware model representation, and the model checker.
+I implemented several different variants of the model checker component that differ
+in overall structure, the finding of CTIs, the way that propagation is performed, and
+the way that CTIs are inductively generalized. The different variants and the
+differences among them are given in figure \ref{implementationSummary}.
 
+\begin{figure}[ht]
+\centering
+\begin{tabular}{l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em}}
+& Priority Queue & Smaller CTIs & Subsumed Clauses & Basic Generalization & Generalization with CTGs\\
+\hline
+\emph{Basic} & & & & \checkmark & \\
+\emph{BetterCTI} & & \checkmark & & \checkmark & \\
+\emph{BetterPropagation} & & \checkmark & \checkmark & \checkmark &\\
+\emph{PriorityQueue} & \checkmark & \checkmark & \checkmark & \checkmark & \\
+\emph{CTG} & & \checkmark & \checkmark & & \checkmark
+\end{tabular}
+\caption{A summary of the different model-checker versions implemented.}
+\label{implementationSummary}
+\end{figure}
+
+I provide an explanation of the implementation of each of the four main components
+in turn.
 
 \section{Parser}
 %Discuss the implementation of the AIGER parser. In particular, mention
@@ -1236,20 +1286,6 @@ and a version that improves upon the version with improved CTIs by considering s
 I have also implemented a variation of IC3 that uses priority queues (\emph{PriorityQueue}) and a
 variation that uses CTGs to improve generalization (\emph{CTG}).
 
-\begin{figure}[h]
-\centering
-\begin{tabular}{l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em}}
-& Priority Queue & Smaller CTIs & Subsumed Clauses & Basic Generalization & Generalization with CTGs\\
-\hline
-\emph{Basic} & & & & \checkmark & \\
-\emph{BetterCTI} & & \checkmark & & \checkmark & \\
-\emph{BetterPropagation} & & \checkmark & \checkmark & \checkmark &\\
-\emph{PriorityQueue} & \checkmark & \checkmark & \checkmark & \checkmark & \\
-\emph{CTG} & & \checkmark & \checkmark & & \checkmark
-\end{tabular}
-\caption{A summary of the different model-checker versions implemented.}
-\end{figure}
-
 \subsection{Overall structure}
 
 The general structure of the algorithm in the implementations is similar
@@ -1342,7 +1378,7 @@ When the consecution query fails, the adjusted algorithm, like the original in f
 calls the ${\it propagate}$ function to handle the updates to the frames made by ${\it proveNegCTI}$.
 
 \subsection{Frames}
-The \verb,Frame, data structure represents frames in the IC3 algorithm.
+The \verb,Frame, data structure represents frames in all implementations of the model checker.
 Along with the set of clauses (represented by a list of literals), a \verb,Frame, also includes
 a \verb,Solver,, which contains at least all the clauses in the frame's set of clauses. The
 \verb,Solver, may also contain the \verb,transition, clauses for the hardware model.
@@ -1352,7 +1388,7 @@ a \verb,Solver,, which contains at least all the clauses in the frame's set of c
 
 The initiation query $I \Rightarrow P$ is an implication, but a MiniSat \verb,Solver, can only
 solve queries given in CNF (with an optional assumption cube). As a result, the representation
-for the query $I \Rightarrow P$ for a frame $I$ and a clause $P$ makes use of the logical equivalence between
+of the query $I \Rightarrow P$ for a frame $I$ and a clause $P$ makes use of the logical equivalence between
 $I \Rightarrow P$ and $\neg (\neg P \wedge I)$.
 
 The implementation of the initiation query in figure \ref{impl:initiation} makes use of
@@ -1375,7 +1411,7 @@ initiation f prop =
 %Describe how the step involving the consecution query is implemented.
 
 Similarly to how the implication in the initiation query is converted to an equivalent CNF
-formula, the implementation uses the logical equivalence of
+formula, all implementation variants use the logical equivalence of
 $F_k \wedge T \Rightarrow P'$ and $\neg (\neg P' \wedge F_k \wedge T)$ along with deMorgan's
 laws to yield the implementation in figure \ref{impl:consecution}.
 
@@ -1407,7 +1443,8 @@ These current-state literals are extracted from the model in the function that
 called \verb,nextCTI,.
 
 \subsubsection{Smaller Counterexamples to Induction}
-In the other implementations of the algorithm, \verb,nextCTI, again asks for a model $m$
+In the all implementations of the algorithm other than {\it Basic},
+\verb,nextCTI, again asks for a model $m$
 for the satisfiable query $\neg P' \wedge F_k \wedge T$. The only literals in $m$ that
 must necessarily be included in the CTI are those current-state literals that result in
 the unsatisfiability of $m \wedge P' \wedge T$. That is, the current-state literals of any
@@ -1423,12 +1460,15 @@ the current-state literals from $q$ to obtain the CTI.
 \subsection{Propagation}
 
 Both the implementation of the {\it pushFrame} function and the implementation of the
-{\it propagate} function in figure \ref{recstr} rely on the implementation of the
+{\it propagate} function in figure \ref{recstr} and figure \ref{pqueuestr} (which
+describes the structure of the {\it priorityQueue} implementation)
+rely on the implementation of the
 {\it push} function, which has two variants described below.
 
 \subsubsection{Basic}
-The most basic implementation's \verb,push, function, when invoked as \verb,push f model f', tries
-to push all clauses in \verb,Frame, \verb,f, that are not in \verb,Frame, \verb,f', to \verb,f', and
+The {\it Basic} and {\it betterCTI} implementations' \verb,push, function,
+when invoked as \verb,push f model f', tries to push all clauses in \verb,Frame, \verb,f,
+that are not in \verb,Frame, \verb,f', to \verb,f', and
 results in a pair containing a \verb,Bool, indicating whether a fixed point has been reached
 (i.e., all clauses could be pushed) and a \verb,Frame, with all the clauses in \verb,f', and all
 the clauses in \verb,f, that could be pushed to \verb,f',.
@@ -1438,9 +1478,11 @@ the clause can be conjoined to the frame represented by \verb,f',, and if it is 
 function must have \verb,False, as the first element in the pair it returns.
 
 \subsubsection{Subsumed clauses}
-The basic implementation's \verb,push, function avoids unnecessary consecution queries by only
-considering clauses in \verb,f, that are not in \verb,f',. Further consecution queries may be
-eliminated by considering the clauses in \verb,f, that are subsumed by other clauses.
+The {\it Basic} and {\it betterCTI} implementations' \verb,push, function avoids unnecessary
+consecution queries by only considering clauses in \verb,f, that are not in \verb,f',.
+Further consecution queries may be eliminated by considering the clauses in \verb,f, that are
+subsumed by other clauses, which is done by all implementation variants other than {\it Basic}
+and {\it betterCTI}.
 
 A clause $c$ \emph{subsumes} a clause $c'$ if the literals in $c$ are a subset of the literals
 in $c'$. In this case, $c \Rightarrow c'$ holds, so $c'$ can be removed from the set of clauses. By
