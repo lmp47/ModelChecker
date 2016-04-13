@@ -1554,7 +1554,7 @@ with the literals in \verb,needed,.
 
 \begin{figure}[!Ht]
 \centering
-\begin{verbatim}
+\begin{lstlisting}
 inductiveGeneralization :: Clause -> Frame -> Frame -> Model -> Word
                         -> Clause
 inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
@@ -1568,7 +1568,7 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
         if not (satisfiable res) && initiation f0 cs
           then generalize cs f0 fk needed k
           else generalize cs f0 fk (c:needed) ( k - 1 ) 
-\end{verbatim}
+\end{lstlisting}
 \caption{The {\tt inductiveGeneralization} function that approximates the {\it mic} algorithm.}
 \end{figure}
 
@@ -1754,17 +1754,47 @@ three, and the parameterizable number of CTGs that each generalization attempt
 in the {\it CTG} implementation will handle is also set to three.
 
 The handwritten examples served as the ``small examples'' that the model checker
-was meant to correctly solve as part of the aims of the project. The model checker
+was meant to correctly solve as part of the aims of the project, with the largest
+(in terms of number of variables) of the handwritten examples,
+\verb,simple_counters.aig,, having 82 variables. The model checker
 implementations were not only able to solve all the handwritten examples correctly,
 but to solve sixty of the examples taken from the Hardware Model Checking Competitions
 within ten minutes as well.
 
-I compare solutions given by the model checker implementations
-against the solutions given by Aaron Bradley's reference implementation and compare
+Following a description of the output of the model checker,
+I discuss the solving capabilities of the model checking implementations and compare
 the performance of the model checker implementations were compared with each other
 and with the reference implementation, discussing the possible causes of the
 differences among implementations.
 
+
+\section{Output}
+
+The output of all model checker implementations gives the value \verb,True, if the safety
+property holds (i.e. if a bad state is not reachable from the initial state) and
+\verb,False, if it does not. The model checker implementations also output the safety property
+that they have attempted to prove. The implementations also provide debug output that gives
+statistics on solving if a nonzero number of frames was required to solve the example.
+In particular, all variants' outputs give the number of frames, the average number of
+literals per clause, the number of CTIs found, and the number of queries made for solving
+that example. The {\it CTG} implementation also reports the number of CTGs found. Sample output
+for the {\it CTG} implementation run on example \verb,eijks713.aig,
+is given in figure \ref{sampleoutput}.
+
+\begin{figure}[!ht]
+\centering
+\begin{verbatim}
+"Safety property: Var 454"
+Number of frames: 3
+Average number of literals/clause (not counting transition relation): 1.1185701830863122
+Number of ctis: 9
+Number of ctgs: 2
+Number of queries: 1711
+"False"
+\end{verbatim}
+\caption{Sample output for running the {\it CTG} implementation on example {\tt eijks713.aig}.
+\label{sampleoutput}
+\end{figure}
 
 \section{Solving}
 
@@ -1774,9 +1804,11 @@ implementation, providing evidence for the correctness of the solutions given by
 implementations.
 
 The largest (in terms of number of variables) unsafe example that the model checker gave a solution
-for was \verb,bj08goodbakerycyclef7.aig, from HWMCC'10, which has 19900 variables.
+for without timing out was \verb,bj08goodbakerycyclef7.aig, from HWMCC'10, which has 19900 variables.
 The largest example for which the safety property holds that the model checker gave a solution
-to was \verb,,.
+to without timing out was \verb,,. Note that the number of variables in an example is only weakly
+correlated with the amount of time needed to solve the example.
+% (simple linear regression gives $r^2$ less than $0.3$).
 
 \section{Benchmarking}
 %figure out how to indicate nontimeout/timeouts better
@@ -1795,9 +1827,9 @@ and {\it CTG} implementations give similar results.
 %Discuss performance comparison of the naive implementation of the
 %model checker and the final implementation of the model checker.
 
-The overall performance of the model checker is heavily dependent on the size and number of SAT-solver queries;
-profiling has consistently revealed that functions in the \verb,MiniSat.Minisat, module consume the most time
-when solving examples.
+Profiling has consistently revealed that functions in the \verb,MiniSat.Minisat, module consume the most time
+when solving examples, suggesting that the overall performance of the model checker is heavily dependent on the
+size and number of SAT-solver queries.
 
 \begin{figure}[!ht]
 \caption{Average literals per clause for examples that require finding at least one CTI.}
@@ -1807,7 +1839,7 @@ when solving examples.
 \caption{Performance for examples that require finding at least one CTI.}
 \end{figure}
 
-\subsection{Smaller Counterexamples to Induction}
+%\subsection{Smaller Counterexamples to Induction}
 
 Discovering smaller CTIs leads, as expected, to a smaller average number of literals per clause. This
 smaller number of literals per clause suggests smaller SAT queries, and {\it betterCTI} exhibits
@@ -1819,7 +1851,7 @@ that required finding CTIs without timing out, but the \emph{BetterCTI} version 
 (and all other implementations that include finding smaller CTIs)
 solved seven more examples than the \emph{Basic} version without timing out.
 
-\subsection{Propagation}
+%\subsection{Propagation}
 
 Also as expected, removing subsumed clauses results in a smaller number of literals per clause, resulting in
 the \emph{BetterPropagation} version having slightly better performance than the \emph{BetterCTI} version.
@@ -1850,7 +1882,7 @@ CTI $s$ would not, after its initial discovery, need to be discovered again.
 Even if $s$ is not a CTI for proving $p$ at depth $i + 2$, the proof obligations $(s, i+1)$ would still need to
 be fulfilled before \verb,proveObligations, attempts to fulfill $(\neg p, i + 2)$.
 
-\section{Performance Comparison with Reference Implementation}
+\section{Reference Implementation}
 %Discuss performance comparison of final implementation with
 %IC3 reference implementation, taking into account differences between
 %the implementations.
@@ -1921,10 +1953,13 @@ The project aims to implement a basic version of the IC3 algorithm in Haskell wi
 and SAT-solver interface have been achieved, and the goal of the model checker being able to check
 small example hardware model has also been reached. Furthermore, several variants of the model checker
 have been implemented, and the implementations of the model checker can model check not only
-my small handwritten examples but also models from the Hardware Model Checking Competitions with hundreds
+my handwritten hardware model examples but also models from the Hardware Model Checking Competitions with hundreds
 of thousands of variables.
 
 \section{Summary}
+
+The IC3 algorithm is a recently-developed SAT-based model-checking algorithm notable for its method of
+using counterexamples to induction to discover new invariants.
 
 \section{Further extensions}
 Rather than implement the extensions mentioned in the initial project proposal, I elected to implement
