@@ -21,6 +21,13 @@
 \renewcommand{\baselinestretch}{1.1}    % adjust line spacing to make
                                         % more readable
 
+\lstset{
+  basicstyle = \footnotesize\ttfamily,
+  columns = fullflexible,
+  keepspaces = true,
+  keywordstype = \bf
+}
+
 \begin{document}
 \SetKwProg{Fn}{Function}{:}{end}
 
@@ -289,8 +296,8 @@ and gaining the necessary knowledge about the IC3 algorithm.
 
 \section{Haskell}
 
-I provide a brief introduction to Haskell, the language used to implement the
-majority of the code for the project. I explain many of the features of the
+The majority of the code for the project is implemented in the functional
+programming language Haskell. I explain many of the features of the
 language by comparison with Standard ML.
 
 %Type signature syntax
@@ -303,9 +310,9 @@ that takes a \verb,Model, and a \verb,Lit, and returns a \verb,Bool,,
 implementation is given in figure \ref{typesigexample}.
 
 \begin{figure}[ht!]
-\begin{verbatim}
+\begin{listing}
 prove :: Model -> Lit -> Bool
-\end{verbatim}
+\end{listing}
 \caption{The type signature for the {\tt prove} function.}
 \label{typesigexample}
 \end{figure}
@@ -1737,16 +1744,20 @@ $(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
 
 \chapter{Evaluation}
 
-The different variants of the model checker were run on fifteen handwritten examples,
-fifty (sixty) examples from HWMCC'10, eleven (twenty) examples from HWMCC'11, and
-two (ten) examples from HWMCC'13.
+The different variants of the model checker were run on fifteen handwritten examples
+and over one hundred examples taken from across HWMCC'10, HWMCC'11, and HWMCC'13
+(several examples are common to the competitions from different years).
 If the elapsed time for attempting to solve an example took longer than ten minutes, the
-attempt was considered to have timed out. 
+attempt was considered to have timed out. The parameterizable number of failed attempts
+at dropping literals in the \verb,inductiveGeneralization, functions were set to set to
+three, and the parameterizable number of CTGs that each generalization attempt
+in the {\it CTG} implementation will handle is also set to three.
 
 The handwritten examples served as the ``small examples'' that the model checker
-was meant to correctly solve as part of the aims of the project. The model checker 
-was not only able to solve all the handwritten examples correctly, but to solve
-several examples taken from the Hardware Model Checking Competition as well.
+was meant to correctly solve as part of the aims of the project. The model checker
+implementations were not only able to solve all the handwritten examples correctly,
+but to solve sixty of the examples taken from the Hardware Model Checking Competitions
+within ten minutes as well.
 
 I compare solutions given by the model checker implementations
 against the solutions given by Aaron Bradley's reference implementation and compare
@@ -1777,7 +1788,8 @@ the average number of literals per clause, the number of CTIs discovered, the nu
 for the \emph{CTG} implementation, the number of CTGs discovered.
 
 The majority of examples for which the implementations did not time out did not require finding any
-CTIs.
+CTIs; for these examples, the the {\it Basic}, {\it BetterCTI}, {\it BetterPropagate},
+and {\it CTG} implementations give similar results. 
 
 \section{Performance Impact of Variations}
 %Discuss performance comparison of the naive implementation of the
@@ -1787,26 +1799,39 @@ The overall performance of the model checker is heavily dependent on the size an
 profiling has consistently revealed that functions in the \verb,MiniSat.Minisat, module consume the most time
 when solving examples.
 
+\begin{figure}[!ht]
+\caption{Average literals per clause for examples that require finding at least one CTI.}
+\end{figure}
+
+\begin{figure}[!ht]
+\caption{Performance for examples that require finding at least one CTI.}
+\end{figure}
+
 \subsection{Smaller Counterexamples to Induction}
 
-Discovering smaller CTIs leads, as expected, to a smaller number of literals per clause and smaller SAT queries,
-giving consistent performance improvements over the basic CTI-finding implementation for nontrivial
-examples (i.e. examples that require finding at least one CTI). The \emph{BetterCTI} version of the implementation
+Discovering smaller CTIs leads, as expected, to a smaller average number of literals per clause. This
+smaller number of literals per clause suggests smaller SAT queries, and {\it betterCTI} exhibits
+better performance than the {\it Basic} implementation for examples
+that require finding at least one CTI. The {\it Basic} implementation was able
+to solve only three unsafe examples (\verb,shortp0.aig,, \verb,shortp0neg.aig,, and \verb,srg5ptimoneg.aig,)
+from the Hardware Model Checking Competitions and no safe examples from the Hardware Model Checking Competitions
+that required finding CTIs without timing out, but the \emph{BetterCTI} version of the implementation
 (and all other implementations that include finding smaller CTIs)
-can solve seven more examples than the \emph{Basic} version without timing out.
+solved seven more examples than the \emph{Basic} version without timing out.
 
 \subsection{Propagation}
 
 Also as expected, removing subsumed clauses results in a smaller number of literals per clause, resulting in
 the \emph{BetterPropagation} version having slightly better performance than the \emph{BetterCTI} version.
 While the performance impact that the improvement has is less dramatic than the improvement of \emph{BetterCTI}
-over \emph{Basic} finding smaller CTIs, there is still a consistent improvement of benchmarked times for all
-nontrivial examples.
+over \emph{Basic} finding smaller CTIs, there is still a consistent improvement of benchmarked times for
+examples that require more than one frame.
 
 \subsection{Counterexamples to Generalization}
 
 The \emph{CTG} version that deals with CTGs performs the same as or worse than the \emph{BetterPropagation} version
-on examples, most likely because the examples used are too small for the performance benefits of using CTGs to
+on examples, even in cases where \emph{CTG} reduces the average number of frames per clause,
+most likely because the examples used are too small for the performance benefits of using CTGs to
 eliminate more states to overcome the overheads of finding and proving negated CTGs. Similar results can be found
 in the performance of Aaron Bradley's reference implementation with basic generalization and
 improved (CTG-using) generalization on the same examples: for these examples, the reference implementation performs
@@ -1835,11 +1860,14 @@ The average performance of the most efficient implementation of the model checke
 compared to the average performance of Aaron Bradley's reference implementation (with or without generalization
 involving CTGs enabled).
 
-\subsection{Implementation Differences}
+The choice of implementation language may account for much of the difference in performance, as the reference
+implementation in C++ has more control over memory allocations than the implementations in Haskell, which is
+a garbage-collected language. I mention other differences between the implementations that may explain some of the
+performance differences below.
 
 \subsubsection{Model Representation}
-The reference implementation differs from this project's implementation in representing the hardware model,
-which may account for some of the performance difference.
+The reference implementation differs from this project's implementations in representing the hardware model,
+which may account for some of the performance differences.
 
 The reference implementation keeps track of which variables are inputs, latches, and AND gates.
 Each \verb,Model, maintains both the the primed and current values for inputs and latches and keeps a
@@ -1874,10 +1902,6 @@ For example, in the \verb,stateOf, function, which extracts a model from a faile
 (to e.g. find a CTI cube), the set of literals passed to the MiniSat \verb,Solver, are reordered according
 to an ordering of that was found to be the best choice empirically.
 
-\subsubsection{Memory Management}
-%The reference implementation can and does manage memory carefully.
-%Haskell is garbage collected.
-
 \subsubsection{Overall Structure}
 
 The reference implementation uses a priority queue, but handles proof obligations differently
@@ -1893,12 +1917,22 @@ placed in the priority queue.
 
 \chapter{Conclusion}
 
+The project aims to implement a basic version of the IC3 algorithm in Haskell with the necessary parser
+and SAT-solver interface have been achieved, and the goal of the model checker being able to check
+small example hardware model has also been reached. Furthermore, several variants of the model checker
+have been implemented, and the implementations of the model checker can model check not only
+my small handwritten examples but also models from the Hardware Model Checking Competitions with hundreds
+of thousands of variables.
+
 \section{Summary}
-Summarize the project and accomplishments
 
 \section{Further extensions}
-Mention further extensions that could be implemented.
-
+Rather than implement the extensions mentioned in the initial project proposal, I elected to implement
+the {\it CTG} and {\it PriorityQueue} variants of the model checker and examine their effects
+on the model checker's performance.
+As a result, possible further extensions still include those mentioned in the initial project
+proposal: interfaces to different SAT solvers and abstraction-refinement could be implemented and
+their effects on the performance of the model checker implementations could be analyzed.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % the bibliography
