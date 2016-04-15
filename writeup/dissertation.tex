@@ -25,7 +25,7 @@
   basicstyle = \footnotesize\ttfamily,
   columns = fullflexible,
   keepspaces = true,
-  keywordstype = \bf
+  keywordstyle = \bf
 }
 
 \begin{document}
@@ -310,9 +310,9 @@ that takes a \verb,Model, and a \verb,Lit, and returns a \verb,Bool,,
 implementation is given in figure \ref{typesigexample}.
 
 \begin{figure}[ht!]
-\begin{listing}
+\begin{lstlisting}
 prove :: Model -> Lit -> Bool
-\end{listing}
+\end{lstlisting}
 \caption{The type signature for the {\tt prove} function.}
 \label{typesigexample}
 \end{figure}
@@ -404,11 +404,11 @@ TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
 \end{verbatim}
 \begin{figure}[h]
 \centering
-\begin{verbatim}
+\begin{lstlisting}
 data Test = TestCase Assertion
           | TestList [Test]
           | TestLabel String Test
-\end{verbatim}
+\end{lstlisting}
 \caption{The HUnit {\tt Test} datatype}
 \end{figure}
 
@@ -1744,8 +1744,8 @@ $(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
 
 \chapter{Evaluation}
 
-The different variants of the model checker were run on fifteen handwritten examples
-and over one hundred examples taken from across HWMCC'10, HWMCC'11, and HWMCC'13
+The different variants of the model checker were run on fourteen handwritten examples
+and one hundred examples taken from across HWMCC'10, HWMCC'11, and HWMCC'13
 (several examples are common to the competitions from different years).
 If the elapsed time for attempting to solve an example took longer than ten minutes, the
 attempt was considered to have timed out. The parameterizable number of failed attempts
@@ -1758,8 +1758,8 @@ was meant to correctly solve as part of the aims of the project, with the larges
 (in terms of number of variables) of the handwritten examples,
 \verb,simple_counters.aig,, having 82 variables. The model checker
 implementations were not only able to solve all the handwritten examples correctly,
-but to solve sixty of the examples taken from the Hardware Model Checking Competitions
-within ten minutes as well.
+but to solve fifty-one of the hundred examples taken from the
+Hardware Model Checking Competitions within ten minutes as well.
 
 Following a description of the output of the model checker,
 I discuss the solving capabilities of the model checking implementations and compare
@@ -1772,52 +1772,51 @@ differences among implementations.
 
 The output of all model checker implementations gives the value \verb,True, if the safety
 property holds (i.e. if a bad state is not reachable from the initial state) and
-\verb,False, if it does not. The model checker implementations also output the safety property
-that they have attempted to prove. The implementations also provide debug output that gives
+\verb,False, if it does not. The implementations also provide debug output that gives
 statistics on solving if a nonzero number of frames was required to solve the example.
 In particular, all variants' outputs give the number of frames, the average number of
 literals per clause, the number of CTIs found, and the number of queries made for solving
 that example. The {\it CTG} implementation also reports the number of CTGs found. Sample output
-for the {\it CTG} implementation run on example \verb,eijks713.aig,
+for the {\it CTG} implementation run on example \verb,counters3.aig,
 is given in figure \ref{sampleoutput}.
 
 \begin{figure}[!ht]
 \centering
-\begin{verbatim}
-"Safety property: Var 454"
-Number of frames: 3
-Average number of literals/clause (not counting transition relation): 1.1185701830863122
-Number of ctis: 9
-Number of ctgs: 2
-Number of queries: 1711
-"False"
-\end{verbatim}
-\caption{Sample output for running the {\it CTG} implementation on example {\tt eijks713.aig}.
+\begin{lstlisting}
+Number of frames: 21
+Average number of literals/clause (not counting transition relation): 4.394657835488733
+Number of ctis: 91
+Number of ctgs: 242
+Number of queries: 15225
+True
+\end{lstlisting}
+\caption{Sample output for running the {\it CTG} implementation on example {\tt counters3.aig}.}
 \label{sampleoutput}
 \end{figure}
 
 \section{Solving}
 
-For all examples that the model checker implementations solved without timing out, the
+For the fourteen handwritten examples and fifty-one Hardware Model Checking Competition examples that
+all the model checker implementations solved without timing out, the
 implementations' solutions agree with the solutions given by Aaron Bradley's reference
 implementation, providing evidence for the correctness of the solutions given by the model checker
 implementations.
 
-The largest (in terms of number of variables) unsafe example that the model checker gave a solution
+The largest (in terms of number of variables) unsafe example that the model checkers gave a solution
 for without timing out was \verb,bj08goodbakerycyclef7.aig, from HWMCC'10, which has 19900 variables.
-The largest example for which the safety property holds that the model checker gave a solution
-to without timing out was \verb,,. Note that the number of variables in an example is only weakly
+The largest example for which the safety property holds that the model checkers gave a solution
+to without timing out was \verb,pdtvsar8multip26.aig, with 7174 variables.
+Note that the number of variables in an example is only weakly
 correlated with the amount of time needed to solve the example.
 % (simple linear regression gives $r^2$ less than $0.3$).
 
 \section{Benchmarking}
-%figure out how to indicate nontimeout/timeouts better
 Benchmarks were taken for the performance of the different versions of the model checker and the reference
 implementation. For each example, forty benchmarking samples were taken.
 
 Other than timing data, I also collected data about the number of frames needed to solve an example,
-the average number of literals per clause, the number of CTIs discovered, the number of SAT-solver queries, and,
-for the \emph{CTG} implementation, the number of CTGs discovered.
+the average number of literals per clause, the number of CTIs discovered, the number of SAT-solver queries,
+and, for the \emph{CTG} implementation, the number of CTGs discovered.
 
 The majority of examples for which the implementations did not time out did not require finding any
 CTIs; for these examples, the the {\it Basic}, {\it BetterCTI}, {\it BetterPropagate},
@@ -1832,11 +1831,11 @@ when solving examples, suggesting that the overall performance of the model chec
 size and number of SAT-solver queries.
 
 \begin{figure}[!ht]
-\caption{Average literals per clause for examples that require finding at least one CTI.}
+\caption{Average literals per clause averaged over all examples.}
 \end{figure}
 
 \begin{figure}[!ht]
-\caption{Performance for examples that require finding at least one CTI.}
+\caption{Average performance averaged over all samples for all examples.}
 \end{figure}
 
 %\subsection{Smaller Counterexamples to Induction}
