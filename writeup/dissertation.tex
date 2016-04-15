@@ -8,6 +8,8 @@
 \usepackage{amsmath}
 \usepackage{docmute}   % only needed to allow inclusion of proposal.tex
 \usepackage{listings}  % for formatting code
+\usepackage{longtable}
+\usepackage{csvsimple}
 \usepackage{float}
 \usepackage[linesnumbered,figure,vlined]{algorithm2e}
 \floatstyle{boxed} 
@@ -1819,7 +1821,7 @@ the average number of literals per clause, the number of CTIs discovered, the nu
 and, for the \emph{CTG} implementation, the number of CTGs discovered.
 
 The majority of examples for which the implementations did not time out did not require finding any
-CTIs; for these examples, the the {\it Basic}, {\it BetterCTI}, {\it BetterPropagate},
+CTIs; for these examples, the the {\it Basic}, {\it BetterCTI}, {\it BetterPropagation},
 and {\it CTG} implementations give similar results. 
 
 \section{Performance Impact of Variations}
@@ -1835,7 +1837,8 @@ size and number of SAT-solver queries.
 \end{figure}
 
 \begin{figure}[!ht]
-\caption{Average performance averaged over all samples for all examples.}
+\includegraphics[width=16cm]{handwritten.pdf}
+\caption{Benchmark results for the fourteen handwritten examples.}
 \end{figure}
 
 %\subsection{Smaller Counterexamples to Induction}
@@ -1976,6 +1979,30 @@ their effects on the performance of the model checker implementations could be a
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % the appendices
 \appendix
+
+\chapter{Benchmark Results}
+
+\section{Basic}
+
+\section{BetterCTI}
+
+\section{BetterPropagation}
+\csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
+    table head= \hline Name & Frames & Avg. Lits / Clause & CTIs & Queries & Mean Time (s) & Std. Dev. of Time (s)\\\hline,
+    late after line=\\\hline]%
+{betterPropagation.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, queries = \queries, time = \time, stdev = \stdev}%
+{\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
+
+\section{PriorityQueue}
+
+\section{CTG}
+\csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|l|p{4.5em}|p{4em}|,
+    table head= \hline Name & Frames & Avg. Lits / Clause & CTIs & CTGs & Queries & Mean Time (s) & Std. Dev. of Time (s)\\\hline,
+    late after line=\\\hline]%
+{ctg.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, ctgs = \ctgs, queries = \queries, time = \time, stdev = \stdev}%
+{\name & \frames & \litspercls & \ctis & \ctgs & \queries & \time & \stdev}%
+
+\section{Reference Implementation}
 
 \chapter{Project Proposal}
 
