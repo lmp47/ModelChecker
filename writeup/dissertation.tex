@@ -262,10 +262,10 @@ While IC3 algorithm is for model checking safety properties of hardware,
 there are applications of the algorithm in model checking LTL and CTL
 properties and model checking software \cite{bradley12}.
 
-The FAIR model-checking algorithm, which model checks $\omega$-regular
+The FAIR model-checking algorithm, which checks $\omega$-regular
 properties, makes use of a safety model checker such as IC3, and IICTL,
-which model-checks CTL formulas \cite{hassan12}, makes use of both a
-safety model checker such as IC3 as well as a fair cycle finder such as
+which checks CTL formulas \cite{hassan12}, makes use of both a
+safety model checker such as IC3 as well as a fair-cycle finder such as
 FAIR.
 
 Other work generalizes IC3 to use an underlying SMT solver rather than a
@@ -280,7 +280,7 @@ software verification \cite{birgmeier14}.
 \section{Project Aims}
 
 This project's main aim is to implement a basic form of the IC3 algorithm in
-Haskell that should be able to correctly check several
+Haskell that can correctly check several
 small examples. Additionally, the project is meant to give me an opportunity
 to learn and use Haskell, to understand formal methods and especially model
 checking more deeply, and to put into practice software engineering techniques.
@@ -308,18 +308,18 @@ by comparison with Standard ML.
 
 %Type signature syntax
 \paragraph{Types}{
-Similarly to Standard ML, Haskell compilers perform type inference, but type
+Similarly to Standard ML, Haskell compilers perform type inference. Though
+Haskell compilers perform type inference, type
 signatures can be (and, in some cases where type inference cannot resolve
-ambiguities, must be) provided. For example, the type signature for the
-\verb,prove, function in the model checker, a curried function
-that takes a \verb,Model, and a \verb,Lit, and returns a \verb,Bool,,
-implementation is given in figure \ref{typesigexample}.
+ambiguities, must be) provided.
 
 \begin{figure}[!ht]
 \begin{lstlisting}
 prove :: Model -> Lit -> Bool
 \end{lstlisting}
-\caption{The type signature for the {\tt prove} function.}
+\caption{The type signature for the {\tt prove} function in the model
+checker implementations, which is a curried function that takes a
+\verb,Model, and a \verb,Lit, and returns a \verb,Bool,.}
 \label{typesigexample}
 \end{figure}
 
@@ -334,7 +334,7 @@ to be named.
 
 %List syntax
 \paragraph{Lists}{
-The model checker implemented as part of this project makes extensive use
+The code written for this project makes extensive use
 of lists. List types in Haskell are denoted using square brackets, i.e.
 a list of \verb,Lit,s has type \verb,[Lit],.
 Lists can be appended using the \verb,++, infix operator, and elements
@@ -415,7 +415,7 @@ expression would give a \verb,TestCase, that tests that function
 \begin{lstlisting}
 TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
 \end{lstlisting}
-\begin{figure}[h]
+\begin{figure}[!ht]
 \centering
 \begin{lstlisting}
 data Test = TestCase Assertion
@@ -481,11 +481,12 @@ the project resulted in simpler, more readable code.
 \paragraph{Aiger Utilities}{
 Several tools provided in Aiger Utilities were used in the project. The
 AIGER parser provided was used for comparison with and as an alternative
-to the one developed as part of this project. 
+to the parser developed as part of this project. 
 
 The Aiger Utilities' tools to convert between formats for specifying
 hardware models eased the specification of new models that would
-be compatible with the model checker, which accepts only AIGER-formatted inputs.
+be compatible with the model checker implementations,
+which accept only AIGER-formatted inputs.
 In particular, I used the {\tt bliftoaig}
 tool to convert circuits specified using the Berkeley Logic Interchange Format
 to circuits specified using the binary AIGER format, and the {\tt aigtoaig} tool,
@@ -818,7 +819,7 @@ that does simplification and returns full assignments.
 Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
 safety property $P$, IC3 aims either to prove inductively that $P$ holds
 at all reachable states from the initial state or
-to find a $\neg P$ state that can be reached.
+to find a reachable $\neg P$ state.
 The pseudocode in \ref{overview} gives an overview of the basic IC3 algorithm,
 which I will refer to in my explanation of the algorithm.
 
@@ -850,11 +851,11 @@ which I will refer to in my explanation of the algorithm.
 
 The IC3 algorithm maintains a set of $k + 1$ frames $F_0,\ldots,F_k$, where
 each frame $F_i$ is a set of clauses whose disjunction represents an
-overapproximation of the set of states that reachable by the transition
-system in at most $i$ steps
+overapproximation of the set of states reachable by the transition
+system in at most $i$ steps from the initial state
 (so, for example, $F_0$ is just the initial state set $I$, as seen
 in the pseudocode).
-The deepest frame $F_k$ in the set of frames is called the frontier frame.
+The deepest frame $F_k$ in the set of frames is the \emph{frontier}.
 
 %Initiation query
 The initiation query $I \Rightarrow P$ on line \ref{initiation} is used to check that the safety
@@ -862,7 +863,7 @@ property holds in the initial state $I$.
 This query is run once at the start of
 the algorithm for the desired safety property.
 If it fails (i.e. if it is {\it False}), then the algorithm terminates,
-as an error state in which $\neg P$ holds is reachable in 0 steps.
+as state in which $\neg P$ holds is reachable in 0 steps.
 If the query succeeds, then the algorithm proceeds to its main loop.
 
 The main loop of the algorithm is the while-loop beginning on line \ref{main}.
@@ -924,7 +925,7 @@ set of states reachable in $k$ steps from the initial state, then a $\neg P$ sta
 is reachable in $k + 1$ steps from the initial state; the safety property does not
 hold, and the algorithm terminates (line \ref{Unsafe}).
 
-Because there may be several counterexamples to induction, it is necessary to
+Because there may be several CTIs, it is necessary to
 perform the consecution query again (line \ref{reconsec}). If it fails again,
 the process of finding the new counterexample to induction state(s) $d$ and trying to
 prove that $\neg d$ holds at depth $k$ repeats. Upon the success of the consecution
@@ -989,7 +990,7 @@ If $I \Rightarrow t$ fails to hold, then removing any literals in $t$ to
 obtain a subclause $u \subset t$ would still result in the query $I \Rightarrow u$
 failing, since it is the case that $u \Rightarrow t$.
 
-The failure of $F_i \wedge t \wedge T \Rightarrow t$ to hold indicates
+The formula $F_i \wedge t \wedge T \Rightarrow t$ not holding indicates
 that there is a predecessor to a $\neg t$ state that is a $F_i \wedge t$ state.
 This predecessor state $p$ can be extracted from the SAT query for
 $F_i \wedge t \wedge T \Rightarrow t$ in the same way that CTIs are found.
@@ -1084,10 +1085,10 @@ in turn.
 %the ASCII and binary versions of the format and the representation
 %of AIG models.
 
-The parser component parses both ASCII or binary-formatted AIGER files and
+The parser component parses ASCII or binary-formatted AIGER files and
 assumes that the new format is used (because all old format AIGER files are also
 new instances of the new format). The justice properties and fairness constraints
-are ignored by the parser, as they are not used by the model checker.
+are ignored by the parser, as they are not used by any of the model checker implementations.
 
 Both the \verb,Parser.AigerParser, module that implements the parser in Haskell and
 the \verb,Parser.AigerTools, module that calls the Aiger Utilities' parser's functions
@@ -1103,7 +1104,7 @@ lists of lists of literals. I discuss the representation of literals, latches, a
 AND gates below.
 
 Literals are represented by a \verb,Lit, data structure in the \verb,Parser.AigModel,
-module, which stores decoded versions of AIGER format indices:
+module, which stores decoded versions of AIGER format indices.
 The \verb,Lit, data structure has a constructor \verb,Boolean, that takes a \verb,Bool,
 argument for representing the boolean values that correspond with AIGER indices
 0 and 1, a \verb,Var, constructor that takes a \verb,Word, for representing a positive literal,
@@ -1153,8 +1154,8 @@ extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
 \label{addClause}
 \end{figure}
 
-I also added an additional \verb,result, struct to allow for all the results of a SAT query to
-be returned from a single function call. The struct contains not only the result of the SAT
+I also added a \verb,result, struct to allow a single function call to return
+all the results of a SAT query. The struct contains not only the result of the SAT
 query, but also pointers to the model and conflict vector (if any) of the \verb,Solver,.
 The wrapper function \verb,solveWithAssumps, for the version of \verb,solve(), that takes an assumption
 vector as an argument and returns a pointer to a \verb,result, struct
@@ -1179,7 +1180,7 @@ for handling the \verb,result, struct.
 Using just the Haskell FFI for calling the C functions does not provide a
 sufficient abstraction for use by the rest of the model checker.
 I wrote further functions to allow for a more natural interface to MiniSat,
- making use of \verb,unsafePerformIO, to have the functions return
+making use of \verb,unsafePerformIO, to have the functions return
 values outside the \verb,IO, monad.
 
 Many of the functions and datatypes in the interface are analogous to functions and structs in
@@ -1254,13 +1255,13 @@ also taken from the set of booleans and literals. The \verb,makeLatches, functio
 values of $l$, $n$, and $i$ to generate \verb,Clause,s that describe the latches' initial values and
 next-state values.
 
-The generation of the initial value clause of the latch proceeds as follows: if $i = {\it True}$,
+Generating the initial value clause of the latch proceeds as follows: if $i = {\it True}$,
 then the singleton clause $\{l\}$ is generated for the initial value list, and if $i = {\it False}$,
 then the singleton clause $\{\neg l\}$ is generated.
 If $i$ is a literal rather than a boolean value, then the latch is
 uninitialized and no clauses are generated for its initial value.
 
-The generation of next-state clauses proceeds similarly: if $n = {\it True}$, then the singleton clause
+Generating next-state clauses proceeds similarly. If $n = {\it True}$, then the singleton clause
 $\{l'\}$ is generated because the next-state value for the variable is a constant-{\it True} value,
 and if $n = {\it False}$, then the singleton clause $\{\neg l'\}$ is generated.
 Otherwise, the next-value clauses generated for $l$, are $\{l', \neg n\}$
@@ -1319,10 +1320,10 @@ $$a \Leftrightarrow i_1 \wedge i_2 \simeq
 
 \section{Model Checking}
 
-I have implemented several versions of the recursive IC3 algorithm:
-the most basic version (\emph{Basic}), a version that
-improves upon the most basic version by discovering smaller CTIs (\emph{BetterCTI}),
-and a version that improves upon the version with improved CTIs by considering subsumed clauses
+I have implemented several variants of the IC3 algorithm:
+the most basic variant (\emph{Basic}), a variant that
+improves upon \emph{Basic} by discovering smaller CTIs (\emph{BetterCTI}),
+and a variant that improves upon \emph{BetterCTI} by considering subsumed clauses
 (\emph{BetterPropagation}).
 
 I have also implemented a variation of IC3 that uses priority queues (\emph{PriorityQueue}) and a
@@ -1331,7 +1332,7 @@ variation that uses CTGs to improve generalization (\emph{CTG}).
 \subsection{Overall structure}
 
 The general structure of the algorithm in the implementations is similar
-to the structure given in figure \ref{overview}; however, there are some
+to the structure given in figure \ref{overview}; however, there are
 small differences that result from implementing the algorithm in a
 functional language and an adjustment to how the propagation phase is
 carried out.
@@ -1342,7 +1343,7 @@ that outlines the general structure shared by all the
 implementations of the model checker except {\it PriorityQueue}
 and compare this structure with figure \ref{overview}.
 I provide an explanation of the variant used in the
-{\it PriorityQueue} implementation is provided in section
+{\it PriorityQueue} implementation in section
 \ref{pqueue}.
 
 \SetKwProg{Let}{let }{ in}{end}
@@ -1402,8 +1403,8 @@ but for the sake of discussing the high level structure of the implementation,
 it is assumed here to return a pair of a boolean value indicating whether a fixed point
 has been found while pushing clauses and a list of the updated frames.
 
-While in figure \ref{overview}, the propagation phase is called at each iteration
-of the algorithm, if the consecution query succeeds and a new frontier frame $F_k$
+In figure \ref{overview}, each iteration of the algorithm calls the propagation
+phase; however, if the consecution query succeeds and a new frontier frame $F_k$
 is added in that iteration, then none of the frames have had any new clauses
 added to them. As a result, the only frame that modified during the propagation phase
 is the frame $F_k$ because all the frames before $F_{k - 1}$ have already had all
@@ -1471,12 +1472,12 @@ consecution f prop =
 %Describe how the implementation discovers counterexamples
 %to induction and proves them unreachable.
 
-Counterexamples to induction are found by the \verb,nextCTI, function, which
+CTIs are found by the \verb,nextCTI, function, which
 uses results from SAT queries to find a full or partial assignment to
 the variables in the \verb,Model, from which the CTI can be extracted.
 
 \subsubsection{Basic}
-In the \emph{Basic} implementation of the IC3 algorithm, \verb,nextCTI, asks for a model
+In the \emph{Basic} implementation, \verb,nextCTI, asks for a model
 (i.e. the set of true literals) for the satisfiable query $\neg P' \wedge F_k \wedge T$.
 The current-state literals then give a predecessor state (a state from which
 a $\neg P$ state can be reached in one step of the transition relation) for $\neg P$,
@@ -1488,7 +1489,7 @@ called \verb,nextCTI,.
 In the all implementations of the algorithm other than {\it Basic},
 \verb,nextCTI, again asks for a model $m$
 for the satisfiable query $\neg P' \wedge F_k \wedge T$. The only literals in $m$ that
-must necessarily be included in the CTI are those current-state literals that result in
+must be included in the CTI are those current-state literals that result in
 the unsatisfiability of $m \wedge P' \wedge T$. That is, the current-state literals of any
 subcube $q$ of $m$ for which $q \wedge P' \wedge T$ holds is also a valid CTI, with
 the state $m$ being one of the states in the set represented by $q$.
@@ -1514,9 +1515,9 @@ that are not in \verb,Frame, \verb,f', to \verb,f', and
 results in a pair containing a \verb,Bool, indicating whether a fixed point has been reached
 (i.e., all clauses could be pushed) and a \verb,Frame, with all the clauses in \verb,f', and all
 the clauses in \verb,f, that could be pushed to \verb,f',.
-For each clause in \verb,f, that is not in \verb,f', the \verb,consecution, function is called to
-see if the clause is inductive relative to the frame represented by \verb,f,. If it is, then
-the clause can be conjoined to the frame represented by \verb,f',, and if it is not, then the
+For each clause in \verb,f, that is not in \verb,f',, the \verb,consecution, function is called to
+see if the clause is inductive relative to the frame \verb,f,. If it is, then
+the clause can be added to \verb,f',, and if it is not, then the
 function must have \verb,False, as the first element in the pair it returns.
 
 \subsubsection{Subsumed clauses}
@@ -1547,10 +1548,10 @@ and all implemented versions of generalization
 \verb,generalize,.
 
 \subsubsection{Simple}
-The simplest approximation for a MIC involves attempting to drop each literal in turn and checking
+The simplest approximation for a MIC attempts to drop each literal in turn and checks
 that the resulting clause $c$ results in the truth of formulas $I \Rightarrow c$ and
-$F_k \wedge c \wedge T \Rightarrow c'$ that the original clause did. If the resulting clause
-does result in satisfiable results for both the queries, then the literal can be successfully dropped,
+$F_k \wedge c \wedge T \Rightarrow c'$ as the original clause did. If the resulting clause
+results in the truth of both queries, then the literal can be successfully dropped,
 but if not, the literal is added to a list \verb,needed, of necessary literals.
 After a parameterizable number of failed attempts at dropping a literal from the clause or after
 having attempted dropping all the literals, the
@@ -1621,7 +1622,7 @@ and attempts to generalize $\neg {\it ctg}$ relative to that frame with a recurs
 {\it mic} algorithm. The generalization of $\neg {\it ctg}$ can then be added to frame $F_j$,
 and {\it down} is called recursively using the updated set of frames.
 
-The implementation of {\it down} is approximate, the Haskell function \verb,down, that implements
+The implementation of {\it down} is approximate; the Haskell function \verb,down, that implements
 the algorithm takes a parameter \verb,r, that limits the number of CTGs that it will handle for
 each non-recursive call to the implementation of the approximation of the {\it mic} algorithm.
 
@@ -1630,10 +1631,10 @@ each non-recursive call to the implementation of the approximation of the {\it m
 
 The \emph{PriorityQueue} implementation keeps track of what to prove next by using a priority
 queue of proof obligations instead of through recursive calls that explicitly specify which
-property to prove at which depth. The implementation of this variant of the algorithm makes
-use of some of the same functions (e.g. \verb,negCTI, and \verb,push,) as the others, but
+property to prove at which depth. This variant of the algorithm makes
+use of some of the same functions (e.g. \verb,negCTI, and \verb,push,) as the other variants but
 differs in its overall structure.
-I first provide a definition of proof obligations, an
+I provide a definition of proof obligations, an
 overview of the structure of the implementation for this variation of the algorithm,
 and some implementation details about representing proof obligations and the priority queue.
 
@@ -1684,7 +1685,7 @@ it is assigned a priority higher than any proof obligation in the queue $(t,j)$ 
 and lower than any proof obligation in the queue $(u,k)$ with $k \leq i$. The
 way that the implementation achieves this priority ordering is discussed later.
 
-Unlike in the other implementations, in the {\it PriorityQueue} implementation, there is
+Unlike in the other variants, in the {\it PriorityQueue} implementation, there is
 no distinction between the negation of the safety property $P$ and any other property that needs
 to be proved. The priority queue maintains all the information about which properties need to be proven,
 and the main recursive {\it fulfillObligations} function attempts proves whichever property has the highest
