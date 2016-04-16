@@ -291,6 +291,8 @@ to check, but also several variants of the algorithm.
 
 \chapter{Preparation}
 
+This chapter describes the knowledge gained and plans made while preparing
+to being writing code for the project.
 The preparation for the project involved learning Haskell, distinguishing
 the main components of the project, choosing and learning how to use
 the necessary tools for implementing the components of the project,
@@ -430,14 +432,14 @@ Criterion is a library for performing benchmarking in Haskell.
 Criterion can output benchmarking results in any format specified in the \verb,.tpl,
 template format, and by default outputs to HTML.
 The \verb,.tpl, file can be configured such that
-Criterion will, for example, output benchmark sample results to a CSV, as the
+Criterion can, for example, output benchmark sample results to a CSV, as the
 \verb,.tpl, for benchmarking this project was configured.}
 
 \paragraph{Cabal}{
 Cabal is the standard package and dependency management system for Haskell,
 where a package may be either a library or a complete piece of software.
-Information about a Cabal package, such as its version and dependencies,
-is specified through a \verb,.cabal, file in its root directory.
+A \verb,.cabal, file in the root directory of a project specifies
+information about a Cabal package, such as its version and dependencies,
 The \verb,.cabal, file may contain several different sections, such as a
 \verb,library, section, describing the modules in the package that should be
 exposed in the library provided by the package or an \verb,executable, section,
@@ -556,7 +558,7 @@ $I \Rightarrow C$ and $F \wedge C \wedge T \Rightarrow C'$ hold.
 \paragraph{States}{
 A single state of the transition system (or a singleton set containing that state)
 is specified through the assignment of all variables in the transition system
-to boolean values, where a complete assignment is represented as a cube such
+to boolean values, where a \emph{complete} assignment is represented as a cube such
 that every variable appears in the formula exactly once.
 An incomplete assignment of variables in the transition system is a cube such that
 at least one variable in the transition system does not appear in the cube. Such an
@@ -582,8 +584,7 @@ $s_0$ is an $I$ state and $s_i \wedge T \Rightarrow s_{i + 1}$ for $1 \leq i < k
 %Comments?
 
 I used both the AIGER format and Berkeley Logic Interchange Format (BLIF)
-to specify the example hardware models that were not taken from the
-HWMCC.
+to specify fourteen example hardware models.
 The hardware models that the model checker accepts as input
 are specified using the AIGER format;
 however using the AIGER format to specify larger models was cumbersome,
@@ -634,7 +635,7 @@ $${\it index}(x, b) =
 The indices 0 and 1 are used to represent the constant boolean values {\it False}
 and {\it True}, respectively.
 
-It is apparent that any index above 1 represents a literal and that for all such
+Any index above 1 represents a literal and that for all such
 indices, all even indices represent positive literals, and all odd indices
 represent negative literals. The representation thus allows an implementation
 use the least significant bit of an index to be used to find the sign of a literal,
@@ -661,7 +662,7 @@ in the order that their counts are given in the header.
 In the ASCII version of the format, inputs are specified by giving the
 index that represents the positive literal for its corresponding variable name,
 and outputs are specified similarly as single indices (that may represent
-booleans or literals of any sign).
+literals of any sign).
 
 Latches have initial value 0 (i.e., {\it False}) and are specified by giving the
 index representing the positive literals for their corresponding variable name
@@ -698,17 +699,17 @@ $6$ that takes the outputs of the two latches as inputs and whose
 output is the single output of the circuit.}
 
 \paragraph{Binary version}{
-In the binary version of the format, variable indices are assumed to
-occur in increasing order. Since each literal must be defined, this allows
-for the omission of the variable indices when defining inputs or latches.
+The binary version of the format assumes that variable indices
+occur in increasing order. Since each literal must be defined, this assumption
+allows for variable indices to be omitted when defining inputs or latches.
 
-Inputs are not explicitly listed: the input variables are inferred based on
+Inputs are not explicitly listed; the input variables are inferred based on
 the value of \verb,I,.
 Similarly, latches are specified by only listing their next-state literals'
 representations.
 
 The binary format also assumes that AND gates occur in order of their
-variable indices and additionally assumes that inputs to an AND gate will
+variable indices and that inputs to an AND gate will
 have already been defined before that AND gate.
 These assumptions allow AND gates to be represented by two differences
 that tend to be small in practice:
@@ -1998,8 +1999,8 @@ placed in the priority queue.
 
 \chapter{Conclusion}
 
-This chapter summarizes the work done and goals met for this project and suggests further extensions
-to the project.
+This chapter summarizes the work done and goals met for this project. Following the summary, I give
+suggestions for further extensions to the project.
 
 \section{Summary}
 
@@ -2023,9 +2024,8 @@ though none of the variants performs as well as the reference implementation of 
 \section{Further extensions}
 Rather than implement the extensions mentioned in the initial project proposal, I elected to implement
 other variants of the model checker and examine their effects on the model checker's performance.
-As a result, possible further extensions still include those mentioned in the initial project
-proposal: interfaces to different SAT solvers and abstraction-refinement could be implemented and
-their effects on the performance of the model checker implementations could be analyzed.
+As a result, interfacing with different SAT solvers remains a further extension. Additionally,
+implementing further variants of the model checker remains as an extension.
 
 Implementing interfaces with different SAT solvers may allow more examples to be solved efficiently.
 Aaron Bradley notes that the performance of the IC3 algorithm is considerably affected
@@ -2033,6 +2033,12 @@ by the behavior of the SAT solver it uses \cite{bradley12}; even if each SAT que
 time, the algorithm's performance may still vary if the SAT solver behaves even slightly differently.
 Because the choice of SAT solver may affect which examples can be solved efficiently, allowing the model
 checker to use different SAT solvers may increase the number of examples that can be solved.
+
+Other than using a different SAT solver, the performance of the model checker may be improved by
+altering its overall structure. The current implementations of the model checker maintain one
+\verb,Solver, per frame. A variant of the model checker that uses a single \verb,Solver,
+instance may yield performance improvments, as suggested in several papers \cite{}.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % the bibliography
