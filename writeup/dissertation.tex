@@ -357,7 +357,7 @@ I chose the AIGER format for representing the hardware models and the
 MiniSat SAT solver for answering SAT queries, resulting in a need for an
 AIGER parser and a Haskell interface to MiniSat. The choice of
 the AIGER format allows the model checker to be run on examples from
-the Hardware Model Checking Competition, since this is the format used
+the Hardware Model Checking Competition (HWMCC), since this is the format used
 to specify examples in the competitions. I chose the MiniSat SAT
 solver because it is the SAT solver used by Aaron Bradley's reference
 implementation of IC3 that this implementation is to be compared against.
@@ -583,7 +583,7 @@ $s_0$ is an $I$ state and $s_i \wedge T \Rightarrow s_{i + 1}$ for $1 \leq i < k
 
 I used both the AIGER format and Berkeley Logic Interchange Format (BLIF)
 to specify the example hardware models that were not taken from the
-Hardware Model Checking Competition.
+HWMCC.
 The hardware models that the model checker accepts as input
 are specified using the AIGER format;
 however using the AIGER format to specify larger models was cumbersome,
@@ -609,8 +609,7 @@ example is that AND gates' inputs can be specified in any order in the ASCII
 format, but the binary format encodes AND gates under the assumption
 that inputs are specified in ascending order.
 The the binary version's assumptions on component ordering allows the format
-to be more compact. The Hardware Model Checking Competition's examples
-use the binary format.
+to be more compact. The HWMCC examples use the binary format.
 
 A new version of the AIGER format is currently under development, with
 examples from HWMCC'14 using the new version. The AIGER parser implemented
@@ -1213,8 +1212,8 @@ as the representation of the hardware in the model checker.
 The inputs $i$ and state variables $x$ in the transition system $T(i,x,I,T)$
 are not distinguished, and the total count of variables is kept in \verb,vars,.
 Clauses that specify the initial state $I$ are kept in \verb,initial,.
-The transition relation $T$ is captured by \verb,transition,, a list of both clauses that specify
-latches and clauses that specify AND gates.
+The \verb,transition, list of clauses that specify latches and clauses that specify AND
+gates captures the transition relation $T$.
 The literal that gives the safety property is given by \verb,safe,.
 
 \begin{figure}[!Ht]
@@ -1765,10 +1764,8 @@ was meant to correctly solve as part of the aims of the project, with the larges
 (in terms of number of variables) of the handwritten examples,
 \verb,simple_counters.aig,, having 82 variables. The model checker
 implementations were not only able to solve all the handwritten examples correctly,
-but to solve fifty of the examples taken from the
-Hardware Model Checking Competitions within ten minutes as well, with some
-variants of the model checker being able to solve some additional examples
-without timing out.
+but to solve fifty of the HWMCC examples within ten minutes as well, with some
+variants being able to solve some additional examples without timing out.
 
 Following a description of the output of the model checker,
 I discuss the solving capabilities of the model checking implementations and compare
@@ -1804,7 +1801,7 @@ True
 
 \section{Solving}
 
-For the fourteen handwritten examples and fifty Hardware Model Checking Competition examples that
+For the fourteen handwritten examples and fifty HWMCC examples that
 all the model checker implementations solved without timing out, the
 implementations' solutions agree with the solutions given by Aaron Bradley's reference
 implementation, providing evidence for the correctness of the solutions given by the model checker
