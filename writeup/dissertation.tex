@@ -1585,8 +1585,8 @@ checks for the relative inductiveness of the subclause and does not attempt to e
 
 \subsubsection{Minimal Inductive Subclauses and Counterexamples to Generalization}
 The more elaborate implementation of generalization implements the full
-(but limited in number of attempts) MIC algorithm with the {\it down} function modified
-so that it deals with CTGs.
+(but limited in number of attempts) {\it mic} algorithm with the {\it down} function modified
+to handle CTGs.
 
 \begin{algorithm}[!Ht]
 \DontPrintSemicolon
@@ -1682,13 +1682,13 @@ The variant of the algorithm used in the {\it PriorityQueue} implementation
 relies on a priority queue of proof obligations.
 When a proof obligation $(s,i)$ is added to the priority queue,
 it is assigned a priority higher than any proof obligation in the queue $(t,j)$ with $j > i$
-and lower than any proof obligation in the queue $(u,k)$ with $k \leq i$. The
-way that the implementation achieves this priority ordering is discussed later.
+and lower than any proof obligation in the queue $(u,k)$ with $k \leq i$. I discuss the
+way that the implementation achieves this priority ordering later.
 
 Unlike in the other variants, in the {\it PriorityQueue} implementation, there is
 no distinction between the negation of the safety property $P$ and any other property that needs
 to be proved. The priority queue maintains all the information about which properties need to be proven,
-and the main recursive {\it fulfillObligations} function attempts proves whichever property has the highest
+and the main recursive {\it fulfillObligations} function attempts to prove whichever property has the highest
 priority in the queue. In other words, the {\it fulfillObligations} function always 
 attempts to fulfill the proof obligation with the highest priority in the queue (this proof obligation
 is the one returned by ${\it dequeue(queue)}$ in line \ref{dequeue} of \ref{pqueuestr}).
@@ -1765,9 +1765,9 @@ in the {\it CTG} implementation will handle was also set to three.
 The handwritten examples served as the ``small examples'' that the model checker
 was meant to correctly solve as part of the aims of the project, with the largest
 (in terms of number of variables) of the handwritten examples,
-\verb,simple_counters.aig,, having 82 variables. The model checker
-implementations were not only able to solve all the handwritten examples correctly,
-but to solve fifty of the HWMCC examples within ten minutes as well. Some
+\verb,simple_counters.aig,, having 82 variables. The 
+variants could not only solve all the handwritten examples correctly
+but also fifty of the HWMCC examples within ten minutes. Some
 variants were able to solve additional examples without timing out.
 
 Following a description of the output of the model checker,
