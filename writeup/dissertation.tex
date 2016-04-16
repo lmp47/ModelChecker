@@ -362,8 +362,11 @@ AIGER parser and a Haskell interface to MiniSat. The choice of
 the AIGER format allows the model checker to be run on examples from
 the Hardware Model Checking Competition (HWMCC), since this is the format used
 to specify examples in the competitions. I chose the MiniSat SAT
-solver because it is the SAT solver used by Aaron Bradley's reference
-implementation of IC3 that this implementation is to be compared against.
+solver to allow for better comparison of this project's model checker
+with Aaron Bradley's reference implementation of IC3.
+Because MiniSat is the solver used by Aaron Bradley's reference implementation
+of IC3, using it as the solver for this project's model checker removes the
+choice of SAT solver as a variable to consider when comparing performance.
 
 Given that the model checking algorithm deals with transition systems
 (discussed later), the implementation also requires a representation of
@@ -437,10 +440,10 @@ Criterion can, for example, output benchmark sample results to a CSV, as the
 
 \paragraph{Cabal}{
 Cabal is the standard package and dependency management system for Haskell,
-where a package may be either a library or a complete piece of software.
+where a package may be a library or a complete piece of software.
 A \verb,.cabal, file in the root directory of a project specifies
-information about a Cabal package, such as its version and dependencies,
-The \verb,.cabal, file may contain several different sections, such as a
+information about the Cabal package, such as its version and dependencies,
+The \verb,.cabal, file may contain several sections, such as a
 \verb,library, section, describing the modules in the package that should be
 exposed in the library provided by the package or an \verb,executable, section,
 which has fields for specifying the Haskell file containing the \verb,Main,
@@ -453,9 +456,9 @@ section to allow the benchmarking program to be run in a standard way as well
 
 Cabal also uses a Haskell file \verb,Setup.hs, to give further information
 about how to build the package. For example, the \verb,Setup.hs, file
-for this project compiles the C and C++ code needed for the project before
-Cabal attempts to build the rest of the project, so the files necessary
-for linking are already present.
+for this project compiles the C and C++ code for MiniSat and the MiniSat
+wrapper before Cabal attempts to build the rest of the project, so the
+files necessary for linking are already present.
 
 The use of Cabal enables the project to be built easily on different platforms,
 since Cabal provides a standard method for building the package that works
@@ -481,7 +484,7 @@ AIGER parser provided was used for comparison with and as an alternative
 to the one developed as part of this project. 
 
 The Aiger Utilities' tools to convert between formats for specifying
-hardware models eased the specification of new hardware models that would
+hardware models eased the specification of new models that would
 be compatible with the model checker, which accepts only AIGER-formatted inputs.
 In particular, I used the {\tt bliftoaig}
 tool to convert circuits specified using the Berkeley Logic Interchange Format
@@ -583,16 +586,13 @@ $s_0$ is an $I$ state and $s_i \wedge T \Rightarrow s_{i + 1}$ for $1 \leq i < k
 
 I used both the AIGER format and Berkeley Logic Interchange Format (BLIF)
 to specify fourteen example hardware models.
-The hardware models that the model checker accepts as input
+The models that the model checker accepts as input
 are specified using the AIGER format;
-however using the AIGER format to specify larger models was cumbersome,
-so such models were specified using BLIF and converted to AIGER format
-using the Aiger Utilities' \verb,bliftoaig, tool.
-
-Inputs to model checker are models formatted using either the ASCII or
-binary versions of the AIGER format. Given that one of the project's
-components is an AIGER parser, I describe the AIGER format in more
-depth.
+however because using the AIGER format to specify larger models was cumbersome,
+I specified some models using BLIF and converted them to AIGER format
+using the Aiger Utilities' \verb,bliftoaig, tool. Given that one of
+the project's components is an AIGER parser, I describe the AIGER format
+in more depth.
 
 The AIGER format provides a method of specifying hardware modeled as
 And-Inverter Graphs with latch elements providing single clock-tick
@@ -601,7 +601,8 @@ AND gates, inverters, and latches, where the latches behave like D
 flip-flops, outputting the value of the current input at the next
 clock tick.
 
-The AIGER format has both an ASCII and a binary version. The ASCII
+The AIGER format has both an ASCII and a binary version, either of which
+can be used as inputs to this project's model checker. The ASCII
 format is more flexible and human readable, imposing fewer constraints
 on the ordering of components within the input file. For example, an
 AND gate with variable name 20 may be specified before an AND gate with
@@ -986,7 +987,7 @@ it is possible that expanding the set of states in $t$ by removing some of the
 literals in $t$ would result in a clause that is inductive relative to $F_i$.
 If $I \Rightarrow t$ fails to hold, then removing any literals in $t$ to
 obtain a subclause $u \subset t$ would still result in the query $I \Rightarrow u$
-failing, since it is the case that $u \Longrightarrow t$.
+failing, since it is the case that $u \Rightarrow t$.
 
 The failure of $F_i \wedge t \wedge T \Rightarrow t$ to hold indicates
 that there is a predecessor to a $\neg t$ state that is a $F_i \wedge t$ state.
