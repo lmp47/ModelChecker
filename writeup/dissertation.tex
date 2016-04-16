@@ -1751,27 +1751,27 @@ $(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
 \chapter{Evaluation}
 
 To evaluate the model checker implementations, I ran the different variants of the model
-checker were on fourteen handwritten examples and over one hundred examples taken from
+checker on fourteen handwritten examples and over one hundred examples taken from
 across HWMCC'10, HWMCC'11, and HWMCC'13
 (several examples are common to the competitions from different years).
-If the elapsed time for attempting to solve an example took longer than ten minutes, the
+If the elapsed time for attempting to solve an example took longer than ten minutes, that
 attempt was considered to have timed out. The parameterizable number of failed attempts
-at dropping literals in the \verb,inductiveGeneralization, functions were set to set to
+at dropping literals in the \verb,inductiveGeneralization, functions was set to set to
 three, and the parameterizable number of CTGs that each generalization attempt
-in the {\it CTG} implementation will handle is also set to three.
+in the {\it CTG} implementation will handle was also set to three.
 
 The handwritten examples served as the ``small examples'' that the model checker
 was meant to correctly solve as part of the aims of the project, with the largest
 (in terms of number of variables) of the handwritten examples,
 \verb,simple_counters.aig,, having 82 variables. The model checker
 implementations were not only able to solve all the handwritten examples correctly,
-but to solve fifty of the HWMCC examples within ten minutes as well, with some
-variants being able to solve some additional examples without timing out.
+but to solve fifty of the HWMCC examples within ten minutes as well. Some
+variants were able to solve additional examples without timing out.
 
 Following a description of the output of the model checker,
-I discuss the solving capabilities of the model checking implementations and compare
-the performance of the model checker implementations with each other
-and with the reference implementation.
+I discuss the solving capabilities of the model-checker implementations and compare
+their performance.
+I also compare their performance with that of the reference implementation.
 
 
 \section{Output}
@@ -1802,31 +1802,31 @@ True
 
 \section{Solving}
 
-For the fourteen handwritten examples and fifty HWMCC examples that
-all the model checker implementations solved without timing out, the
-implementations' solutions agree with the solutions given by Aaron Bradley's reference
+For the fourteen handwritten examples and fifty HWMCC examples that all implementations solved
+within the time limit, the
+implementations' solutions agree with those given by Aaron Bradley's reference
 implementation, providing evidence for the correctness of the solutions given by the model checker
-implementations. Furthermore, solutions for the additional examples solved by some variants
-also agreed.
+implementations. Furthermore, the variants that solved the additional examples also gave
+solutions that agreed with the reference implementations' solutions.
 
-The largest (in terms of number of variables) unsafe example that the model checkers gave a solution
+The largest (in terms of number of variables) unsafe example that the variants gave a solution
 for without timing out was \verb,bj08goodbakerycyclef7.aig, which has 19900 variables.
-The largest example for which the safety property holds that the model checkers gave a solution
-to without timing out was \verb,pdtvsar8multip26.aig, with 7174 variables.
+The largest safe example that the variants gave a solution
+to without timing out was \verb,pdtvsar8multip26.aig,, with 7174 variables.
 %Note that the number of variables in an example is only weakly
 %correlated with the amount of time needed to solve the example.
 % (simple linear regression gives $r^2$ less than $0.3$).
 
 \section{Benchmarking}
-Benchmarks were taken for the performance of the different variations of the model checker and for the
-performance of the reference implementation both with CTG-handling enabled and disabled. For each of the fourteen handwritten examples and the fifty examples from the Hardware Model Checking Competition, forty benchmarking samples were taken.
+I took benchmarks for the performance of the different variations of the model checker and for the
+performance of the reference implementation both with CTG-handling enabled and disabled. For each of the fourteen handwritten examples and the fifty examples from the HWMCC, forty benchmarking samples were taken.
 
-Other than timing data, I also collected data about the number of frames needed to solve an example,
+In addition to timing data, I collected data about the number of frames needed to solve an example,
 the average number of literals per clause, the number of CTIs discovered, the number of SAT-solver queries,
 and, for the \emph{CTG} implementation, the number of CTGs discovered. These measurements can be found in
 appendix \ref{benchmarks}.
 
-The majority of examples for which the implementations did not time out did not require finding any
+The majority of the fifty HWMCC examples did not require finding any
 CTIs; for these examples, the the {\it Basic}, {\it BetterCTI}, {\it BetterPropagation},
 and {\it CTG} implementations give similar results. 
 
@@ -1834,7 +1834,7 @@ and {\it CTG} implementations give similar results.
 %Discuss performance comparison of the naive implementation of the
 %model checker and the final implementation of the model checker.
 
-Profiling has consistently revealed that functions in the \verb,MiniSat.Minisat, module consume the most time
+Profiling consistently revealed that functions in the \verb,MiniSat.Minisat, module consume the most time
 when solving examples, suggesting that the overall performance of the model checker is heavily dependent on
 the size and number of SAT-solver queries. In this section, I will discuss the impact that different
 variants of the model checker have on the size and number of SAT-solver queries and performance.
@@ -1858,7 +1858,7 @@ Model Checking Competition examples.}
 \paragraph{Smaller Counterexamples to Induction}{
 The \emph{BetterCTI} implementation exhibits consistently
 better performance than the \emph{Basic} implementation for examples
-that require finding at least one CTI. For such examples,
+that require finding at least one CTI. In such cases,
 discovering CTI clauses with fewer literals leads, as expected, to a smaller average number of
 literals per clause, which suggests smaller SAT queries.
 
@@ -1868,7 +1868,7 @@ $k$, several states have been shown to be unreachable within $k$ steps of the tr
 from the initial state. Dealing with sets of states rather than single CTI states should allow
 the \emph{BetterCTI} implementation to deal with fewer CTIs in some cases (because the CTI sets of states
 may encompass several CTI states), leading to fewer queries needing to be made. Benchmark results
-agree with these expectations: for examples that require finding more than one CTI, \emph{BetterCTI}
+agree with these expectations; for examples that require finding more than one CTI, \emph{BetterCTI}
 finds fewer CTIs and makes fewer queries. For example, the \emph{Basic} variant finds 59
 CTIs and makes 414 queries to solve \verb,shortp0.aig,, but the \emph{BetterCTI} variant only
 finds 3 CTIs and makes 49 queries.
