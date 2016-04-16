@@ -299,19 +299,20 @@ and gaining the necessary knowledge about the IC3 algorithm.
 \section{Haskell}
 
 The majority of the code for the project is implemented in the functional
-programming language Haskell. I explain many of the features of the
-language by comparison with Standard ML.
+programming language Haskell. I explain some features of the
+language that should help with understanding future code snippets
+by comparison with Standard ML.
 
 %Type signature syntax
 \paragraph{Types}{
 Similarly to Standard ML, Haskell compilers perform type inference, but type
 signatures can be (and, in some cases where type inference cannot resolve
 ambiguities, must be) provided. For example, the type signature for the
-\verb,prove, function in the model checker, which is a curried function
+\verb,prove, function in the model checker, a curried function
 that takes a \verb,Model, and a \verb,Lit, and returns a \verb,Bool,,
 implementation is given in figure \ref{typesigexample}.
 
-\begin{figure}[ht!]
+\begin{figure}[!ht]
 \begin{lstlisting}
 prove :: Model -> Lit -> Bool
 \end{lstlisting}
@@ -319,8 +320,13 @@ prove :: Model -> Lit -> Bool
 \label{typesigexample}
 \end{figure}
 
-% Type constructors, structs
-Haskell type constructors work similarly to Standard ML type constructors.
+%Type constructors
+Haskell type constructors work similarly to Standard ML type constructors,
+with the main difference being that Standard ML's \verb,datatype, is instead
+\verb,data, in Haskell.
+
+Haskell also provides record syntax for creating new types, allowing components
+to be named.
 }
 
 %List syntax
@@ -1127,7 +1133,7 @@ as inputs to the AND gate.
 %functions, including the wrapper functions for Minisat written in C.
 
 MiniSat serves as the SAT solver for this implementation of the IC3 algorithm.
-Because the Haskell Foreign Function Interface cannot interface with C++ directly,
+Because the Haskell Foreign Function Interface (FFI) cannot interface with C++ directly,
 the interface to the MiniSat SAT solver is composed of a C wrapper for the relevant
 MiniSat functions and classes and a Haskell interface to the C wrapper.
 
@@ -1154,7 +1160,7 @@ vector as an argument and returns a pointer to a \verb,result, struct
 rather than just whether or not the query was satisfiable.
 
 \begin{figure}[ht]
-\begin{verbatim}
+\begin{lstlisting}[language=C]
 struct result {
   unsigned solved;
   unsigned modelSize;
@@ -1162,7 +1168,7 @@ struct result {
   minisatLbool* model;
   litptr* conflict;
 } res = {0, 0, 0, 0, 0};
-\end{verbatim}
+\end{lstlisting}
 \caption{The {\tt result} struct from {\tt CSolver.h}}
 \end{figure}
 
@@ -1211,14 +1217,14 @@ The transition relation $T$ is captured by \verb,transition,, a list of both cla
 latches and clauses that specify AND gates.
 The literal that gives the safety property is given by \verb,safe,.
 
-\begin{figure}[H]
+\begin{figure}[!Ht]
 \centering
-\begin{verbatim}
+\begin{lstlisting}
 data Model = Model { vars :: Word
                    , initial :: [Clause]
                    , transition :: [Clause]
                    , safe :: Lit } deriving Show
-\end{verbatim}
+\end{lstlisting}
 \caption{The data structure for representing the hardware model in the model checker.}
 \end{figure}
 
@@ -1995,25 +2001,41 @@ placed in the priority queue.
 
 \chapter{Conclusion}
 
-The project aims to implement a basic version of the IC3 algorithm in Haskell with the necessary parser
-and SAT-solver interface have been achieved, and the goal of the model checker being able to check
-small example hardware model has also been reached. Furthermore, several variants of the model checker
-have been implemented, and the implementations of the model checker can model check not only
-my handwritten hardware model examples but also models from the Hardware Model Checking Competitions with hundreds
-of thousands of variables.
+This chapter summarizes the work done and goals met for this project and suggests further extensions
+to the project.
 
 \section{Summary}
 
-The IC3 algorithm is a recently-developed SAT-based model-checking algorithm notable for its method of
-using counterexamples to induction to discover new invariants.
+The project aims to implement a basic version of the IC3 algorithm in Haskell with the necessary parser
+and SAT-solver interface have been achieved, and the goal of the model checker being able to check
+small example hardware model has also been reached. The \emph{Basic} implementation correctly
+solved fourteen small examples, with its solutions agreeing with the solutions given by the
+reference implementation of IC3.
+
+In addition to the basic version of the IC3 algorithm, I implemented several variants of the model checker.
+Furthermore the implementations of the model checker can model check not only
+the fourteen handwritten hardware model examples but also models from the
+Hardware Model Checking Competitions with thousands of variables.
+
+I evaluated the different model checker variants by comparing their performance on examples from
+the Hardware Model Checking Competition. The benchmark results show that finding smaller CTI clauses
+results in a dramatic improvement in performance, with the best-performing implementation
+\emph{betterPropagation} finding smaller CTI clauses and removing subsumed clauses from frames,
+though none of the variants performs as well as the reference implementation of IC3.
 
 \section{Further extensions}
 Rather than implement the extensions mentioned in the initial project proposal, I elected to implement
-the {\it CTG} and {\it PriorityQueue} variants of the model checker and examine their effects
-on the model checker's performance.
+other variants of the model checker and examine their effects on the model checker's performance.
 As a result, possible further extensions still include those mentioned in the initial project
 proposal: interfaces to different SAT solvers and abstraction-refinement could be implemented and
 their effects on the performance of the model checker implementations could be analyzed.
+
+Implementing interfaces with different SAT solvers may allow more examples to be solved efficiently.
+Aaron Bradley notes that the performance of the IC3 algorithm is considerably affected
+by the behavior of the SAT solver it uses \cite{bradley12}; even if each SAT query takes the same amount of
+time, the algorithm's performance may still vary if the SAT solver behaves even slightly differently.
+Because the choice of SAT solver may affect which examples can be solved efficiently, allowing the model
+checker to use different SAT solvers may increase the number of examples that can be solved.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % the bibliography
