@@ -24,7 +24,8 @@
                                         % more readable
 
 \lstset{
-  basicstyle = \footnotesize\ttfamily,
+  basicstyle = \small\ttfamily,
+  language = Haskell,
   columns = fullflexible,
   keepspaces = true,
   keywordstyle = \bf
@@ -380,17 +381,16 @@ as version control and testing, and to otherwise ease the development of
 the project's code.
 
 \paragraph{Git}{
-The Git version control system was used for managing the project's code. The
-previous versions maintained by the version control system proved useful in
+The Git version control system was used for managing the project's code, and
+GitHub, a widely-used hosting service for Git repositories, was used to
+keep backups of the code.
+The previous versions maintained by the system proved useful in
 the development of the code, and branching and merging capabilities were
 useful for working on and organizing different variations of the model checker.
 Git submodules, which allow the inclusion of other Git projects within another
 project, were used to include MiniSat within the project, enabling easier
 acquisition of project dependencies (i.e., MiniSat can be obtained by running
-\verb,git submodule init, after running \verb,git clone, to clone the repository).
-
-GitHub, a widely-used hosting service for Git repositories, was used to keep
-backups of the code.}
+\verb,git submodule init, after running \verb,git clone, to clone the repository).}
 
 \paragraph{Haddock}{
 The Haddock documentation tool for Haskell was used to generate documentation
@@ -409,9 +409,9 @@ that gives an error message and a \verb,Bool, value, and raises an exception (wi
 the error message) if the \verb,Bool, is not \verb,True,, so the following
 expression would give a \verb,TestCase, that tests that function
 \verb,isEven, returns \verb,True, when called with parameter 12:
-\begin{verbatim}
+\begin{lstlisting}
 TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
-\end{verbatim}
+\end{lstlisting}
 \begin{figure}[h]
 \centering
 \begin{lstlisting}
@@ -483,12 +483,10 @@ to the one developed as part of this project.
 The Aiger Utilities' tools to convert between formats for specifying
 hardware models eased the specification of new hardware models that would
 be compatible with the model checker, which accepts only AIGER-formatted inputs.
-In particular, the tools of use were
-the {\tt bliftoaig}
-tool, which converts a circuit specified using the Berkeley Logic Interchange Format
-to a circuit specified using the binary AIGER format, and the {\tt aigtoaig} tool,
-which converts between the ASCII and binary AIGER formats.
-}
+In particular, I used the {\tt bliftoaig}
+tool to convert circuits specified using the Berkeley Logic Interchange Format
+to circuits specified using the binary AIGER format, and the {\tt aigtoaig} tool,
+to convert between the ASCII and binary AIGER formats. }
 
 \paragraph{MiniSat}{
 MiniSat is a SAT solver implemented in C++ that solves boolean satisfiability problems
@@ -507,9 +505,9 @@ I give a brief review of concepts in logic before formally defining transition s
 and explaining how propositional logic formulas represent states.
 
 \paragraph{Logic}{
-Unless otherwise specified, a variable is a propositional symbol,
-and can be assigned to boolean values {\it True} or {\it False}.
-A \emph{literal} is defined as being either a variable $v$ or its negation $\neg v$.
+A variable is a propositional symbol that can be assigned to boolean values {\it True}
+or {\it False}. A \emph{literal} is defined as being either an atom $a$ (which can
+be a variable or boolean value) or its negation $\neg a$.
 
 The concepts of a cube and a clause are useful in describing the
 representation of states as logical formulas.
@@ -569,8 +567,8 @@ More generally, any logical formula $b$ involving the variables in the transitio
 system gives the set of states
 $\{a \in {\it Full~Assignment} | a \wedge b~{\rm is~satisfiable}\}$.
 
-A state that is in the set of states represented by a logical formula $B$ is referred to
-as a $B$ state. A set of states $s$ is said to be reachable
+For a logical formula $B$, a $B$ state is a state that is in the set of states represented
+by $B$. A set of states $s$ is said to be \emph{reachable}
 in $k$ steps of the transition relation iff there exist states $s_0, \ldots, s_k$ such that
 $s_0$ is an $I$ state and $s_i \wedge T \Rightarrow s_{i + 1}$ for $1 \leq i < k$.
 
@@ -592,7 +590,10 @@ so such models were specified using BLIF and converted to AIGER format
 using the Aiger Utilities' \verb,bliftoaig, tool.
 
 Inputs to model checker are models formatted using either the ASCII or
-binary versions of the AIGER format.
+binary versions of the AIGER format. Given that one of the project's
+components is an AIGER parser, I describe the AIGER format in more
+depth.
+
 The AIGER format provides a method of specifying hardware modeled as
 And-Inverter Graphs with latch elements providing single clock-tick
 delays: all circuits are modeled as a graph of nodes consisting only of
@@ -670,7 +671,7 @@ followed by the index for their next-state value.
 AND gates are specified by giving the indices that represent the positive literal
 for their variable name and the two indices that specify their input values.
 
-\begin{figure}[h]
+\begin{figure}[!ht]
 \centering
 \begin{verbatim}
 aag 3 0 2 1 1
@@ -680,23 +681,22 @@ aag 3 0 2 1 1
 6 2 4
 \end{verbatim}
 \caption{
-A circuit specified in the old ASCII AIGER format
+A circuit specified in the old ASCII AIGER format. The circuit has
+no inputs, two latches with indices $2$ and $4$ and one AND gate
+with index $6$ that takes the outputs of the two latches as inputs.
+The output of the whole circuit is the output of the AND gate.
 }
 \label{aagCircuit}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[!ht]
 \centering
 \includegraphics[width=100mm]{circuit.png}
 \caption{The circuit represented by figure \ref{aagCircuit}, where
 the variable name for each component is directly to the left of that
 component, with the corresponding index in parenthesis.}
 \end{figure}
-
-For example, figure \ref{aagCircuit} specifies a circuit with
-no inputs, two latches with indices $2$ and $4$ and one AND gate
-$6$ that takes the outputs of the two latches as inputs and whose
-output is the single output of the circuit.}
+}
 
 \paragraph{Binary version}{
 The binary version of the format assumes that variable indices
@@ -1111,9 +1111,9 @@ Variable names are adjusted (by subtracting 1) so that they start at 0.
 
 \begin{figure}[H]
 \centering
-\begin{verbatim}
+\begin{lstlisting}
 data Lit = Var Word | Neg Word | Boolean Bool
-\end{verbatim}
+\end{lstlisting}
 \caption{The {\tt Lit} data structure in {\it Parser.AigModel}}
 \end{figure}
 
@@ -1142,12 +1142,12 @@ type, and every MiniSat function is replaced with a function with an \verb,exter
 calls the MiniSat C++ function, as in figure \ref{addClause}.
 
 \begin{figure}[ht]
-\begin{verbatim}
+\begin{lstlisting}[language = C++]
 extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
                                  Minisat::vec<Minisat::Lit>* ps) {
   return solver -> addClause (*ps);
 }
-\end{verbatim}
+\end{lstlisting}
 \caption{The C wrapper function for {\tt addClause} from {\tt CSolver.cpp}}
 \label{addClause}
 \end{figure}
@@ -1438,12 +1438,12 @@ The \verb,initiation,
 The implementation also makes use of deMorgan's laws as described in section
 \ref{logic} to acquire the assumption cube by negating all the literals in the \verb,prop, clause.
 
-\begin{figure}[H]
-\begin{verbatim}
+\begin{figure}[!Ht]
+\begin{lstlisting}
 initiation :: Frame -> Clause -> Bool
 initiation f prop =
   not (satisfiable (solveWithAssumps (solver f) (map neg prop)))
-\end{verbatim}
+\end{lstlisting}
 \caption{The initiation query implementation.}
 \label{impl:initiation}
 \end{figure}
@@ -1456,12 +1456,12 @@ formula, all implementation variants use the logical equivalence of
 $F_k \wedge T \Rightarrow P'$ and $\neg (\neg P' \wedge F_k \wedge T)$ along with deMorgan's
 laws to yield the implementation in figure \ref{impl:consecution}.
 
-\begin{figure}[H]
-\begin{verbatim}
+\begin{figure}[!Ht]
+\begin{lstlisting}
 consecution :: Frame -> Clause -> Bool
 consecution f prop =
   not (satisfiable (solveWithAssumps (solver f) (map (prime.neg) prop)))
-\end{verbatim}
+\end{lstlisting}
 \caption{The consecution query implementation.}
 \label{impl:consecution}
 \end{figure}
@@ -1788,7 +1788,7 @@ is given in figure \ref{sampleoutput}.
 
 \begin{figure}[!ht]
 \centering
-\begin{lstlisting}
+\begin{lstlisting}[keywordstyle = \ttfamily, basicstyle = \footnotesize\ttfamily]
 Number of frames: 21
 Average number of literals/clause (not counting transition relation): 4.394657835488733
 Number of ctis: 91
