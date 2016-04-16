@@ -1744,8 +1744,9 @@ $(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
 
 \chapter{Evaluation}
 
-The different variants of the model checker were run on fourteen handwritten examples
-and over one hundred examples taken from across HWMCC'10, HWMCC'11, and HWMCC'13
+To evaluate the model checker implementations, I ran the different variants of the model
+checker were on fourteen handwritten examples and over one hundred examples taken from
+across HWMCC'10, HWMCC'11, and HWMCC'13
 (several examples are common to the competitions from different years).
 If the elapsed time for attempting to solve an example took longer than ten minutes, the
 attempt was considered to have timed out. The parameterizable number of failed attempts
@@ -1759,13 +1760,14 @@ was meant to correctly solve as part of the aims of the project, with the larges
 \verb,simple_counters.aig,, having 82 variables. The model checker
 implementations were not only able to solve all the handwritten examples correctly,
 but to solve fifty of the examples taken from the
-Hardware Model Checking Competitions within ten minutes as well.
+Hardware Model Checking Competitions within ten minutes as well, with some
+variants of the model checker being able to solve some additional examples
+without timing out.
 
 Following a description of the output of the model checker,
 I discuss the solving capabilities of the model checking implementations and compare
-the performance of the model checker implementations were compared with each other
-and with the reference implementation, discussing the possible causes of the
-differences among implementations.
+the performance of the model checker implementations with each other
+and with the reference implementation.
 
 
 \section{Output}
@@ -1800,14 +1802,15 @@ For the fourteen handwritten examples and fifty Hardware Model Checking Competit
 all the model checker implementations solved without timing out, the
 implementations' solutions agree with the solutions given by Aaron Bradley's reference
 implementation, providing evidence for the correctness of the solutions given by the model checker
-implementations.
+implementations. Furthermore, solutions for the additional examples solved by some variants
+also agreed.
 
 The largest (in terms of number of variables) unsafe example that the model checkers gave a solution
 for without timing out was \verb,bj08goodbakerycyclef7.aig, from HWMCC'10, which has 19900 variables.
 The largest example for which the safety property holds that the model checkers gave a solution
 to without timing out was \verb,pdtvsar8multip26.aig, with 7174 variables.
-Note that the number of variables in an example is only weakly
-correlated with the amount of time needed to solve the example.
+%Note that the number of variables in an example is only weakly
+%correlated with the amount of time needed to solve the example.
 % (simple linear regression gives $r^2$ less than $0.3$).
 
 \section{Benchmarking}
@@ -1828,8 +1831,9 @@ and {\it CTG} implementations give similar results.
 %model checker and the final implementation of the model checker.
 
 Profiling has consistently revealed that functions in the \verb,MiniSat.Minisat, module consume the most time
-when solving examples, suggesting that the overall performance of the model checker is heavily dependent on the
-size and number of SAT-solver queries.
+when solving examples, suggesting that the overall performance of the model checker is heavily dependent on
+the size and number of SAT-solver queries. In this section, I will discuss the impact that different
+variants of the model checker have on the size and number of SAT-solver queries and performance.
 
 \begin{figure}[!ht]
 \includegraphics[width=16cm]{litspercls.pdf}
@@ -1842,59 +1846,85 @@ Model Checking Competition examples.}
 \caption{Benchmark results for the fourteen handwritten examples on a log scale.}
 \end{figure}
 
-%\subsection{Smaller Counterexamples to Induction}
+\begin{figure}[!ht]
+\includegraphics[width=16cm]{numqueries.pdf}
+\caption{Number of queries for each variant run on the fourteen handwritten examples on a log scale.}
+\end{figure}
 
-Discovering smaller CTIs leads, as expected, to a smaller average number of literals per clause. This
-smaller number of literals per clause suggests smaller SAT queries, and {\it betterCTI} exhibits
-better performance than the {\it Basic} implementation for examples
-that require finding at least one CTI. The {\it Basic} implementation was able
-to solve only three unsafe examples (\verb,shortp0.aig,, \verb,shortp0neg.aig,, and \verb,srg5ptimoneg.aig,)
-from the Hardware Model Checking Competitions and no safe examples from the Hardware Model Checking Competitions
-that required finding CTIs without timing out, but the \emph{BetterCTI} version of the implementation
-(and all other implementations that include finding smaller CTIs)
-solved six more examples (\verb,counterp0.aig,, \verb,counterp0neg.aig,, \verb,pdtvishuffman7.aig,, 
-\verb,pdtvismiim3.aig,, \verb,6s318r.aig,, \verb,srg5ptimo.aig,) than the \emph{Basic} version without timing out.
+\paragraph{Smaller Counterexamples to Induction}{
+The \emph{BetterCTI} implementation exhibits consistently
+better performance than the \emph{Basic} implementation for examples
+that require finding at least one CTI. For such examples,
+discovering CTI clauses with fewer literals leads, as expected, to a smaller average number of
+literals per clause, which suggests smaller SAT queries.
 
-\subsection{Propagation}
+As mentioned previously, because the \emph{BetterCTI} implementation uses
+CTIs that encompass sets of states rather than single states, when a negated CTI is proven at a depth
+$k$, several states have been shown to be unreachable within $k$ steps of the transition relation
+from the initial state. Dealing with sets of states rather than single CTI states should allow
+the \emph{BetterCTI} implementation to deal with fewer CTIs in some cases (because the CTI sets of states
+may encompass several CTI states), leading to fewer queries needing to be made. Benchmark results
+agree with these expectations: for examples that require finding more than one CTI, \emph{BetterCTI}
+finds fewer CTIs and makes fewer queries. For example, the \emph{Basic} variant finds 59
+CTIs and makes 414 queries to solve \verb,shortp0.aig,, but the \emph{BetterCTI} variant only
+finds 3 CTIs and makes 49 queries.
 
-Removing subsumed clauses results in results in better performance for some examples.
-While the performance impact that the improvement has is less consistent than the improvement of
+The improvement of finding more general CTIs enabled the \emph{BetterCTI} variant of the implementation
+(and all other implementations that include finding smaller CTIs) to
+solve six more examples (\verb,counterp0.aig,, \verb,counterp0neg.aig,, \verb,pdtvishuffman7.aig,, 
+\verb,pdtvismiim3.aig,, \verb,6s318r.aig,, \verb,srg5ptimo.aig,) than the \emph{Basic} version without
+timing out.}
+
+\paragraph{Propagation}{
+Removing subsumed clauses also in results in better performance for several examples.
+While the performance impact that the improvement has is less drastic than the improvement of
 \emph{BetterCTI} over \emph{Basic} finding smaller CTIs, the \emph{BetterPropagation} version performs
+considerably better
 than the \emph{BetterCTI} version on the \verb,counters3.aig, and \verb,counters4.aig, examples in
 particular, where the adjustments allow the algorithm to prove the safety properties using fewer
 queries. Even for examples such as \verb,pdtvismiim3.aig,, where \emph{BetterPropagation} makes more
 queries than \emph{BetterCTI}, \emph{BetterPropagation} manages to perform better than \emph{BetterCTI}
-because it makes smaller queries.
+because it makes smaller queries.}
 
-\subsection{Counterexamples to Generalization}
-
+\paragraph{Counterexamples to Generalization}{
 The \emph{CTG} variation that deals with CTGs performs worse than the \emph{BetterPropagation} version
 on examples, even in cases where \emph{CTG} reduces the average number of frames per clause,
 most likely because the examples used are too small for the performance benefits of using CTGs to
-eliminate more states to overcome the overheads of finding and proving negated CTGs.
+eliminate more states to overcome the overheads of finding and proving negated CTGs, which require
+making additional queries on each call to the \verb,inductiveGeneralization, function.
+
 Similar results can be found
 in the performance of Aaron Bradley's reference implementation with basic generalization and
 improved (CTG-using) generalization on the same examples: for these small examples,
-the reference implementation performs better overall with CTG-handling disabled.
+the reference implementation performs better overall with CTG-handling disabled.}
 
-\subsection{Priority Queues}
-
+\paragraph{Priority Queues}{
 The \emph{PriorityQueue} implementation's performance generally does not perform as well as the
-implementations that do not use priority queues (with the exception of \emph{CTG}).
+implementations that do not use priority queues (with the exception of \emph{CTG}). There are
+two features of the variant in particular that may account for its worse performance: accumulating
+CTIs and early generalization.
 
-One of the performance advantages of the {\it PriorityQueue} implementation is that CTIs do not need
-to be rediscovered: after a proof obligation $(s,i)$ is enqueued, until the algorithm fails or finds a fixed point,
+One of the performance advantages of the \emph{PriorityQueue} implementation is that CTIs do not need
+to be rediscovered \cite{een11}: after a proof obligation $(s,i)$ is enqueued, until the algorithm fails or finds a fixed point,
 the queue will always contain a proof obligation $(s,j)$ for $j \geq i$. When the proof obligation $(s,i)$
 fulfilled at a certain depth $i$, $(s,i + 1)$ is then enqueued, If $s$ is a CTI for proving a property
 $p$ at depth $i + 2$ (i.e. proof obligation $(\neg p, i + 2)$), by the time \verb,proveObligations, removes
 proof obligation $(\neg p, i + 2)$ from the priority queue, $(s, i+1)$ has already been fulfilled, so the
 CTI $s$ would not, after its initial discovery, need to be discovered again.
 
-As with the handling of CTGs, avoiding the rediscovery of CTIs may result in worse performance for smaller
-examples. Proof obligations that do not need to be fulfilled in order to find the fixed point may
-have to be proven in the \emph{PriorityQueue} implementation: even if $s$ is not a CTI for proving $p$
-at depth $i + 2$, the proof obligation $(s, i+1)$ would still need to be fulfilled before the
-\verb,proveObligations, attempts to fulfill $(\neg p, i + 2)$.
+%As with the handling of CTGs, avoiding the rediscovery of CTIs may result in worse performance for smaller
+%examples. Proof obligations that do not need to be fulfilled in order to find the fixed point may
+%have to be proven in the \emph{PriorityQueue} implementation: even if $s$ is not a CTI for proving $p$
+%at depth $i + 2$, the proof obligation $(s, i+1)$ would still need to be fulfilled before the
+%\verb,proveObligations, attempts to fulfill $(\neg p, i + 2)$.
+
+The \emph{PriorityQueue} implementation performs inductive generalization for each CTI only once, though,
+when that CTI's first proof obligation is first enqueued. Rediscovering CTIs would allow the CTIs to
+be generalized relative to later frames as well, rather than only to the first frame relative to which
+the negated CTI is inductive. Not generalizing CTIs relative to later frames may lead to
+\emph{PriorityQueue} making larger queries and explain the variant's higher average number of
+literals per clause.
+}
 
 \section{Reference Implementation}
 %Discuss performance comparison of final implementation with
@@ -1932,7 +1962,7 @@ CTI states can be eliminated at once.
 The \verb,stateOf, function uses the information kept in \verb,Model,s to extract the smaller
 cube from the model $s$ giving the satisfying assignment for a failed consecution query directly,
 without further SAT-solver queries.
-The Haskell implementation instead uses several SAT-solver queries to extract the necessary literals
+The Haskell implementations instead use several SAT-solver queries to extract the necessary literals
 from $s$.
 
 \subsubsection{MiniSat}
@@ -1952,12 +1982,14 @@ to an ordering of that was found to be the best choice empirically.
 
 The reference implementation uses a priority queue, but handles proof obligations differently
 than the {\it PriorityQueue} implementation does. For a CTI $s$ that prevents the fulfillment
-of a proof obligation at depth $i$, the reference implementation enqueues a CTI $(s,i - 1)$
+of a proof obligation at depth $i$, the reference implementation enqueues proof obligation $(s,i - 1)$
 and performs generalization relative to the frame $F_{i - 1}$ each time $\neg s$ has been shown
 to be inductive relative to frame $F_{i - 1}$ (generalization does not seem
-to be as expensive for the reference implementation). The reference implementation also does not
+to be as expensive for the reference implementation).
+The reference implementation also does not
 enqueue a new proof obligation $(s, i+1)$ each time a proof obligation $(s, i)$ has been
-fulfilled as the {\it priorityQueue} implementation does. The safety property is maintained and
+fulfilled as the {\it priorityQueue} implementation does, so CTIs need to be rediscovered.
+The safety property is maintained and
 handled separately from CTIs; its negation is not included as part of a proof obligation
 placed in the priority queue.
 
@@ -1996,8 +2028,18 @@ their effects on the performance of the model checker implementations could be a
 \label{benchmarks}
 
 \section{Basic}
+\csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
+    table head= \hline Name & Frames & Avg. Lits / Clause & CTIs & Queries & Mean Time (s) & Std. Dev. of Time (s)\\\hline,
+    late after line=\\\hline]%
+{basic.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, queries = \queries, time = \time, stdev = \stdev}%
+{\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
 
 \section{BetterCTI}
+\csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
+    table head= \hline Name & Frames & Avg. Lits / Clause & CTIs & Queries & Mean Time (s) & Std. Dev. of Time (s)\\\hline,
+    late after line=\\\hline]%
+{betterCTI.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, queries = \queries, time = \time, stdev = \stdev}%
+{\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
 
 \section{BetterPropagation}
 \csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
@@ -2007,6 +2049,11 @@ their effects on the performance of the model checker implementations could be a
 {\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
 
 \section{PriorityQueue}
+\csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
+    table head= \hline Name & Frames & Avg. Lits / Clause & CTIs & Queries & Mean Time (s) & Std. Dev. of Time (s)\\\hline,
+    late after line=\\\hline]%
+{priorityQueue.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, queries = \queries, time = \time, stdev = \stdev}%
+{\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
 
 \section{CTG}
 \csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|l|p{4.5em}|p{4em}|,
@@ -2015,7 +2062,7 @@ their effects on the performance of the model checker implementations could be a
 {ctg.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, ctgs = \ctgs, queries = \queries, time = \time, stdev = \stdev}%
 {\name & \frames & \litspercls & \ctis & \ctgs & \queries & \time & \stdev}%
 
-\section{Reference Implementation}
+%\section{Reference Implementation}
 
 \chapter{Project Proposal}
 
