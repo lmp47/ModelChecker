@@ -206,17 +206,14 @@ An alternative to BDD-based symbolic model-checking techniques are SAT-based
 techniques, which use procedures for solving the boolean satisfiability
 problem and, unlike BDD-based methods, do not use the canonical representations
 of propositional formulas.
-Such techniques include bounded model checking (BMC),
-which proves properties by finding counterexamples of certain lengths
-\cite{biere99a};
-$k$-induction, which proves properties inductively \cite{sheeran00};
+Such techniques include bounded model checking (BMC)
+\cite{biere99a}, $k$-induction \cite{sheeran00},
 and the IC3 algorithm that is the focus of this project.
-% Mention FSIS?
-% Mention ITP?
 
 Many modern SAT-based model checkers are based on BMC, which begins at the
-initial state of the transition system and searches for paths of length
-$k$ from the initial state that violate the safety property.
+initial state of the transition system that represents the hardware
+and searches for paths of length $k$ from the initial state that violate
+the safety property.
 If no path of length $k$ is found, BMC increments $k$ and searches again.
 BMC is effective at finding counterexamples, but for some large systems,
 BMC is incomplete unless it is allowed to reach the point at which $k$ is
@@ -269,8 +266,9 @@ methods in practice \cite{bradley12}.
 %Mention IIV?
 
 While IC3 algorithm is for model checking safety properties of hardware,
-there are applications of the algorithm in model checking LTL and CTL
-properties and model checking software \cite{bradley12}.
+there are applications of the algorithm in model checking more
+elaborate properties, such as LTL and CTL
+properties, and model checking software \cite{bradley12}.
 
 The FAIR model-checking algorithm, which checks $\omega$-regular
 properties, uses a safety model checker such as IC3, and IICTL,
@@ -446,7 +444,7 @@ that return the \verb,Assertion, type to write \verb,TestCase,s. For example, th
 that gives an error message and a \verb,Bool, value, and raises an exception (with
 the error message) if the \verb,Bool, is not \verb,True,, so the
 expression in figure \ref{hunitex} gives a \verb,TestCase, that tests that function
-\verb,isEven, returns \verb,True, when called with parameter 12:
+\verb,isEven, returns \verb,True, when called with parameter 12.
 \begin{figure}[t]
 \centering
 \begin{lstlisting}
