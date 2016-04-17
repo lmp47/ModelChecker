@@ -11,6 +11,7 @@
 \usepackage{longtable}
 \usepackage{csvsimple}
 \usepackage{float}
+\usepackage{color}
 \usepackage[linesnumbered,figure,vlined]{algorithm2e}
 \floatstyle{boxed} 
 \restylefloat{figure}
@@ -28,7 +29,9 @@
   language = Haskell,
   columns = fullflexible,
   keepspaces = true,
-  keywordstyle = \bf
+  showspaces = false,
+  showstringspaces = false,
+  keywordstyle = \color{blue}
 }
 
 \begin{document}
@@ -306,6 +309,16 @@ programming language Haskell. I explain some features of the
 language that should help with understanding future code snippets
 by comparison with Standard ML.
 
+\begin{figure}[t]
+\begin{lstlisting}
+prove :: Model -> Lit -> Bool
+\end{lstlisting}
+\caption{The type signature for the {\tt prove} function in the model
+checker implementations, which is a curried function that takes a
+{\tt Model} and a {\tt Lit} and returns a {\tt Bool}.}
+\label{typesigexample}
+\end{figure}
+
 %Type signature syntax
 \paragraph{Types}{
 Similarly to Standard ML, Haskell compilers perform type inference. Though
@@ -313,32 +326,31 @@ Haskell compilers perform type inference, type
 signatures can be (and, in some cases where type inference cannot resolve
 ambiguities, must be) provided.
 
-\begin{figure}[!ht]
-\begin{lstlisting}
-prove :: Model -> Lit -> Bool
-\end{lstlisting}
-\caption{The type signature for the {\tt prove} function in the model
-checker implementations, which is a curried function that takes a
-\verb,Model, and a \verb,Lit, and returns a \verb,Bool,.}
-\label{typesigexample}
-\end{figure}
-
 %Type constructors
 Haskell type constructors work similarly to Standard ML type constructors,
-with the main difference being that Standard ML's \verb,datatype, is instead
-\verb,data, in Haskell.
+with the main difference being that Standard ML's \verb,datatype, is instead \verb,data, in Haskell.
 
-Haskell also provides record syntax for creating new types, allowing components
+Haskell provides record syntax for creating new types, allowing components
 to be named.
+
+%Type classes
+Haskell also has type classes, which allow for function overloading.
+Functions may be defined within the definition of a type class,
+and will work for any type that is an instance of that type class.
+
+Haskell's \verb,Monad, class encompasses composable
+structures that describe computations. The described computations
+may have side effects, and Haskell programs use instances of the
+\verb,Monad, class to achieve side effects such as I/O.
 }
 
 %List syntax
 \paragraph{Lists}{
 The code written for this project makes extensive use
-of lists. List types in Haskell are denoted using square brackets, i.e.
+of lists. List types in Haskell are denoted using square brackets, e.g.,
 a list of \verb,Lit,s has type \verb,[Lit],.
 Lists can be appended using the \verb,++, infix operator, and elements
-can be prepended to lists using the infix operator \verb,:,. For
+can be prepended to lists using the operator \verb,:,. For
 example, the Haskell equivalent to the Standard ML expression \verb.1::[2,3,4] @ [5,6].
 is \verb.1:[2,3,4] ++ [5,6]..}
 
@@ -348,6 +360,7 @@ A Haskell program consists of modules, which are used to organize code.
 Modules (or just selected functions from modules) can be imported into other
 modules, which is how library functions can be used.
 }
+
 
 \section{Requirements Analysis}
 
@@ -363,9 +376,9 @@ the AIGER format allows the model checker to be run on examples from
 the Hardware Model Checking Competition (HWMCC), since this is the format used
 to specify examples in the competitions. I chose the MiniSat SAT
 solver to allow for better comparison of this project's model checker
-with Aaron Bradley's reference implementation of IC3.
-Because MiniSat is the solver used by Aaron Bradley's reference implementation
-of IC3, using it as the solver for this project's model checker removes the
+with Aaron Bradley's reference implementation of IC3 (\emph{IC3ref})\cite{refic3}.
+Because MiniSat is the solver used by \emph{IC3ref}, using it as the solver
+for this project's model checker removes the
 choice of SAT solver as a variable to consider when comparing performance.
 
 Given that the model checking algorithm deals with transition systems
@@ -405,7 +418,8 @@ on Hackage.
 
 \paragraph{HUnit}{
 HUnit is a framework for writing unit tests in Haskell based on the JUnit framework
-for unit testing in Java. HUnit allows tests to be specified by using functions
+for unit testing in Java \cite{hunit}.
+HUnit tests can be specified by using functions
 that return the \verb,Assertion, type to write \verb,TestCase,s. For example, the
 \verb,assertBool :: String -> Bool -> Assertion, function takes a \verb,String,
 that gives an error message and a \verb,Bool, value, and raises an exception (with
@@ -431,11 +445,12 @@ singly tree can then be treated as a test suite, and the whole tree
 of unit tests can be run.}
 
 \paragraph{Criterion}{
-Criterion is a library for performing benchmarking in Haskell.
+Criterion is a library for performing benchmarking in Haskell
+\cite{criterion}.
 Criterion can output benchmarking results in any format specified in the \verb,.tpl,
-template format, and by default outputs to HTML.
+template format, and by default outputs HTML.
 The \verb,.tpl, file can be configured such that
-Criterion can, for example, output benchmark sample results to a CSV, as the
+Criterion can, e.g., output benchmark sample results to a CSV file, as the
 \verb,.tpl, for benchmarking this project was configured.}
 
 \paragraph{Cabal}{
@@ -474,12 +489,14 @@ macros that the preprocessor can expand to, e.g., pointer offsets. The
 
 \paragraph{HLint}{
 The HLint tool suggests improvements for Haskell source code to improve
-the style of the code. The incorporation of HLint suggestions in
+the style of the code \cite{hlint}.
+The incorporation of HLint suggestions in
 the project resulted in simpler, more readable code.
 }
 
 \paragraph{Aiger Utilities}{
-Several tools provided in Aiger Utilities were used in the project. The
+Several tools provided in Aiger Utilities were used in the project
+\cite{aiger}. The
 AIGER parser provided was used for comparison with and as an alternative
 to the parser developed as part of this project. 
 
@@ -494,7 +511,7 @@ to convert between the ASCII and binary AIGER formats. }
 
 \paragraph{MiniSat}{
 MiniSat is a SAT solver implemented in C++ that solves boolean satisfiability problems
-posed in conjunctive normal form. Further details are given in section \ref{MiniSat}.
+posed in conjunctive normal form \cite{minisat}. Further details are given in section \ref{MiniSat}.
 }
 
 \section{Symbolic Representation}
@@ -1116,7 +1133,7 @@ Variable names are adjusted (by subtracting 1) so that they start at 0.
 \begin{lstlisting}
 data Lit = Var Word | Neg Word | Boolean Bool
 \end{lstlisting}
-\caption{The {\tt Lit} data structure in {\it Parser.AigModel}}
+\caption{The {\tt Lit} data structure in {\tt Parser.AigModel}}
 \end{figure}
 
 For example, the index 3 read from an AIGER file is parsed into \verb,Neg 0,:
@@ -1773,8 +1790,8 @@ variants were able to solve additional examples without timing out.
 Following a description of the output of the model checker,
 I discuss the solving capabilities of the model-checker implementations and compare
 their performance.
-I also compare their performance with that of the reference implementation.
-
+I also compare their performance with that of the reference implementation
+\emph{IC3ref}.
 
 \section{Output}
 
@@ -1806,10 +1823,9 @@ True
 
 For the fourteen handwritten examples and fifty HWMCC examples that all implementations solved
 within the time limit, the
-implementations' solutions agree with those given by Aaron Bradley's reference
-implementation, providing evidence for the correctness of the solutions given by the model checker
+implementations' solutions agree with those given by \emph{IC3ref}, providing evidence for the correctness of the solutions given by the model checker
 implementations. Furthermore, the variants that solved the additional examples also gave
-solutions that agreed with the reference implementations' solutions.
+solutions that agreed with the reference implementation's solutions.
 
 The largest (in terms of number of variables) unsafe example that the variants gave a solution
 for without timing out was \verb,bj08goodbakerycyclef7.aig, which has 19900 variables.
@@ -1821,7 +1837,7 @@ to without timing out was \verb,pdtvsar8multip26.aig,, with 7174 variables.
 
 \section{Benchmarking}
 I took benchmarks for the performance of the different variations of the model checker and for the
-performance of the reference implementation both with CTG-handling enabled and disabled. For each of the fourteen handwritten examples and the fifty examples from the HWMCC, forty benchmarking samples were taken.
+performance of \emph{IC3ref} both with CTG-handling enabled and disabled. For each of the fourteen handwritten examples and the fifty examples from the HWMCC, forty benchmarking samples were taken.
 
 In addition to timing data, I collected data about the number of frames needed to solve an example,
 the average number of literals per clause, the number of CTIs discovered, the number of SAT-solver queries,
@@ -1900,7 +1916,7 @@ eliminate more states to overcome the overheads of finding and proving negated C
 making additional queries on each call to the \verb,inductiveGeneralization, function.
 
 Similar results can be found
-in the performance of Aaron Bradley's reference implementation with basic generalization and
+in the performance of \emph{IC3ref} with basic generalization and
 improved (CTG-using) generalization on the same examples: for these small examples,
 the reference implementation performs better overall with CTG-handling disabled.}
 
@@ -1939,7 +1955,7 @@ literals per clause.
 
 The performance of this project's model checker implementations is, for all except very small examples
 (e.g. \verb,simple1.aag,),
-worse compared to the average performance of Aaron Bradley's reference implementation
+worse compared to the average performance of \emph{IC3ref}
 (with or without generalization involving CTGs enabled).
 
 The choice of implementation language may account for much of the difference in performance, as the reference
@@ -1974,7 +1990,8 @@ from $s$.
 \subsubsection{MiniSat}
 The reference implementation is more closely coupled to MiniSat's implementation. Because both the reference
 implementation and MiniSat are in C++, the reference implementation can and does call MiniSat functions
-and instantiate MiniSat objects, such as \verb,SimpSolver,s directly. In contrast, the Haskell implementation
+and instantiate MiniSat objects, such as \verb,SimpSolver,s directly.
+In contrast, the Haskell implementations
 must interact with MiniSat through an interface and suffers from associated overheads, such as those from
 marshalling data from the data structures returned from the C wrapper for MiniSat into the corresponding
 Haskell data structures.
@@ -2026,8 +2043,8 @@ though none of the variants performs as well as the reference implementation of 
 \section{Further extensions}
 Rather than implement the extensions mentioned in the initial project proposal, I elected to implement
 other variants of the model checker and examine their effects on the model checker's performance.
-As a result, interfacing with different SAT solvers remains a further extension. Additionally,
-implementing further variants of the model checker remains as an extension.
+As a result, interfacing with different SAT solvers and implementing lazy
+abstraction-refinement remain as further extensions.
 
 Implementing interfaces with different SAT solvers may allow more examples to be solved efficiently.
 Aaron Bradley notes that the performance of the IC3 algorithm is considerably affected
@@ -2036,11 +2053,18 @@ time, the algorithm's performance may still vary if the SAT solver behaves even 
 Because the choice of SAT solver may affect which examples can be solved efficiently, allowing the model
 checker to use different SAT solvers may increase the number of examples that can be solved.
 
-Other than using a different SAT solver, the performance of the model checker may be improved by
-altering its overall structure. The current implementations of the model checker maintain one
-\verb,Solver, per frame. A variant of the model checker that uses a single \verb,Solver,
-instance may yield performance improvments, as suggested in several papers \cite{}.
-
+Abstraction-refinement is a technique used in verification to mitigate the effects
+of the state explosion problem. Abstraction removes irrelevant details of the model,
+and if the abstraction is found to be too coarse at some point during verification,
+refinement can add necessary details of the model back into the abstraction.
+Yakir Vizel, Orna Grumberg, and Sharon Shoham introduced a abstraction-refinement
+scheme that is compatible with the IC3 algorithm \cite{vizel12}. The implementation
+of this modified algorithm achieved significant speedups compared with the
+original IC3 algorithm implementation \verb,ic3,, and a variant
+of the model checker in Haskell that uses this abstraction-refinement scheme may 
+exhibit a similar improvement.
+%The modified algorithm uses different
+%abstractions for the different approximated sets of states (i.e. frames). Upon
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % the bibliography
