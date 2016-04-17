@@ -417,7 +417,7 @@ the project's code.
 
 \paragraph{Git}{
 The Git version control system was used for managing the project's code, and
-GitHub, a widely-used hosting service for Git repositories, was used to
+GitHub \cite{github}, a widely-used hosting service for Git repositories, was used to
 keep backups of the code.
 The previous versions maintained by the system proved useful in
 the development of the code, and branching and merging capabilities were
@@ -534,7 +534,7 @@ to convert between the ASCII and binary AIGER formats. }
 
 \paragraph{MiniSat}{
 MiniSat is a SAT solver implemented in C++ that solves boolean satisfiability problems
-posed in conjunctive normal form \cite{minisat}. Further details are given in section \ref{MiniSat}.
+posed in conjunctive normal form \cite{minisat,een05}. Further details are given in section \ref{MiniSat}.
 }
 
 \section{Symbolic Representation}
@@ -1362,6 +1362,12 @@ and a variant that improves upon \emph{BetterCTI} by considering subsumed clause
 
 I have also implemented a variation of IC3 that uses priority queues (\emph{PriorityQueue}) and a
 variation that uses CTGs to improve generalization (\emph{CTG}).
+
+I describe the overall structure shared by all the variants except the
+\emph{PriorityQueue} implementation, and then describe the implementation
+details of smaller components of the algorithm and how they differ across
+variants. A separate description of the \emph{PriorityQueue} implementation
+follows.
 
 \subsection{Overall structure}
 
