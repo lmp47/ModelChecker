@@ -80,13 +80,20 @@ Supporting Supervisor: & Prof Alan Mycroft
 
 \section*{Original Aims of the Project}
 
-Describe the original aims of the project, i.e. summarize information from
-the ``Substance and Structure'' and ``Success Criteria'' sections of the
-project proposal.
+The original aims of the project are to implement the basic
+IC3 algorithm as part of a model checker written in Haskell.
+This model checker should be able to
+solve several small example hardware models correctly.
 
 \section*{Work Completed}
 
-Describe the work completed as part of project, including extensions.
+The work completed as part of the project includes the implementation
+of the major components for completing the original aims of the
+project: the AIGER parser, MiniSat interface,
+hardware model representation, and basic IC3 implementation. In
+addition to this work, several other variants of the IC3 algorithm
+were implemented. The different variants can model check small
+hardware model examples as well as several larger examples.
 
 \section*{Special Difficulties}
 
@@ -147,9 +154,9 @@ One formal verification technique is model checking.
 Given a model of the system
 and a specified property, a model checker will check
 whether all reachable states in the system satisfy this property.
-Unlike formal verification techniques that employ Hoare Logic
-and theorem provers that require user guidance, model checking
-is a fully automated verification technique.
+Unlike formal verification techniques that require user guidance
+such as those that employ Hoare Logic or proof assistants, model
+checking is fully automated.
 
 In addition to being automated, because model checkers prove
 properties by considering reachable states, when a model checker
@@ -172,20 +179,20 @@ number of state variables \cite{clarke12}.
 The initial approach to the model checking problem involved explicitly
 considering each reachable state in the model.
 Symbolic model checking arose as a method of mitigating the effects of
-the state explosion problem to some extent. By representing
-states and the transition relation between them as boolean
-expression, symbolic model checking allows sets of states to be
-represented efficiently as boolean expressions involving state variables
-as opposed to an explicit list of each individual state in the set
+the state explosion problem. By representing
+states and the transition relation between them as logical formulas,
+symbolic model checking allows sets of states to be
+represented efficiently as logical formulas involving state variables
+instead of as an explicit list of each individual state in the set
 \cite{mcmillan92}. 
 
 Symbolic model checking was originally invented for use with ordered
 binary decision diagrams (BDDs), data structures that provide an efficient
-representation of propositional formulas. A unique BDD represents each logical
-formula given a particular variable ordering, and an implementation that
-only stores each BDD once and uses pointers appropriately can result in
-less space being used.
-The efficiency of BDDs in storing propositional formulas allowed for the model
+representation of propositional formulas. For a particular variable
+ordering, a unique BDD represents each formula (and all equivalent formulas).
+An implementation that only stores each BDD once and uses pointers appropriately
+can result in less space being used.
+The efficiency of BDDs in storing propositional formulas allows for the model
 checking of systems with larger numbers of states than could be handled
 by explicit-state model checking \cite{mcmillan92}.
 
@@ -196,9 +203,9 @@ there is no such ordering that results in a space-efficient BDD
 \cite{biere99a}.
 
 An alternative to BDD-based symbolic model-checking techniques are SAT-based
-techniques, which do not use the canonical representations of propositional
-formulas as BDDs and make use of procedures for solving the boolean
-satisfiability problem.
+techniques, which use procedures for solving the boolean satisfiability
+problem and, unlike BDD-based methods, do not use the canonical representations
+of propositional formulas.
 Such techniques include bounded model checking (BMC),
 which proves properties by finding counterexamples of certain lengths
 \cite{biere99a};
@@ -209,7 +216,7 @@ and the IC3 algorithm that is the focus of this project.
 
 Many modern SAT-based model checkers are based on BMC, which begins at the
 initial state of the transition system and searches for paths of length
-$k$ from the initial state that violate the negated property.
+$k$ from the initial state that violate the safety property.
 If no path of length $k$ is found, BMC increments $k$ and searches again.
 BMC is effective at finding counterexamples, but for some large systems,
 BMC is incomplete unless it is allowed to reach the point at which $k$ is
@@ -238,7 +245,7 @@ since then, several variants of the algorithm have been developed.
 %2015 paper
 
 As in $k$-induction, properties are proved through induction:
-the algorithm considers reachable sets of states $k$ steps away from the
+the algorithm considers sets of states reachable in at most $k$ steps from the
 initial state until reaching a fixed point.
 % Note: find when k-induction started using counterexamples
 As with later variants of $k$-induction, the IC3 algorithm also discovers
@@ -266,16 +273,16 @@ there are applications of the algorithm in model checking LTL and CTL
 properties and model checking software \cite{bradley12}.
 
 The FAIR model-checking algorithm, which checks $\omega$-regular
-properties, makes use of a safety model checker such as IC3, and IICTL,
-which checks CTL formulas \cite{hassan12}, makes use of both a
-safety model checker such as IC3 as well as a fair-cycle finder such as
+properties, uses a safety model checker such as IC3, and IICTL,
+which checks CTL formulas \cite{hassan12}, uses both a
+safety model checker such as IC3 and a fair-cycle finder such as
 FAIR.
 
 Other work generalizes IC3 to use an underlying SMT solver rather than a
-SAT solver, and this generalization has been used to check control-flow
+SAT solver. This generalization has been used to check control-flow
 graphs of programs \cite{cimatti12}.
 More recently, Johannes Birgmeier, Aaron Bradley, and Georg Weissenbacher
-have introduced CTIGAR, a method of abstraction-refinement based on IC3's
+introduced CTIGAR, a method of abstraction-refinement based on IC3's
 counterexamples to induction rather than the counterexamples in CEGAR,
 which experiments suggest is competitive with CEGAR-based techniques for
 software verification \cite{birgmeier14}.
@@ -288,7 +295,7 @@ small examples. Additionally, the project is meant to give me an opportunity
 to learn and use Haskell, to understand formal methods and especially model
 checking more deeply, and to put into practice software engineering techniques.
 
-I have successfully implemented not only a basic form of the IC3 algorithm,
+I successfully implemented not only a basic form of the IC3 algorithm,
 which can correctly check several examples from the hardware model checking
 competition in addition to the small hardware models I initially set out
 to check, but also several variants of the algorithm.
@@ -307,7 +314,7 @@ and gaining the necessary knowledge about the IC3 algorithm.
 The majority of the code for the project is implemented in the functional
 programming language Haskell. I explain some features of the
 language that should help with understanding future code snippets
-by comparison with Standard ML.
+and implementation descriptions.
 
 \begin{figure}[t]
 \begin{lstlisting}
@@ -315,48 +322,62 @@ prove :: Model -> Lit -> Bool
 \end{lstlisting}
 \caption{The type signature for the {\tt prove} function in the model
 checker implementations, which is a curried function that takes a
-{\tt Model} and a {\tt Lit} and returns a {\tt Bool}.}
+{\tt Model} and a {\tt Lit} and returns a {\tt Bool}}
 \label{typesigexample}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\begin{lstlisting}
+data Lit = Var Word | Neg Word | Boolean Bool deriving (Show, Eq, Ord)
+\end{lstlisting}
+\caption{The {\tt Lit} datatype in the {\tt AigModel} module
+is an instance of the {\tt Show}, {\tt Eq}, and {\tt Ord} type classes.
+The {\tt Show} class contains the {\tt show} function (and related functions) that
+converts instances to {\tt String}, the {\tt Eq} class contains
+operators that allow equality testing of instances for
+equality, and {\tt Ord} class contains comparison operators
+that allow instances to be ordered.}
+\label{lit}
 \end{figure}
 
 %Type signature syntax
 \paragraph{Types}{
-Similarly to Standard ML, Haskell compilers perform type inference. Though
+Though
 Haskell compilers perform type inference, type
-signatures can be (and, in some cases where type inference cannot resolve
+signatures can be (and, in cases where type inference cannot resolve
 ambiguities, must be) provided.
 
 %Type constructors
-Haskell type constructors work similarly to Standard ML type constructors,
-with the main difference being that Standard ML's \verb,datatype, is instead \verb,data, in Haskell.
-
-Haskell provides record syntax for creating new types, allowing components
+Haskell type constructors are similar to those in Standard ML,
+with the main difference being the syntactic,
+where Standard ML's \verb,datatype, is instead \verb,data, in Haskell.
+Haskell also provides record syntax for creating new types, allowing components
 to be named.
 
 %Type classes
-Haskell also has type classes, which allow for function overloading.
-Functions may be defined within the definition of a type class,
-and will work for any type that is an instance of that type class.
+Haskell's type classes allow for function overloading.
+Functions specified within the definition of a type class
+must be supported for any type that is an instance of that type class.
 
 Haskell's \verb,Monad, class encompasses composable
-structures that describe computations. The described computations
+structures that describe computations. These computations
 may have side effects, and Haskell programs use instances of the
 \verb,Monad, class to achieve side effects such as I/O.
 }
 
 %List syntax
 \paragraph{Lists}{
-The code written for this project makes extensive use
-of lists. List types in Haskell are denoted using square brackets, e.g.,
+List types in Haskell are denoted using square brackets, e.g.,
 a list of \verb,Lit,s has type \verb,[Lit],.
-Lists can be appended using the \verb,++, infix operator, and elements
-can be prepended to lists using the operator \verb,:,. For
-example, the Haskell equivalent to the Standard ML expression \verb.1::[2,3,4] @ [5,6].
-is \verb.1:[2,3,4] ++ [5,6]..}
+Lists can be appended using the \verb,++, operator, and elements
+can be prepended to lists using the \verb,:, operator.
+For example, \verb.1:[2,3,4] ++ [5,6]. gives the Haskell equivalent to
+\verb.1::[2,3,4] @ [5,6]. in Standard ML.
 
 %Modules
 \paragraph{Modules}{
-A Haskell program consists of modules, which are used to organize code.
+A Haskell program consists of modules, which organize code.
 Modules (or just selected functions from modules) can be imported into other
 modules, which is how library functions can be used.
 }
@@ -402,18 +423,18 @@ GitHub, a widely-used hosting service for Git repositories, was used to
 keep backups of the code.
 The previous versions maintained by the system proved useful in
 the development of the code, and branching and merging capabilities were
-useful for working on and organizing different variations of the model checker.
-Git submodules, which allow the inclusion of other Git projects within another
-project, were used to include MiniSat within the project, enabling easier
+useful for organizing different variations of the model checker.
+I used Git submodules, which allow the inclusion of other Git projects within another
+project, to include MiniSat within the project, enabling easier
 acquisition of project dependencies (i.e., MiniSat can be obtained by running
 \verb,git submodule init, after running \verb,git clone, to clone the repository).}
 
 \paragraph{Haddock}{
 The Haddock documentation tool for Haskell was used to generate documentation
-for the code. Haddock automatically generates documentation in
+for the code \cite{haddock}. Haddock automatically generates documentation in
 several formats (e.g. HTML) from annotated Haskell code. It is commonly
 used to document Haskell code, being used for most packages available
-on Hackage.
+on the Haskell package database Hackage.
 }
 
 \paragraph{HUnit}{
@@ -423,13 +444,10 @@ HUnit tests can be specified by using functions
 that return the \verb,Assertion, type to write \verb,TestCase,s. For example, the
 \verb,assertBool :: String -> Bool -> Assertion, function takes a \verb,String,
 that gives an error message and a \verb,Bool, value, and raises an exception (with
-the error message) if the \verb,Bool, is not \verb,True,, so the following
-expression would give a \verb,TestCase, that tests that function
+the error message) if the \verb,Bool, is not \verb,True,, so the
+expression in figure \ref{hunitex} gives a \verb,TestCase, that tests that function
 \verb,isEven, returns \verb,True, when called with parameter 12:
-\begin{lstlisting}
-TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
-\end{lstlisting}
-\begin{figure}[!ht]
+\begin{figure}[t]
 \centering
 \begin{lstlisting}
 data Test = TestCase Assertion
@@ -437,6 +455,13 @@ data Test = TestCase Assertion
           | TestLabel String Test
 \end{lstlisting}
 \caption{The HUnit {\tt Test} datatype}
+\end{figure}
+\begin{figure}[t]
+\begin{lstlisting}
+TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
+\end{lstlisting}
+\caption{An example use of HUnit's {\tt TestCase} and {\tt assertBool}}
+\label{hunitex}
 \end{figure}
 
 The \verb,Test, datatype in HUnit allows \verb,Test,s to be grouped
@@ -454,8 +479,8 @@ Criterion can, e.g., output benchmark sample results to a CSV file, as the
 \verb,.tpl, for benchmarking this project was configured.}
 
 \paragraph{Cabal}{
-Cabal is the standard package and dependency management system for Haskell,
-where a package may be a library or a complete piece of software.
+Cabal is the standard package and dependency management system for Haskell
+\cite{cabal}, where a package may be a library or a complete piece of software.
 A \verb,.cabal, file in the root directory of a project specifies
 information about the Cabal package, such as its version and dependencies,
 The \verb,.cabal, file may contain several sections, such as a
@@ -491,11 +516,11 @@ macros that the preprocessor can expand to, e.g., pointer offsets. The
 The HLint tool suggests improvements for Haskell source code to improve
 the style of the code \cite{hlint}.
 The incorporation of HLint suggestions in
-the project resulted in simpler, more readable code.
+this project resulted in simpler, more readable code.
 }
 
 \paragraph{Aiger Utilities}{
-Several tools provided in Aiger Utilities were used in the project
+Several tools provided in Aiger Utilities were used in this project
 \cite{aiger}. The
 AIGER parser provided was used for comparison with and as an alternative
 to the parser developed as part of this project. 
@@ -530,8 +555,6 @@ A variable is a propositional symbol that can be assigned to boolean values {\it
 or {\it False}. A \emph{literal} is defined as being either an atom $a$ (which can
 be a variable or boolean value) or its negation $\neg a$.
 
-The concepts of a cube and a clause are useful in describing the
-representation of states as logical formulas.
 A \emph{cube} is defined to be a conjunction of literals and may be represented as the set
 of literals that occur in it. Similarly, a \emph{clause} is a disjunction of literals that
 may also be represented as the set of literals that occur in it.
@@ -625,17 +648,16 @@ format is more flexible and human readable, imposing fewer constraints
 on the ordering of components within the input file. For example, an
 AND gate with variable name 20 may be specified before an AND gate with
 variable name 11 in the ASCII format, but AND gates must be specified in
-ascending order of their variable names in the binary AIGER format. Another
-example is that AND gates' inputs can be specified in any order in the ASCII
+ascending order of their variable names in the binary format. Another
+example is that AND gates' inputs can occur in any order in the ASCII
 format, but the binary format encodes AND gates under the assumption
-that inputs are specified in ascending order.
-The the binary version's assumptions on component ordering allows the format
+that inputs' indices are in ascending order.
+The the binary version's assumptions on component ordering allow the format
 to be more compact. The HWMCC examples use the binary format.
 
 A new version of the AIGER format is currently under development, with
-examples from HWMCC'14 using the new version. The AIGER parser implemented
-as part of this project handles both the old and new versions of the AIGER
-format.
+examples from HWMCC'14 using the new version. The AIGER parser component
+of this project handles both the old and new versions of the format.
 
 \paragraph{AIGER Variables}{
 A variable's name in AIGER format is a positive integer. Variables themselves
@@ -690,7 +712,7 @@ followed by the index for their next-state value.
 AND gates are specified by giving the indices that represent the positive literal
 for their variable name and the two indices that specify their input values.
 
-\begin{figure}[!ht]
+\begin{figure}[t]
 \centering
 \begin{verbatim}
 aag 3 0 2 1 1
@@ -708,7 +730,7 @@ The output of the whole circuit is the output of the AND gate.
 \label{aagCircuit}
 \end{figure}
 
-\begin{figure}[!ht]
+\begin{figure}[t]
 \centering
 \includegraphics[width=100mm]{circuit.png}
 \caption{The circuit represented by figure \ref{aagCircuit}, where
@@ -780,15 +802,17 @@ Justice and fairness constraints are not included in the model used by
 the model checker and will not be explained further.
 
 Components are specified after the header in the same order that their
-counts are given in the header with the exception of AND gates, which
+counts occur in the header with the exception of AND gates, which
 occur at the end of the file. Latches' initial values can also be specified
 now with an additional \verb,0, or \verb,1, after the next-state literal's
 index. The initial value may also be given as the index of the latch itself,
 in which case the latch is considered to be uninitialized.
 If the initial value is omitted, the initial value is assumed to be
-0 as in the old version of the format. The header can also be truncated
-after giving the number of AND-gates if the remaining counts are all
-zero, allowing any parser for the new AIGER format to be
+0, as in the old version of the format.
+
+The header can be truncated
+after giving the AND-gate count if all remaining counts are
+zero, allowing parsers for the new AIGER format to be
 backwards-compatible.
 
 The new version of the format is otherwise
@@ -837,8 +861,7 @@ Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
 safety property $P$, IC3 aims either to prove inductively that $P$ holds
 at all reachable states from the initial state or
 to find a reachable $\neg P$ state.
-The pseudocode in \ref{overview} gives an overview of the basic IC3 algorithm,
-which I will refer to in my explanation of the algorithm.
+The pseudocode in \ref{overview} gives an overview of the basic IC3 algorithm.
 
 \begin{algorithm}[!Ht]
 \DontPrintSemicolon
@@ -875,13 +898,13 @@ in the pseudocode).
 The deepest frame $F_k$ in the set of frames is the \emph{frontier}.
 
 %Initiation query
-The initiation query $I \Rightarrow P$ on line \ref{initiation} is used to check that the safety
+The initiation query $I \Rightarrow P$ on line \ref{initiation} checks that the safety
 property holds in the initial state $I$.
 This query is run once at the start of
 the algorithm for the desired safety property.
 If it fails (i.e. if it is {\it False}), then the algorithm terminates,
 as state in which $\neg P$ holds is reachable in 0 steps.
-If the query succeeds, then the algorithm proceeds to its main loop.
+If it succeeds, then the algorithm proceeds to its main loop.
 
 The main loop of the algorithm is the while-loop beginning on line \ref{main}.
 The algorithm only exits the loop when it has determined whether or not the
@@ -908,7 +931,7 @@ attempts to prove that $\neg s$ is inductive relative to $F_{k - 1}$,
 so that all $F_k$ states are necessarily $\neg s$ states, so $\neg s$ can
 be added to the set of $F_k$ clauses.
 
-The {\it proveNegCTI} function works similarly to the
+The {\it proveNegCTI} algorithm works similarly to the
 while loop on line \ref{reconsec}. For as long as the query
 $F_k \wedge \neg s \wedge T \Rightarrow s'$ is unsuccessful,
 the algorithm extracts a counterexample to induction cube and
@@ -1073,7 +1096,7 @@ frame $F_k$ allows $s$ to be generalized to $c$.
 
 The implementation can be broken up into four main components: the AIGER parser, the
 MiniSat interface, the hardware model representation, and the model checker.
-I implemented several different variants of the model checker component that differ
+I implemented several variants of the model checker component that differ
 in overall structure, the finding of CTIs, the way that propagation is performed, and
 the way that CTIs are inductively generalized. The different variants and the
 differences among them are given in figure \ref{implementationSummary}.
@@ -1104,8 +1127,9 @@ in turn.
 
 The parser component parses ASCII or binary-formatted AIGER files and
 assumes that the new format is used (because all old format AIGER files are also
-new instances of the new format). The justice properties and fairness constraints
-are ignored by the parser, as they are not used by any of the model checker implementations.
+new instances of the new format). The parser ignores the
+justice properties and fairness constraints, which are not used by any of the model
+checker implementations.
 
 Both the \verb,Parser.AigerParser, module that implements the parser in Haskell and
 the \verb,Parser.AigerTools, module that calls the Aiger Utilities' parser's functions
@@ -1114,33 +1138,27 @@ which stores the components specified in the AIGER file.
 
 \subsection{Model}
 
-More specifically, the \verb,Model, data structure stores the number of variables and
+The \verb,Model, data structure stores the number of variables and
 the number of inputs. It also stores as a list of literals the outputs, bad states,
 and invariant constraints. The data structure also stores latches and AND gates as
 lists of lists of literals. I discuss the representation of literals, latches, and
 AND gates below.
 
-Literals are represented by a \verb,Lit, data structure in the \verb,Parser.AigModel,
-module, which stores decoded versions of AIGER format indices.
-The \verb,Lit, data structure has a constructor \verb,Boolean, that takes a \verb,Bool,
-argument for representing the boolean values that correspond with AIGER indices
-0 and 1, a \verb,Var, constructor that takes a \verb,Word, for representing a positive literal,
-and a \verb,Neg, constructor that takes a \verb,Word, for representing a negative literal.
+Literals are represented by \verb,Lit,s (defined in figure \ref{lit}),
+which store decoded versions of AIGER indices. The {\tt Lit} datatype
+in {\tt Parser.AigModel} has constructor
+{\tt Boolean} that takes a {\tt Bool} argument that represents the boolean values
+corresponding with AIGER indices 0 and 1, constructor {\tt Var} that represents
+the positive literal of the variable whose name is given by the {\tt Word} it takes
+as an argument, and constructor {\tt Neg} that represents the negative literal
+of the variable whose name is given by the {\tt Word} it takes as an argument.
 Variable names are adjusted (by subtracting 1) so that they start at 0.
 
-\begin{figure}[H]
-\centering
-\begin{lstlisting}
-data Lit = Var Word | Neg Word | Boolean Bool
-\end{lstlisting}
-\caption{The {\tt Lit} data structure in {\tt Parser.AigModel}}
-\end{figure}
-
-For example, the index 3 read from an AIGER file is parsed into \verb,Neg 0,:
-the odd index 3 indicates that it is a negative literal of the variable named 1, and
+For example, the index 3 read from an AIGER file is parsed to \verb,Neg 0,;
+the odd index 3 indicates that it is a negative literal of the variable 1, and
 subtracting by 1 gives the new variable name 0.
 
-Latches and AND gates are represented using three-element \verb,Lit, lists.
+Latches and AND gates are represented using three-element \verb,[Lit],s.
 For latches, the first element gives the variable name of the latch (as a positive literal),
 the second gives the next-state literal, and the final element gives the initial state
 of the latch. For AND gates, the first element gives the variable name of the AND gate
@@ -1151,16 +1169,24 @@ as inputs to the AND gate.
 %Describe the process of implementing the Haskell bindings for Minisat
 %functions, including the wrapper functions for Minisat written in C.
 
-MiniSat serves as the SAT solver for this implementation of the IC3 algorithm.
+MiniSat serves as the SAT solver for this project's implementations of the IC3 algorithm.
 Because the Haskell Foreign Function Interface (FFI) cannot interface with C++ directly,
 the interface to the MiniSat SAT solver is composed of a C wrapper for the relevant
 MiniSat functions and classes and a Haskell interface to the C wrapper.
 
-Much of the C wrapper is straightforwardly as follows: every MiniSat class is replaced with a C
+Much of the C wrapper is straightforwardly as follows:
+every MiniSat class is replaced with a C
 type, and every MiniSat function is replaced with a function with an \verb,extern C, function that
 calls the MiniSat C++ function, as in figure \ref{addClause}.
 
-\begin{figure}[ht]
+I also added a \verb,result, struct to allow a single function call to return
+all the results of a SAT query. The struct contains not only an indication of
+whether the SAT queryi was satisfiable but also contains pointers to the model and conflict vector (if any) of the \verb,Solver,.
+The wrapper function \verb,solveWithAssumps, for the version of \verb,solve(), that takes an assumption
+vector as an argument and returns a pointer to a \verb,result, struct
+rather than just whether or not the query was satisfiable.
+
+\begin{figure}[t]
 \begin{lstlisting}[language = C++]
 extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
                                  Minisat::vec<Minisat::Lit>* ps) {
@@ -1171,14 +1197,7 @@ extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
 \label{addClause}
 \end{figure}
 
-I also added a \verb,result, struct to allow a single function call to return
-all the results of a SAT query. The struct contains not only the result of the SAT
-query, but also pointers to the model and conflict vector (if any) of the \verb,Solver,.
-The wrapper function \verb,solveWithAssumps, for the version of \verb,solve(), that takes an assumption
-vector as an argument and returns a pointer to a \verb,result, struct
-rather than just whether or not the query was satisfiable.
-
-\begin{figure}[ht]
+\begin{figure}[t]
 \begin{lstlisting}[language=C]
 struct result {
   unsigned solved;
@@ -1191,7 +1210,7 @@ struct result {
 \caption{The {\tt result} struct from {\tt CSolver.h}}
 \end{figure}
 
-The Haskell interface makes use of the Haskell FFI as well as the \verb,hsc2hs, preprocessor
+The Haskell interface uses the Haskell FFI and the \verb,hsc2hs, preprocessor
 for handling the \verb,result, struct.
 
 Using just the Haskell FFI for calling the C functions does not provide a
@@ -1396,10 +1415,10 @@ from the model $M$}
 
 Because the implementation of the model checker is in Haskell, the overall
 structure of the algorithm has been modified to be recursive rather than iterative.
-The {\it prove} function makes an initiation query, and, if it succeeds, calls the
-{\it prove'} function that corresponds the main while loop in line \ref{main} of figure
-\ref{overview} using recursion. The {\it proveNegCTI} function here
-does not correspond just to the {\it proveNegCTI} function in \ref{overview} but rather
+The {\it prove} function makes an initiation query, and, if it succeeds, calls
+{\it prove'}, which corresponds to a recursive version of the main while loop
+in line \ref{main} of figure \ref{overview}. Here, {\it proveNegCTI}
+does not correspond just to the {\it proveNegCTI} algorithm in \ref{overview} but rather
 to the while loop that contains that function.
 
 Because functions in Haskell are pure, the assumption made in figure \ref{overview}
@@ -2030,18 +2049,18 @@ solved fourteen small examples, with its solutions agreeing with the solutions g
 reference implementation of IC3.
 
 In addition to the basic version of the IC3 algorithm, I implemented several variants of the model checker.
-Furthermore the implementations of the model checker can model check not only
-the fourteen handwritten hardware model examples but also models from the
+The implementations of the model checker can model check not only
+the fourteen handwritten examples but also models from the
 Hardware Model Checking Competitions with thousands of variables.
 
 I evaluated the different model checker variants by comparing their performance on examples from
 the Hardware Model Checking Competition. The benchmark results show that finding smaller CTI clauses
 results in a dramatic improvement in performance, with the best-performing implementation
 \emph{betterPropagation} finding smaller CTI clauses and removing subsumed clauses from frames,
-though none of the variants performs as well as the reference implementation of IC3.
+though none of the variants performs as well as \emph{IC3ref}.
 
 \section{Further extensions}
-Rather than implement the extensions mentioned in the initial project proposal, I elected to implement
+Instead of the extensions mentioned in the initial project proposal, I elected to implement
 other variants of the model checker and examine their effects on the model checker's performance.
 As a result, interfacing with different SAT solvers and implementing lazy
 abstraction-refinement remain as further extensions.
