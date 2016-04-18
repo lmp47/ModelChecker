@@ -1147,9 +1147,9 @@ which stores the components specified in the AIGER file.
 \subsection{Model}
 
 The \verb,Model, data structure stores the number of variables and
-the number of inputs. It also stores as a list of literals the outputs, bad states,
+number of inputs. It also stores as a list of literals the outputs, bad states,
 and invariant constraints. The data structure also stores latches and AND gates as
-lists of lists of literals. I discuss the representation of literals, latches, and
+lists of literal lists. I discuss the representation of literals, latches, and
 AND gates below.
 
 Literals are represented by \verb,Lit,s (defined in figure \ref{lit}),
@@ -1186,27 +1186,19 @@ MiniSat functions and classes and a Haskell interface to the C wrapper.
 Much of the C wrapper is straightforwardly as follows:
 every MiniSat class is replaced with a C
 type, and every MiniSat function is replaced with a function with an \verb,extern C, function that
-calls the MiniSat C++ function, as in figure \ref{addClause}.
-
-I also added a \verb,result, struct to allow a single function call to return
-all the results of a SAT query. The struct contains not only an indication of
-whether the SAT queryi was satisfiable but also contains pointers to the model and conflict vector (if any) of the \verb,Solver,.
-The wrapper function \verb,solveWithAssumps, for the version of \verb,solve(), that takes an assumption
-vector as an argument and returns a pointer to a \verb,result, struct
-rather than just whether or not the query was satisfiable.
-
-\begin{figure}[t]
+calls the MiniSat C++ function, as in the following function
+from \verb,Minisat/CSolver.cpp,:
 \begin{lstlisting}[language = C++]
 extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
                                  Minisat::vec<Minisat::Lit>* ps) {
   return solver -> addClause (*ps);
 }
 \end{lstlisting}
-\caption{The C wrapper function for {\tt addClause} from {\tt CSolver.cpp}}
-\label{addClause}
-\end{figure}
 
-\begin{figure}[t]
+I also added a \verb,result, struct to \verb,Minisat/CSolver.h, to
+allow a single function call to return
+all the results of a SAT query. The struct contains not only an indication of
+whether the SAT query was satisfiable but also contains pointers to the model and conflict vector (if any) of the \verb,Solver,:
 \begin{lstlisting}[language=C]
 struct result {
   unsigned solved;
@@ -1216,8 +1208,11 @@ struct result {
   litptr* conflict;
 } res = {0, 0, 0, 0, 0};
 \end{lstlisting}
-\caption{The {\tt result} struct from {\tt CSolver.h}}
-\end{figure}
+
+The wrapper function \verb,solveWithAssumps, for the version of \verb,solve(),
+that takes an assumption
+vector as an argument and returns a pointer to a \verb,result, struct
+rather than just whether or not the query was satisfiable.
 
 The Haskell interface uses the Haskell FFI and the \verb,hsc2hs, preprocessor
 for handling the \verb,result, struct.
@@ -1257,24 +1252,20 @@ list of the \verb,Lit,s in the clause.
 % Describe how transition systems and safety properties are represented.
 The representation of transition systems and the safety property for the model checker to check
 are both encompassed in the \verb,Model, data structure in \verb,Model.Model,, which serves
-as the representation of the hardware in the model checker.
-The inputs $i$ and state variables $x$ in the transition system $T(i,x,I,T)$
-are not distinguished, and the total count of variables is kept in \verb,vars,.
-Clauses that specify the initial state $I$ are kept in \verb,initial,.
-The \verb,transition, list of clauses that specify latches and clauses that specify AND
-gates captures the transition relation $T$.
-The literal that gives the safety property is given by \verb,safe,.
-
-\begin{figure}[!Ht]
-\centering
+as the representation of the hardware in the model checker:
 \begin{lstlisting}
 data Model = Model { vars :: Word
                    , initial :: [Clause]
                    , transition :: [Clause]
                    , safe :: Lit } deriving Show
 \end{lstlisting}
-\caption{The data structure for representing the hardware model in the model checker.}
-\end{figure}
+
+The inputs $i$ and state variables $x$ in the transition system $T(i,x,I,T)$
+are not distinguished, and the total count of variables is kept in \verb,vars,.
+Clauses that specify the initial state $I$ are kept in \verb,initial,.
+The \verb,transition, list of clauses that specify latches and clauses that specify AND
+gates captures the transition relation $T$.
+The literal that gives the safety property is given by \verb,safe,.
 
 \subsection{Construction}
 % Describe how transition systems are constructed given AIG models.
@@ -1483,25 +1474,21 @@ a \verb,Solver,, which contains at least all the clauses in the frame's set of c
 %Describe how the step involving the initiation query is implemented.
 
 The initiation query $I \Rightarrow P$ is an implication, but a MiniSat \verb,Solver, can only
-solve queries given in CNF (with an optional assumption cube). As a result, the representation
-of the query $I \Rightarrow P$ for a frame $I$ and a clause $P$ makes use of the logical equivalence between
-$I \Rightarrow P$ and $\neg (\neg P \wedge I)$.
+solve queries given in CNF (with an optional assumption cube).
+As a result, the implementation of the query $I \Rightarrow P$ for a frame $I$ and a
+clause $P$ makes use of the logical equivalence between
+$I \Rightarrow P$ and $\neg (\neg P \wedge I)$. The implementation
+also makes use of the fact that the formula $\neg (\neg P \wedge I)$ is true
+iff $\neg P \wedge I$ is unsatisfiable, and it uses deMorgan's laws (as described in
+section \ref{prep:logic}) to acquire the asumption cube by negating all the literals in
+the \verb,prop, clause. The resulting implementation in \verb,IC3.hs, is the
+following:
 
-The implementation of the initiation query in figure \ref{impl:initiation} makes use of
-the fact that the formula $\neg (\neg P \wedge I)$ is true iff $\neg P \wedge I$ is unsatisfiable.
-The \verb,initiation,
-The implementation also makes use of deMorgan's laws as described in section
-\ref{prep:logic} to acquire the assumption cube by negating all the literals in the \verb,prop, clause.
-
-\begin{figure}[!Ht]
 \begin{lstlisting}
 initiation :: Frame -> Clause -> Bool
 initiation f prop =
   not (satisfiable (solveWithAssumps (solver f) (map neg prop)))
 \end{lstlisting}
-\caption{The initiation query implementation.}
-\label{impl:initiation}
-\end{figure}
 
 \subsection{Consecution}
 %Describe how the step involving the consecution query is implemented.
@@ -1509,17 +1496,12 @@ initiation f prop =
 Similarly to how the implication in the initiation query is converted to an equivalent CNF
 formula, all implementation variants use the logical equivalence of
 $F_k \wedge T \Rightarrow P'$ and $\neg (\neg P' \wedge F_k \wedge T)$ along with deMorgan's
-laws to yield the implementation in figure \ref{impl:consecution}.
-
-\begin{figure}[!Ht]
+laws to yield the following implementation:
 \begin{lstlisting}
 consecution :: Frame -> Clause -> Bool
 consecution f prop =
   not (satisfiable (solveWithAssumps (solver f) (map (prime.neg) prop)))
 \end{lstlisting}
-\caption{The consecution query implementation.}
-\label{impl:consecution}
-\end{figure}
 
 \subsection{Counterexamples to Induction}
 %Describe how the implementation discovers counterexamples
@@ -1858,7 +1840,7 @@ that example. The {\it CTG} implementation also reports the number of CTGs found
 for the {\it CTG} implementation run on example \verb,counters3.aig,
 is given in figure \ref{sampleoutput}.
 
-\begin{figure}[!ht]
+\begin{figure}[t]
 \centering
 \begin{lstlisting}[keywordstyle = \ttfamily, basicstyle = \footnotesize\ttfamily]
 Number of frames: 21
@@ -1913,13 +1895,13 @@ when solving examples, suggesting that the overall performance of the model chec
 the size and number of SAT-solver queries. In this section, I will discuss the impact that different
 variants of the model checker have on the size and number of SAT-solver queries and performance.
 
-\begin{figure}[!ht]
+\begin{figure}[t]
 \includegraphics[width=16cm]{litspercls.pdf}
 \caption{Average literals per clause averaged over the fourteen handwritten examples and fifty Hardware
 Model Checking Competition examples.}
 \end{figure}
 
-\begin{figure}[!ht]
+\begin{figure}[t]
 \includegraphics[width=16cm]{handwritten.pdf}
 \caption{Benchmark results for the fourteen handwritten examples on a log scale.}
 \end{figure}
@@ -2083,10 +2065,12 @@ placed in the priority queue.
 
 \chapter{Conclusion}
 
-This chapter summarizes the work done and goals met for this project. Following the summary, I give
-suggestions for further extensions to the project.
+This chapter summarizes the work done and goals met for this project.
+Following the summary in section \ref{conc:summary}, I give
+suggestions for further extensions to the project \ref{conc:extensions}.
 
 \section{Summary}
+\label{conc:summary}
 
 The project aims to implement a basic version of the IC3 algorithm in Haskell with the necessary parser
 and SAT-solver interface have been achieved, and the goal of the model checker being able to check
@@ -2105,9 +2089,12 @@ results in a dramatic improvement in performance, with the best-performing imple
 \emph{betterPropagation} finding smaller CTI clauses and removing subsumed clauses from frames,
 though none of the variants performs as well as \emph{IC3ref}.
 
-\section{Further extensions}
-Instead of the extensions mentioned in the initial project proposal, I elected to implement
-other variants of the model checker and examine their effects on the model checker's performance.
+\section{Further Extensions}
+\label{conc:extensions}
+
+Instead of the extensions mentioned in the initial project proposal,
+I elected to implement other variants of the model checker and examine their
+effects on the model checker's performance.
 As a result, interfacing with different SAT solvers and implementing lazy
 abstraction-refinement remain as further extensions.
 
