@@ -1794,19 +1794,34 @@ $(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
 
 To evaluate the model checker implementations, I ran the different variants of the model
 checker on fourteen handwritten examples and over one hundred examples taken from
-across HWMCC'10, HWMCC'11, and HWMCC'13
-(several examples are common to the competitions from different years).
+across HWMCC'10 \cite{hwmcc10}, HWMCC'11 \cite{hwmcc11}, and HWMCC'13
+(several examples are common to the competitions from different years) \cite{hwmcc13}.
+Examples from HWMCC'10 were chosen based on relatively short (under 2 second)
+solving times for \verb,ic3,'s in the competition.
+Examples were also chosen from HWMCC'11 that did not overlap with HWMCC'10 examples.
+To avoid having as much overlap between examples as those from HWMCC'10 and HWMCC'11,
+I skipped HWMCC'12 and took examples
+with relatively short solving times for some of the solvers from HWMCC'13
+\cite{hwmcc13}.
+
 If the elapsed time for attempting to solve an example took longer than ten minutes, that
 attempt was considered to have timed out. The parameterizable number of failed attempts
 at dropping literals in the \verb,inductiveGeneralization, functions was set to set to
 three, and the parameterizable number of CTGs that each generalization attempt
 in the {\it CTG} implementation will handle was also set to three.
 
+
 The handwritten examples served as the ``small examples'' that the model checker
 was meant to correctly solve as part of the aims of the project, with the largest
 (in terms of number of variables) of the handwritten examples,
-\verb,simple_counters.aig,, having 82 variables. The 
-variants could not only solve all the handwritten examples correctly
+\verb,simple_counters.aig,, having 82 variables, 77 of which are AND gates.
+To provide context for the
+typical number of variables in the small examples, the handwritten example involving a
+two-bit counter \verb,counters2.aig, has 14 variables, the three-bit counter example
+\verb,counters3.aig, has 45 variables, and the four-bit counter example
+\verb,counters4.aig, has 79 variables.
+
+The variants could not only solve all the handwritten examples correctly
 but also fifty of the HWMCC examples within ten minutes. Some
 variants were able to solve additional examples without timing out.
 
@@ -1853,7 +1868,7 @@ solutions that agreed with the reference implementation's solutions.
 The largest (in terms of number of variables) unsafe example that the variants gave a solution
 for without timing out was \verb,bj08goodbakerycyclef7.aig, which has 19900 variables.
 The largest safe example that the variants gave a solution
-to without timing out was \verb,pdtvsar8multip26.aig,, with 7174 variables.
+to without timing out was \verb,pdtvsar8multip26.aig, with 7174 variables.
 %Note that the number of variables in an example is only weakly
 %correlated with the amount of time needed to solve the example.
 % (simple linear regression gives $r^2$ less than $0.3$).
@@ -1868,8 +1883,8 @@ and, for the \emph{CTG} implementation, the number of CTGs discovered. These mea
 appendix \ref{benchmarks}.
 
 The majority of the fifty HWMCC examples did not require finding any
-CTIs; for these examples, the the {\it Basic}, {\it BetterCTI}, {\it BetterPropagation},
-and {\it CTG} implementations give similar results. 
+CTIs; for these examples, the \emph{Basic}, \emph{BetterCTI}, \emph{BetterPropagation},
+and \emph{CTG} implementations give similar results. 
 
 \section{Performance Impact of Variations}
 %Discuss performance comparison of the naive implementation of the
@@ -2026,15 +2041,23 @@ to an ordering of that was found to be the best choice empirically.
 
 \subsubsection{Overall Structure}
 
-The reference implementation uses a priority queue, but handles proof obligations differently
-than the {\it PriorityQueue} implementation does. For a CTI $s$ that prevents the fulfillment
-of a proof obligation at depth $i$, the reference implementation enqueues proof obligation $(s,i - 1)$
+The reference implementation uses a priority queue, but handles proof obligations
+differently than the {\it PriorityQueue} implementation does because \emph{IC3ref}
+does not attempt to reduce the number of generalization attmpts or prevent
+the rediscovery of CTIs.
+
+For a CTI $s$ that prevents the fulfillment
+of a proof obligation at depth $i$, the reference implementation enqueues proof
+obligation $(s,i - 1)$
 and performs generalization relative to the frame $F_{i - 1}$ each time $\neg s$ has been shown
-to be inductive relative to frame $F_{i - 1}$ (generalization does not seem
-to be as expensive for the reference implementation).
+to be inductive relative to frame $F_{i - 1}$. Generalization does not seem
+to be as expensive for \emph{IC3ref} as the Haskell implementations, probably as a
+result of aforementioned differences.
 The reference implementation also does not
 enqueue a new proof obligation $(s, i+1)$ each time a proof obligation $(s, i)$ has been
-fulfilled as the {\it priorityQueue} implementation does, so CTIs need to be rediscovered.
+fulfilled as the {\it priorityQueue} implementation does,
+so CTIs need to be rediscovered. The efficiency of \emph{IC3ref} otherwise compensates
+for the performance disadvantage of rediscovering CTIs.
 The safety property is maintained and
 handled separately from CTIs; its negation is not included as part of a proof obligation
 placed in the priority queue.
