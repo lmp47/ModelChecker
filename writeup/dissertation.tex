@@ -302,12 +302,17 @@ to check, but also several variants of the algorithm.
 
 This chapter describes the knowledge gained and plans made while preparing
 to being writing code for the project.
-The preparation for the project involved learning Haskell, distinguishing
-the main components of the project, choosing and learning how to use
-the necessary tools for implementing the components of the project,
-and gaining the necessary knowledge about the IC3 algorithm.
+The preparation for the project involved learning Haskell (section \ref{prep:haskell}),
+distinguishing the main components of the project (section \ref{prep:requirements}),
+choosing and learning how to use
+the necessary tools for implementing the components of the project
+(sections \ref{prep:tools}, \ref{prep:aiger}, \ref{prep:minisat}),
+and gaining the necessary knowledge about the symbolic representation
+of hardware models
+(section \ref{prep:logic}) and the IC3 algorithm (section \ref{prep:ic3}).
 
 \section{Haskell}
+\label{prep:haskell}
 
 The majority of the code for the project is implemented in the functional
 programming language Haskell. I explain some features of the
@@ -382,6 +387,7 @@ modules, which is how library functions can be used.
 
 
 \section{Requirements Analysis}
+\label{prep:requirements}
 
 %Describe the requirements for the project: AIGER parser, Minisat interface,
 %transition system representation, algorithm implementation.
@@ -410,6 +416,7 @@ The main required components are thus the AIGER parser, MiniSat interface,
 transition system representation, and IC3 algorithm implementation.
 
 \section{Tools Used}
+\label{prep:tools}
 
 I used a variety of tools to employ software engineering practices, such
 as version control and testing, and to otherwise ease the development of
@@ -443,8 +450,12 @@ that return the \verb,Assertion, type to write \verb,TestCase,s. For example, th
 \verb,assertBool :: String -> Bool -> Assertion, function takes a \verb,String,
 that gives an error message and a \verb,Bool, value, and raises an exception (with
 the error message) if the \verb,Bool, is not \verb,True,, so the
-expression in figure \ref{hunitex} gives a \verb,TestCase, that tests that function
-\verb,isEven, returns \verb,True, when called with parameter 12.
+following expression gives a \verb,TestCase, that tests that function
+\verb,isEven, returns \verb,True, when called with parameter 12:
+\begin{lstlisting}
+TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
+\end{lstlisting}
+
 \begin{figure}[t]
 \centering
 \begin{lstlisting}
@@ -453,13 +464,6 @@ data Test = TestCase Assertion
           | TestLabel String Test
 \end{lstlisting}
 \caption{The HUnit {\tt Test} datatype}
-\end{figure}
-\begin{figure}[t]
-\begin{lstlisting}
-TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
-\end{lstlisting}
-\caption{An example use of HUnit's {\tt TestCase} and {\tt assertBool}}
-\label{hunitex}
 \end{figure}
 
 The \verb,Test, datatype in HUnit allows \verb,Test,s to be grouped
@@ -534,11 +538,11 @@ to convert between the ASCII and binary AIGER formats. }
 
 \paragraph{MiniSat}{
 MiniSat is a SAT solver implemented in C++ that solves boolean satisfiability problems
-posed in conjunctive normal form \cite{minisat,een05}. Further details are given in section \ref{MiniSat}.
+posed in conjunctive normal form \cite{minisat,een05}. Further details are given in section \ref{prep:minisat}.
 }
 
 \section{Symbolic Representation}
-\label{logic}
+\label{prep:logic}
 
 Symbolic model checkers rely on the representation of the underlying system as a
 transition system, which describes the behavior of the system as one-step transitions
@@ -618,6 +622,7 @@ $s_0$ is an $I$ state and $s_i \wedge T \Rightarrow s_{i + 1}$ for $1 \leq i < k
 
 
 \section{Model Specification}
+\label{prep:aiger}
 %Describe the AIGER (old and new version) and BLIF formats and
 %{\tt bliftoaig} from the AIGER utilities.
 
@@ -817,7 +822,7 @@ The new version of the format is otherwise
 the same as the old format.}
 
 \section{MiniSat}
-\label{MiniSat}
+\label{prep:minisat}
 
 To solve a SAT query, MiniSat creates an instance of a \verb,Solver, object,
 which contains a set of variables, sets of clauses, and possibly a model or a conflict vector.
@@ -853,6 +858,7 @@ This model checker uses instances of \verb,SimpSolver,, a subclass of the \verb,
 that does simplification and returns full assignments.
 
 \section{The IC3 Algorithm}
+\label{prep:ic3}
 %Describe how the IC3 algorithm works when trying to prove a model has a property
 %$P$.
 Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
@@ -1092,8 +1098,11 @@ frame $F_k$ allows $s$ to be generalized to $c$.
 
 \chapter{Implementation}
 
-The implementation can be broken up into four main components: the AIGER parser, the
-MiniSat interface, the hardware model representation, and the model checker.
+The implementation can be broken up into four main components: the AIGER parser
+(section \ref{impl:aiger}), the
+MiniSat interface (section \ref{impl:minisat}), the hardware model representation
+(section \ref{impl:representation}), and the model checker
+(section \ref{impl:modelchecker}).
 I implemented several variants of the model checker component that differ
 in overall structure, the finding of CTIs, the way that propagation is performed, and
 the way that CTIs are inductively generalized. The different variants and the
@@ -1114,10 +1123,11 @@ differences among them are given in figure \ref{implementationSummary}.
 \label{implementationSummary}
 \end{figure}
 
-I provide an explanation of the implementation of each of the four main components
-in turn. 
+In this chapter, I provide an explanation of the implementation of each of the
+four main components in turn. 
 
 \section{Parser}
+\label{impl:aiger}
 %Discuss the implementation of the AIGER parser. In particular, mention
 %the handling of both the older and newer AIGER format versions for both
 %the ASCII and binary versions of the format and the representation
@@ -1164,6 +1174,7 @@ of the latch. For AND gates, the first element gives the variable name of the AN
 as inputs to the AND gate.
 
 \section{MiniSat Interface}
+\label{impl:minisat}
 %Describe the process of implementing the Haskell bindings for Minisat
 %functions, including the wrapper functions for Minisat written in C.
 
@@ -1231,6 +1242,7 @@ to convert from the MiniSat representation of literals to the model checker’s 
 literals was necessary.
 
 \section{Hardware Models}
+\label{impl:representation}
 \subsection{Representation}
 \subsubsection{Literals and Clauses}
 The \verb,Lit, data structure in \verb,Model.Model, gives the representation for literals in
@@ -1353,6 +1365,7 @@ $$a \Leftrightarrow i_1 \wedge i_2 \simeq
 
 
 \section{Model Checking}
+\label{impl:modelchecker}
 
 I have implemented several variants of the IC3 algorithm:
 the most basic variant (\emph{Basic}), a variant that
@@ -1478,7 +1491,7 @@ The implementation of the initiation query in figure \ref{impl:initiation} makes
 the fact that the formula $\neg (\neg P \wedge I)$ is true iff $\neg P \wedge I$ is unsatisfiable.
 The \verb,initiation,
 The implementation also makes use of deMorgan's laws as described in section
-\ref{logic} to acquire the assumption cube by negating all the literals in the \verb,prop, clause.
+\ref{prep:logic} to acquire the assumption cube by negating all the literals in the \verb,prop, clause.
 
 \begin{figure}[!Ht]
 \begin{lstlisting}
@@ -1810,7 +1823,6 @@ at dropping literals in the \verb,inductiveGeneralization, functions was set to 
 three, and the parameterizable number of CTGs that each generalization attempt
 in the {\it CTG} implementation will handle was also set to three.
 
-
 The handwritten examples served as the ``small examples'' that the model checker
 was meant to correctly solve as part of the aims of the project, with the largest
 (in terms of number of variables) of the handwritten examples,
@@ -1825,13 +1837,16 @@ The variants could not only solve all the handwritten examples correctly
 but also fifty of the HWMCC examples within ten minutes. Some
 variants were able to solve additional examples without timing out.
 
-Following a description of the output of the model checker,
-I discuss the solving capabilities of the model-checker implementations and compare
-their performance.
+Following a description of the output of the model checker (section \ref{eval:output}),
+I discuss the solving capabilities of the model-checker implementations (section
+\ref{eval:solving}), provide further details on how benchmarks were taken
+(section \ref{eval:benchmarking}) and compare
+their performance (section \ref{eval:variants}).
 I also compare their performance with that of the reference implementation
-\emph{IC3ref}.
+\emph{IC3ref} (section \ref{eval:ic3ref}).
 
 \section{Output}
+\label{eval:output}
 
 The output of all model checker implementations gives the value \verb,True, if the safety
 property holds (i.e. if a bad state is not reachable from the initial state) and
@@ -1858,6 +1873,7 @@ True
 \end{figure}
 
 \section{Solving}
+\label{eval:solving}
 
 For the fourteen handwritten examples and fifty HWMCC examples that all implementations solved
 within the time limit, the
@@ -1874,6 +1890,7 @@ to without timing out was \verb,pdtvsar8multip26.aig, with 7174 variables.
 % (simple linear regression gives $r^2$ less than $0.3$).
 
 \section{Benchmarking}
+\label{eval:benchmarking}
 I took benchmarks for the performance of the different variations of the model checker and for the
 performance of \emph{IC3ref} both with CTG-handling enabled and disabled. For each of the fourteen handwritten examples and the fifty examples from the HWMCC, forty benchmarking samples were taken.
 
@@ -1887,6 +1904,7 @@ CTIs; for these examples, the \emph{Basic}, \emph{BetterCTI}, \emph{BetterPropag
 and \emph{CTG} implementations give similar results. 
 
 \section{Performance Impact of Variations}
+\label{eval:variants}
 %Discuss performance comparison of the naive implementation of the
 %model checker and the final implementation of the model checker.
 
@@ -1987,6 +2005,7 @@ literals per clause.
 }
 
 \section{Reference Implementation}
+\label{eval:ic3ref}
 %Discuss performance comparison of final implementation with
 %IC3 reference implementation, taking into account differences between
 %the implementations.
