@@ -319,41 +319,18 @@ programming language Haskell. I explain some features of the
 language that should help with understanding future code snippets
 and implementation descriptions.
 
-\begin{figure}[t]
-\begin{lstlisting}
-prove :: Model -> Lit -> Bool
-\end{lstlisting}
-\caption{The type signature for the {\tt prove} function in the model
-checker implementations, which is a curried function that takes a
-{\tt Model} and a {\tt Lit} and returns a {\tt Bool}}
-\label{typesigexample}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\begin{lstlisting}
-data Lit = Var Word | Neg Word | Boolean Bool deriving (Show, Eq, Ord)
-\end{lstlisting}
-\caption{The {\tt Lit} datatype in the {\tt AigModel} module
-is an instance of the {\tt Show}, {\tt Eq}, and {\tt Ord} type classes.
-The {\tt Show} class contains the {\tt show} function (and related functions) that
-converts instances to {\tt String}, the {\tt Eq} class contains
-operators that allow equality testing of instances for
-equality, and {\tt Ord} class contains comparison operators
-that allow instances to be ordered.}
-\label{lit}
-\end{figure}
-
 %Type signature syntax
 \paragraph{Types}{
-Though
-Haskell compilers perform type inference, type
+Though Haskell compilers perform type inference, type
 signatures can be (and, in cases where type inference cannot resolve
-ambiguities, must be) provided.
+ambiguities, must be) provided. For example, the type signature for
+the \verb,prove, function in \verb,IC3.hs,, a curried function that takes
+a \verb,Model, and returns a function that takes a \verb,Lit, and returns a \verb,Bool,,
+is \verb,prove :: Model -> Lit -> Bool,.
 
 %Type constructors
-Haskell type constructors are similar to those in Standard ML,
-with the main difference being the syntactic,
+Haskell type constructors and datatype declarations are similar to those in Standard ML,
+with the main difference being syntactic,
 where Standard ML's \verb,datatype, is instead \verb,data, in Haskell.
 Haskell also provides record syntax for creating new types, allowing components
 to be named.
@@ -362,6 +339,18 @@ to be named.
 Haskell's type classes allow for function overloading.
 Functions specified within the definition of a type class
 must be supported for any type that is an instance of that type class.
+An example of a datatype that is an instance of a type class is the \verb,Lit, datatype
+in the \verb,AigModel, module in \verb,Parser/AigModel.hs,:
+\begin{lstlisting}
+data Lit = Var Word | Neg Word | Boolean Bool deriving (Show, Eq, Ord)
+\end{lstlisting}
+The \verb,Lit, datatype is an instance of the \verb,Show,, \verb,Eq,, and
+\verb,Ord, type classes.
+The \verb,Show, class contains the \verb,show, function (and related functions) that
+converts instances to \verb,String,, the \verb,Eq, class contains
+operators that allow equality testing of instances for
+equality, and \verb,Ord, class contains comparison operators
+that allow instances to be ordered.
 
 Haskell's \verb,Monad, class encompasses composable
 structures that describe computations. These computations
@@ -2067,7 +2056,7 @@ placed in the priority queue.
 
 This chapter summarizes the work done and goals met for this project.
 Following the summary in section \ref{conc:summary}, I give
-suggestions for further extensions to the project \ref{conc:extensions}.
+suggestions for further extensions to the project in section \ref{conc:extensions}.
 
 \section{Summary}
 \label{conc:summary}
