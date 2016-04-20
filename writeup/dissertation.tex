@@ -180,7 +180,8 @@ The initial approach to the model checking problem involved explicitly
 considering each reachable state in the model.
 Symbolic model checking arose as a method of mitigating the effects of
 the state explosion problem. By representing
-states and the transition relation between them as logical formulas,
+states and the transition relation between them as logical formulas
+(described further in section \ref{prep:logic},
 symbolic model checking allows sets of states to be
 represented efficiently as logical formulas involving state variables
 instead of as an explicit list of each individual state in the set
@@ -267,23 +268,27 @@ methods in practice \cite{bradley12}.
 
 While IC3 algorithm is for model checking safety properties of hardware,
 there are applications of the algorithm in model checking more
-elaborate properties, such as LTL and CTL
-properties, and model checking software \cite{bradley12}.
+elaborate properties expressing temporal constraints (e.g. LTL and CTL
+properties) and model checking software \cite{bradley12}.
 
-The FAIR model-checking algorithm, which checks $\omega$-regular
-properties, uses a safety model checker such as IC3, and IICTL,
-which checks CTL formulas \cite{hassan12}, uses both a
-safety model checker such as IC3 and a fair-cycle finder such as
-FAIR.
+%The FAIR model-checking algorithm, which checks $\omega$-regular
+%properties, uses a safety model checker such as IC3, and IICTL,
+%which checks CTL formulas \cite{hassan12}, uses both a
+%safety model checker such as IC3 and a fair-cycle finder such as
+%FAIR.
 
 Other work generalizes IC3 to use an underlying SMT solver rather than a
-SAT solver. This generalization has been used to check control-flow
-graphs of programs \cite{cimatti12}.
-More recently, Johannes Birgmeier, Aaron Bradley, and Georg Weissenbacher
-introduced CTIGAR, a method of abstraction-refinement based on IC3's
-counterexamples to induction rather than the counterexamples in CEGAR,
-which experiments suggest is competitive with CEGAR-based techniques for
-software verification \cite{birgmeier14}.
+SAT solver. This generalization has been used in the verification of software
+\cite{cimatti12}. Results for more recent developments of software verification
+techniques based on IC3 suggest that these techniques are competitive with
+established software verification methods \cite{birgmeier14}.
+%This generalization has been used to check control-flow
+%graphs of programs \cite{cimatti12}.
+%More recently, Johannes Birgmeier, Aaron Bradley, and Georg Weissenbacher
+%introduced CTIGAR, a method of abstraction-refinement based on IC3's
+%counterexamples to induction rather than the counterexamples in CEGAR,
+%which experiments suggest is competitive with CEGAR-based techniques for
+%software verification \cite{birgmeier14}.
 
 \section{Project Aims}
 
@@ -298,7 +303,15 @@ which can correctly check several examples from the hardware model checking
 competition in addition to the small hardware models I initially set out
 to check, but also several variants of the algorithm.
 
+I discuss the background knowledge about Haskell, the IC3 algorithm, and software
+development tools in section \ref{prep}; the implementation of the components of
+the model checker and the different variants of the model checker in section
+\ref{impl}; and the model-checking capabilities of the implementations in
+\ref{eval}. Finally I provide a summary of the completed work and ideas for
+future work in section \ref{conc}.
+
 \chapter{Preparation}
+\label{prep}
 
 This chapter describes the knowledge gained and plans made while preparing
 to being writing code for the project.
@@ -1086,6 +1099,7 @@ frame $F_k$ allows $s$ to be generalized to $c$.
 
 
 \chapter{Implementation}
+\label{impl}
 
 The implementation can be broken up into four main components: the AIGER parser
 (section \ref{impl:aiger}), the
@@ -1779,6 +1793,7 @@ contains only \verb,Obligation, \verb.(1, 0, [prop])., representing the proof ob
 $(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
 
 \chapter{Evaluation}
+\label{eval}
 
 This chapter discusses the evaluation of the model checker implementations,
 including a description of how the project aim of implementing a model checker
@@ -2061,6 +2076,7 @@ handled separately from CTIs; its negation is not included as part of a proof ob
 placed in the priority queue.
 
 \chapter{Conclusion}
+\label{conc}
 
 This chapter summarizes the work done and goals met for this project.
 Following the summary in section \ref{conc:summary}, I give
