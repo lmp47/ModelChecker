@@ -130,7 +130,7 @@ extent for a comparable purpose.
 
 \chapter{Introduction}
 
-This project focuses on implementing the IC3 algorithm, a SAT-based model checker. 
+This project focuses on implementing the IC3 algorithm, a SAT-based model checker.
 To provide context for the project,
 I provide a brief introduction to formal verification and model checking, followed
 by a discussion of symbolic model checking and SAT-based model checking.
@@ -1097,6 +1097,10 @@ in overall structure, the finding of CTIs, the way that propagation is performed
 the way that CTIs are inductively generalized. The different variants and the
 differences among them are given in figure \ref{implementationSummary}.
 
+The implementation of the AIGER parser, MiniSat interface, and \emph{Basic} version
+of the IC3 algorithm satisfy the project aims to implement these components. As
+extensions, I have implementated additional variants of the IC3 algorithm.
+
 \begin{figure}[!ht]
 \centering
 \begin{tabular}{l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em}}
@@ -1141,7 +1145,7 @@ and invariant constraints. The data structure also stores latches and AND gates 
 lists of literal lists. I discuss the representation of literals, latches, and
 AND gates below.
 
-Literals are represented by \verb,Lit,s (defined in figure \ref{lit}),
+Literals are represented by \verb,Lit,s (defined in section \ref{prep:haskell}),
 which store decoded versions of AIGER indices. The {\tt Lit} datatype
 in {\tt Parser.AigModel} has constructor
 {\tt Boolean} that takes a {\tt Bool} argument that represents the boolean values
@@ -1776,8 +1780,12 @@ $(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
 
 \chapter{Evaluation}
 
-To evaluate the model checker implementations, I ran the different variants of the model
-checker on fourteen handwritten examples and over one hundred examples taken from
+This chapter discusses the evaluation of the model checker implementations,
+including a description of how the project aim of implementing a model checker
+that can solve several small examples has been met.
+
+To evaluate the implementations, I ran the different variants
+on fourteen handwritten examples and over one hundred examples taken from
 across HWMCC'10 \cite{hwmcc10}, HWMCC'11 \cite{hwmcc11}, and HWMCC'13
 (several examples are common to the competitions from different years) \cite{hwmcc13}.
 Examples from HWMCC'10 were chosen based on relatively short (under 2 second)
