@@ -319,7 +319,7 @@ future work in section \ref{conc}.
 \label{prep}
 
 This chapter describes the knowledge gained and plans made while preparing
-to being writing code for the project.
+to begin writing code for the project.
 The preparation for the project involved learning Haskell (Section \ref{prep:haskell}),
 an analysis that distinguishes the main components of the project
 (Section \ref{prep:requirements}), choosing and learning how to use
@@ -469,7 +469,8 @@ solver to allow for better comparison of this project's model checker
 with Aaron Bradley's reference implementation of IC3 (\emph{IC3ref})\cite{refic3}.
 Because MiniSat is the solver used by \emph{IC3ref}, using it as the solver
 for this project's model checker removes the
-choice of SAT solver as a variable to consider when comparing performance.
+choice of SAT solver as a variable to consider when comparing performance,
+reducing confounding factors.
 
 Given that the model checking algorithm deals with transition systems
 (discussed in Section \cite{prep:logic}), the implementation also requires a representation of
@@ -520,16 +521,6 @@ following expression gives a \verb,TestCase, that tests that function
 \begin{lstlisting}
 TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
 \end{lstlisting}
-
-\begin{figure}[t]
-\centering
-\begin{lstlisting}
-data Test = TestCase Assertion
-          | TestList [Test]
-          | TestLabel String Test
-\end{lstlisting}
-\caption{The HUnit {\tt Test} datatype}
-\end{figure}
 
 The \verb,Test, datatype in HUnit allows \verb,Test,s to be grouped
 and built up hierarchically. Tests that have been assembled into a
@@ -615,10 +606,11 @@ between states. Transition systems and states are themselves defined using
 propositional logic formulas.
 
 I give a brief review of concepts in logic before formally defining transition systems
-and explaining how propositional logic formulas represent states.
+and explaining how propositional logic formulas represent states. I assume basic
+knowledge of propositional logic throughout.
 
 \paragraph{Logic}{
-A variable is a propositional symbol that can be assigned to boolean values {\it True}
+A variable is a propositional symbol that can be assigned Boolean values {\it True}
 or {\it False}. A \emph{literal} is defined as being either an atom $a$ (which can
 be a variable or boolean value) or its negation $\neg a$.
 
@@ -632,10 +624,10 @@ Similarly, given a clause $c$, a clause $d$ is a \emph{subclause} of $c$ (also
 denoted $d \subset c$) iff the set of literals in $d$ are a subset of
 the literals in $c$.
 
-Through the application of deMorgan's laws, the negation of a cube is a clause and
+Through the application of de Morgan's laws, the negation of a cube is a clause and
 vice-versa. In particular, a cube $C = l_0 \wedge \ldots \wedge l_n$ has negation
 $\neg C = \neg (l_0 \wedge \ldots \wedge l_n)$, which is logically equivalent,
-by deMorgan's laws, to the formula $\neg l_0 \vee \ldots \vee \neg l_n$.
+by de Morgan's laws, to the formula $\neg l_0 \vee \ldots \vee \neg l_n$.
 Similarly, a clause $D = l_0 \vee \ldots \vee l_n$ has a negation that is
 logically equivalent to $\neg l_0 \wedge \ldots \wedge \neg l_n$. It follows
 that the clause obtained by negating a cube is specified by the set obtained
@@ -662,6 +654,7 @@ $$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$
 Given transition relation $(i,x,I,T)$, a logical formula $C$ is, by definition,
 \emph{inductive relative} to another logical formula $F$ if both
 $I \Rightarrow C$ and $F \wedge C \wedge T \Rightarrow C'$ hold.
+Relative inductiveness plays a key role in the IC3 algorithm.
 }
 
 \paragraph{States}{
@@ -678,10 +671,12 @@ More generally, any logical formula $b$ involving the variables in the transitio
 system gives the set of states
 $\{a \in {\it Full~Assignment} | a \wedge b~{\rm is~satisfiable}\}$.
 
-For a logical formula $B$, a $B$ state is a state that is in the set of states represented
+For a logical formula $B$, a \emph{$B$ state} is a state that is in the set of states
+represented
 by $B$. A set of states $s$ is said to be \emph{reachable}
 in $k$ steps of the transition relation iff there exist states $s_0, \ldots, s_k$ such that
-$s_0$ is an $I$ state and $s_i \wedge T \Rightarrow s_{i + 1}$ for $1 \leq i < k$.
+$s_0$ is an $I$ state and $s_i \wedge T \Rightarrow s_{i + 1}$ for $1 \leq i < k$,
+where $T$ represents the transition relation of the transition system.
 
 }
 
@@ -1416,7 +1411,7 @@ i_1 \wedge i_2 \Rightarrow a &\simeq \neg (i_1 \wedge i_2) \vee a
 Distributing $\vee$ over $\wedge$ gives further equivalence
 $$\neg a \vee (i_1 \wedge i_2) \simeq
 (\neg a \vee i_1) \wedge (\neg a \vee i_2),$$
-and using deMorgan's laws gives equivalence
+and using de Morgan's laws gives equivalence
 $$\neg (i_1 \wedge i_2) \vee a \simeq
 \neg i_1 \vee \neg i_2 \vee a.$$
 
@@ -1550,7 +1545,7 @@ As a result, the implementation of the query $I \Rightarrow P$ for a frame $I$ a
 clause $P$ makes use of the logical equivalence between
 $I \Rightarrow P$ and $\neg (\neg P \wedge I)$. The implementation
 also makes use of the fact that the formula $\neg (\neg P \wedge I)$ is true
-iff $\neg P \wedge I$ is unsatisfiable, and it uses deMorgan's laws (as described in
+iff $\neg P \wedge I$ is unsatisfiable, and it uses de Morgan's laws (as described in
 section \ref{prep:logic}) to acquire the asumption cube by negating all the literals in
 the \verb,prop, clause. The resulting implementation in \verb,IC3.hs, is the
 following:
@@ -1566,7 +1561,7 @@ initiation f prop =
 
 Similarly to how the implication in the initiation query is converted to an equivalent CNF
 formula, all implementation variants use the logical equivalence of
-$F_k \wedge T \Rightarrow P'$ and $\neg (\neg P' \wedge F_k \wedge T)$ along with deMorgan's
+$F_k \wedge T \Rightarrow P'$ and $\neg (\neg P' \wedge F_k \wedge T)$ along with de Morgan's
 laws to yield the following implementation:
 \begin{lstlisting}
 consecution :: Frame -> Clause -> Bool
