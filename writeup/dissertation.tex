@@ -80,20 +80,25 @@ Supporting Supervisor: & Prof Alan Mycroft
 
 \section*{Original Aims of the Project}
 
-The original aims of the project are to implement the basic
+The original aims of the project were to implement the basic
 IC3 algorithm as part of a model checker written in Haskell.
 This model checker should be able to
 solve several small example hardware models correctly.
 
 \section*{Work Completed}
 
-The work completed as part of the project includes the implementation
-of the major components for completing the original aims of the
-project: the AIGER parser, MiniSat interface,
-hardware model representation, and basic IC3 implementation. In
-addition to this work, several other variants of the IC3 algorithm
-were implemented. The different variants can model check small
-hardware model examples as well as several larger examples.
+I implemented the basic IC3 algorithm as part of a model checker,
+which involved implementing several additional components: the AIGER parser,
+MiniSat interface, hardware model representation.
+As an extension, I implemented other variants of the algorithm.
+I benchmarked the variants on fourteen handwritten examples and roughly
+fifty examples from the Hardware
+Model Checking Competition and compared the results with those for
+the IC3 reference implementation. The implementation of
+the basic algorithm and its ability to solve
+the handwritten examples meets the project's goals;
+the implementation of other variants and the variants' ability to solve
+additional examples exceeds these goals.
 
 \section*{Special Difficulties}
 
@@ -315,50 +320,67 @@ future work in section \ref{conc}.
 
 This chapter describes the knowledge gained and plans made while preparing
 to being writing code for the project.
-The preparation for the project involved learning Haskell (section \ref{prep:haskell}),
-distinguishing the main components of the project (section \ref{prep:requirements}),
-choosing and learning how to use
+The preparation for the project involved learning Haskell (Section \ref{prep:haskell}),
+an analysis that distinguishes the main components of the project
+(Section \ref{prep:requirements}), choosing and learning how to use
 the necessary tools for implementing the components of the project
-(sections \ref{prep:tools}, \ref{prep:aiger}, \ref{prep:minisat}),
+(Sections \ref{prep:tools}, \ref{prep:aiger}, \ref{prep:minisat}),
 and gaining the necessary knowledge about the symbolic representation
 of hardware models
-(section \ref{prep:logic}) and the IC3 algorithm (section \ref{prep:ic3}).
+(Section \ref{prep:logic}) and the IC3 algorithm (Section \ref{prep:ic3}).
 
 \section{Haskell}
 \label{prep:haskell}
 
-The majority of the code for the project is implemented in the functional
-programming language Haskell. I explain some features of the
-language that should help with understanding future code snippets
-and implementation descriptions.
+All of the code for the project, with the exception of the C wrapper for the
+MiniSat interface (described in Section \ref{impl:minisat})
+is implemented in the purely functional
+programming language Haskell \cite{haskell}.
+I briefly explain some features of the
+language that will make the rest of the report easier to follow.
+I assume a working knowledge of Standard ML.
+
+\paragraph{Functions}{
+Unlike in Standard ML, there is no keyword in Haskell for defining functions. Otherwise,
+Haskell function definitions are similar to Standard ML function definitions with the
+\verb,fun, keyword omitted. Anonymous functions in Haskell are also defined similarly
+as they are in Standard ML, using \verb,\, to bind variables analagously to Standard
+ML's \verb,fn, keyword.
+}
+
+\paragraph{Types}{
+Haskell is a strongly- and statically-typed language.
+%Type constructors
+Haskell type constructors and datatype declarations are largely similar to those in
+Standard ML. A new Haskell datatype is declared using the \verb,data, keyword, an analogue
+of Standard ML's \verb,datatype, keyword.
+Haskell also provides record syntax for creating new types, allowing components
+to be named.
 
 %Type signature syntax
-\paragraph{Types}{
 Though Haskell compilers perform type inference, type
 signatures can be (and, in cases where type inference cannot resolve
 ambiguities, must be) provided. For example, the type signature for
 the \verb,prove, function in \verb,IC3.hs,, a curried function that takes
 a \verb,Model, and returns a function that takes a \verb,Lit, and returns a \verb,Bool,,
-is \verb,prove :: Model -> Lit -> Bool,.
+is \verb,prove :: Model -> Lit -> Bool,. Type signatures may begin with
+constraints specifying that a polymorphic type variable occuring in the type
+signature must be an instance of a certain type class.
 
-%Type constructors
-Haskell type constructors and datatype declarations are similar to those in Standard ML,
-with the main difference being syntactic,
-where Standard ML's \verb,datatype, is instead \verb,data, in Haskell.
-Haskell also provides record syntax for creating new types, allowing components
-to be named.
 
 %Type classes
-Haskell's type classes allow for function overloading.
+Haskell's type classes allow for ad hoc polymorphism.
 Functions specified within the definition of a type class
 must be supported for any type that is an instance of that type class.
-An example of a datatype that is an instance of a type class is the \verb,Lit, datatype
+Haskell compilers are able to automatically provide instances of standard
+type classes for some types.
+For example, a datatype that is an instance of a type class is the \verb,Lit, datatype
 in the \verb,AigModel, module in \verb,Parser/AigModel.hs,:
 \begin{lstlisting}
 data Lit = Var Word | Neg Word | Boolean Bool deriving (Show, Eq, Ord)
 \end{lstlisting}
 The \verb,Lit, datatype is an instance of the \verb,Show,, \verb,Eq,, and
-\verb,Ord, type classes.
+\verb,Ord, type classes, with the instances being automatically derived.
 The \verb,Show, class contains the \verb,show, function (and related functions) that
 converts instances to \verb,String,, the \verb,Eq, class contains
 operators that allow equality testing of instances for
@@ -369,16 +391,56 @@ Haskell's \verb,Monad, class encompasses composable
 structures that describe computations. These computations
 may have side effects, and Haskell programs use instances of the
 \verb,Monad, class to achieve side effects such as I/O.
+
+Monads can be created with the function
+\verb,return :: Monad m => a -> m a,, which takes a Haskell
+value of some type \verb,a, and returns an instance \verb,m, of the
+\verb,Monad, class containing that value.
+The \verb,>>=, infix operator allows computations to be composed.
+As expected given its type signature
+\verb,(>>=) :: Monad m => m a -> (a -> m b) -> m b,, the function
+takes a \verb,Monad, containing a computation that produces a value of type
+\verb,a, and a function that takes values of type \verb,a, and returns
+monads, and returns the result of applying the function to the value.
+The \verb,>>, infix operator also allows computations to be composed,
+but the output of the first action is ignored by the second.
+
+To avoid unwieldy code resulting from composing several
+computations with \verb,>>=,, Haskell provides syntactic sugar
+in the form of \verb,do,-notation, which allows computations
+inside \verb,Monad,s to be written in a more imperative fashion.
+
+For example, the \verb,addClause', function in \verb,Minisat/Minisat.hs, could
+be written as follows:
+\begin{lstlisting}
+addClause' solver clause =
+  newMinisatVecLit >>=
+  \veclit ->
+    addToVecLit veclit clause >> 
+    addMinisatClause solver veclit >>
+    deleteMinisatVecLit veclit >>
+    return solver
+\end{lstlisting}
+Using \verb,do,-notation results in more readable code:
+\begin{lstlisting}
+addClause' solver clause =
+  do veclit <- newMinisatVecLit
+     addToVecLit veclit clause
+     addMinisatClause solver veclit
+     deleteMinisatVecLit veclit
+     return solver
+\end{lstlisting}
 }
 
 %List syntax
 \paragraph{Lists}{
 List types in Haskell are denoted using square brackets, e.g.,
 a list of \verb,Lit,s has type \verb,[Lit],.
-Lists can be appended using the \verb,++, operator, and elements
-can be prepended to lists using the \verb,:, operator.
+Lists can be appended using the \verb,++, infix operator, and elements
+can be prepended to lists using the \verb,:, infix operator.
 For example, \verb.1:[2,3,4] ++ [5,6]. gives the Haskell equivalent to
-\verb.1::[2,3,4] @ [5,6]. in Standard ML.
+\verb.1::[2,3,4] @ [5,6]. in Standard ML, both of which result in
+the value \verb.[1,2,3,4,5,6]..
 
 %Modules
 \paragraph{Modules}{
@@ -394,7 +456,8 @@ modules, which is how library functions can be used.
 %Describe the requirements for the project: AIGER parser, Minisat interface,
 %transition system representation, algorithm implementation.
 
-The model checker requires a way of taking input models and also
+The model checker requires a way of taking input models and, since
+the IC3 algorithm uses a SAT solver as an internal subcomponent, also
 requires a way to solve SAT queries.
 I chose the AIGER format for representing the hardware models and the
 MiniSat SAT solver for answering SAT queries, resulting in a need for an
@@ -409,7 +472,7 @@ for this project's model checker removes the
 choice of SAT solver as a variable to consider when comparing performance.
 
 Given that the model checking algorithm deals with transition systems
-(discussed later), the implementation also requires a representation of
+(discussed in Section \cite{prep:logic}), the implementation also requires a representation of
 transition systems, which should correspond to the input hardware model.
 A further requirement is the implementation of the
 IC3 algorithm itself.
