@@ -1288,9 +1288,10 @@ the \verb,Latch, and \verb,And, components to \verb,Clause,s in \verb,Model.Mode
 
 \subsubsection{Latches}
 The \verb,makeLatches, function generates a pair of \verb,Clause, lists
-for a list of \verb,Parser.AigModel.Latch,es, where the first \verb,Clause, list contains
-clauses whose conjunction describes the latches' initial values, and the second \verb,Clause, list
-contains a clauses whose conjunction describes the latches' next-state values.
+for a list of \verb,Parser.AigModel.Latch,es. The first \verb,Clause, list contains
+clauses whose conjunction describes the latches' initial values,
+and the second contains a clauses whose conjunction describes the
+latches' next-state values.
 
 Consider a given \verb,Parser.AigModel.Latch, \verb.[latchVar, next, init]. representing the latch with
 output variable $l$ (represented by \verb,latchVar,), next-state $n$ (represented
@@ -1336,11 +1337,11 @@ constructor for \verb,Parser.AigModel.Lit,s), then a singleton clause suffices t
 If $i_1 \wedge i_2$ holds, then the singleton clause $\{a\}$ describes the constantly {\it True} AND gate,
 and if not, then the singleton clause $\{\neg a\}$ describes the constantly {\it False} AND gate.
 
-If only one of the inputs ($i_1$ and $i_2$) is a boolean value, then the clauses equivalent to $a \Leftrightarrow i$
+If only one of the inputs ($i_1$ and $i_2$) is a boolean, then the clauses equivalent to $a \Leftrightarrow i$
 are generated, where $i$ is the input that is not a boolean value and the clauses to generate for $a \Leftrightarrow i$ 
-are described above in the explanation for generating clauses for latches.
+are described in the explanation for generating clauses for latches.
 
-If neither of $i_1$ or $i_2$ are boolean values, then the clauses generated are
+If neither of $i_1$ or $i_2$ are booleans, then the clauses generated are
 $\{\neg a, i_1\}$, $\{\neg a, i_1\}$, and
 $\{\neg i_1,\neg i_2, a\}$. The conjunction of these clauses are, as needed,
 logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$:
@@ -1357,7 +1358,7 @@ $$\neg (i_1 \wedge i_2) \vee a \simeq
 \neg i_1 \vee \neg i_2 \vee a.$$
 
 It follows that the original double implication is equivalent to the CNF
-formula that corresponds to the generated clauses:
+formula corresponding to the generated clauses:
 $$a \Leftrightarrow i_1 \wedge i_2 \simeq
 (\neg a \vee i_1) \wedge (\neg a \vee i_2) \wedge (\neg i_1 \vee \neg i_2 \vee a).$$
 
@@ -1563,15 +1564,15 @@ the clause can be added to \verb,f',, and if it is not, then the
 function must have \verb,False, as the first element in the pair it returns.
 
 \subsubsection{Subsumed clauses}
-The {\it Basic} and {\it BetterCTI} implementations' \verb,push, function avoids unnecessary
+The \emph{Basic} and \emph{BetterCTI} implementations' \verb,push, function avoids unnecessary
 consecution queries by only considering clauses in \verb,f, that are not in \verb,f',.
-Further consecution queries may be eliminated by considering the clauses in \verb,f, that are
-subsumed by other clauses, which is done by all implementation variants other than {\it Basic}
-and {\it betterCTI}.
+Further consecution queries may be eliminated by removing the clauses in \verb,f,
+that are subsumed by other clauses, which is done by all variants other than {\it Basic}
+and \emph{BetterCTI}.
 
 A clause $c$ \emph{subsumes} a clause $c'$ if the literals in $c$ are a subset of the literals
 in $c'$. In this case, $c \Rightarrow c'$ holds, so $c'$ can be removed from the set of clauses. By
-removing all subsumed clauses $c'$ from a frame before trying to push clauses, the model
+removing subsumed clauses $c'$ from a frame before trying to push clauses, the model
 checker can avoid making the consecution queries that arise from attempts to push those clauses.
 
 The versions of \verb,push, that consider subsumed clauses include a call to the function
@@ -1586,7 +1587,7 @@ and updates \verb,Frame, \verb,f',.
 \subsection{Inductive Generalization}
 Finding the minimal inductive subclause (MIC) for a clause is in practice inefficient,
 and all implemented versions of generalization
-\verb,inductiveGeneralization, involve approximating the MIC with a call to the function
+\verb,inductiveGeneralization, approximate the MIC with a call to the function
 \verb,generalize,.
 
 \subsubsection{Simple}
@@ -1627,7 +1628,7 @@ checks for the relative inductiveness of the subclause and does not attempt to e
 
 \subsubsection{Minimal Inductive Subclauses and Counterexamples to Generalization}
 The more elaborate implementation of generalization implements the full
-(but limited in number of attempts) {\it mic} algorithm with the {\it down} function modified
+(but limited in number of attempts) {\it mic} algorithm with {\it down} modified
 to handle CTGs.
 
 \begin{algorithm}[!Ht]
@@ -1671,7 +1672,7 @@ each non-recursive call to the implementation of the approximation of the {\it m
 \subsection{Priority Queue Variant}
 \label{pqueue}
 
-The \emph{PriorityQueue} implementation keeps track of what to prove next by using a priority
+The \emph{PriorityQueue} implementation keeps track of what to prove next with a priority
 queue of proof obligations instead of through recursive calls that explicitly specify which
 property to prove at which depth. This variant of the algorithm makes
 use of some of the same functions (e.g. \verb,negCTI, and \verb,push,) as the other variants but
@@ -1682,7 +1683,7 @@ and some implementation details about representing proof obligations and the pri
 
 \subsubsection{Proof Obligations}
 A \emph{proof obligation} is a pair $(s,i)$ of a state $s$ that is either a set of bad states
-or a counterexample to induction and a depth $i$. When the model checker encounters a proof obligation
+or a CTI and a depth $i$. When the model checker encounters a proof obligation
 $(s,i)$ as the highest-priority element of the queue, it must prove $\neg s$ holds for all states
 reachable in at most $i$ steps of the transition relation to fulfill
 $(s, i)$.
