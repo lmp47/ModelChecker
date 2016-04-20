@@ -1280,7 +1280,7 @@ The literal that gives the safety property is given by \verb,safe,.
 The \verb,Model.Model, module contains functions to convert the \verb,Model, data
 structure from the \verb,Parser.AigModel, module into the hardware model representation used by
 the model checker. In particular, the \verb,toModel, function takes an \verb,Parser.AigModel.Model,
-and outputs a \verb,Model.Model.Model,. As mentioned before, the \verb,Model.ModelLit,
+and outputs a \verb,Model.Model.Model,. As mentioned before, the \verb,Model.Model.Lit,
 data structure only has constructors for variables and their negations; \verb,Lit,s from
 the \verb,Parser.AigModel, module are either converted to \verb,Model.Model.Lit,s or, in the case
 that they use the \verb,Boolean, constructor, are removed from the model during the conversion of
@@ -1288,7 +1288,7 @@ the \verb,Latch, and \verb,And, components to \verb,Clause,s in \verb,Model.Mode
 
 \subsubsection{Latches}
 The \verb,makeLatches, function generates a pair of \verb,Clause, lists
-for a list of \verb,Parser.AigModel.Latch,es. The first \verb,Clause, list contains
+for a list of \verb,Parser.AigModel.Latch,es. The first list contains
 clauses whose conjunction describes the latches' initial values,
 and the second contains a clauses whose conjunction describes the
 latches' next-state values.
@@ -1972,7 +1972,7 @@ improved (CTG-using) generalization on the same examples: for these small exampl
 the reference implementation performs better overall with CTG-handling disabled.}
 
 \paragraph{Priority Queues}{
-The \emph{PriorityQueue} implementation's performance generally does not perform as well as the
+The \emph{PriorityQueue} implementation generally does not perform as well as the
 implementations that do not use priority queues (with the exception of \emph{CTG}). There are
 two features of the variant in particular that may account for its worse performance: accumulating
 CTIs and early generalization.
@@ -2086,19 +2086,29 @@ suggestions for further extensions to the project in section \ref{conc:extension
 \section{Summary}
 \label{conc:summary}
 
-The project aims to implement a basic version of the IC3 algorithm in Haskell with the necessary parser
-and SAT-solver interface have been achieved, and the goal of the model checker being able to check
-small example hardware model has also been reached. The \emph{Basic} implementation correctly
-solved fourteen small examples, with its solutions agreeing with the solutions given by the
-reference implementation of IC3.
+The IC3 algorithm provides a new way to perform SAT-based symbolic model checking of
+safety properties of hardware, and the performance of its initial implementation
+\verb,ic3, in HWMCC'10 resulted in the development of several variants of
+and extensions to the algorithm.
 
-In addition to the basic version of the IC3 algorithm, I implemented several variants of the model checker.
+This project aims to implement a basic version of the IC3 algorithm in Haskell with the
+necessary parser and SAT-solver interface, with the goal of having the model checker
+be able to check small example hardware models. These goals have been achieved.
+
+I described the implementation of the different components required by
+the project in chapter \ref{impl}.
+In addition to the basic version of the IC3 algorithm, I implemented several variants of the model checker (also described in chapter \ref{impl}).
 The implementations of the model checker can model check not only
 the fourteen handwritten examples but also models from the
 Hardware Model Checking Competitions with thousands of variables.
 
-I evaluated the different model checker variants by comparing their performance on examples from
-the Hardware Model Checking Competition. The benchmark results show that finding smaller CTI clauses
+In chapter \ref{eval}, I evaluated the different model checker variants by comparing their performance on examples from
+the Hardware Model Checking Competition.
+The \emph{Basic} implementation correctly
+solved fourteen small examples, with its solutions agreeing with the solutions given by
+the reference implementation of IC3, meeting the project goal of being able to check
+small examples.
+The benchmark results show that finding smaller CTI clauses
 results in a dramatic improvement in performance, with the best-performing implementation
 \emph{betterPropagation} finding smaller CTI clauses and removing subsumed clauses from frames,
 though none of the variants performs as well as \emph{IC3ref}.
