@@ -186,7 +186,7 @@ considering each reachable state in the model.
 Symbolic model checking arose as a method of mitigating the effects of
 the state explosion problem. By representing
 states and the transition relation between them as logical formulas
-(described further in section \ref{prep:logic},
+(described further in Section \ref{prep:logic},
 symbolic model checking allows sets of states to be
 represented efficiently as logical formulas involving state variables
 instead of as an explicit list of each individual state in the set
@@ -209,7 +209,7 @@ there is no such ordering that results in a space-efficient BDD
 \cite{biere99a}.
 
 An alternative to BDD-based symbolic model-checking techniques are SAT-based
-techniques, which use procedures for solving the boolean satisfiability
+techniques, which use procedures for solving the Boolean satisfiability
 problem and, unlike BDD-based methods, do not use the canonical representations
 of propositional formulas.
 Such techniques include bounded model checking (BMC)
@@ -309,11 +309,11 @@ competition in addition to the small hardware models I initially set out
 to check, but also several variants of the algorithm.
 
 I discuss the background knowledge about Haskell, the IC3 algorithm, and software
-development tools in section \ref{prep}; the implementation of the components of
-the model checker and the different variants of the model checker in section
+development tools in Section \ref{prep}; the implementation of the components of
+the model checker and the different variants of the model checker in Section
 \ref{impl}; and the model-checking capabilities of the implementations in
 \ref{eval}. Finally I provide a summary of the completed work and ideas for
-future work in section \ref{conc}.
+future work in Section \ref{conc}.
 
 \chapter{Preparation}
 \label{prep}
@@ -473,7 +473,7 @@ choice of SAT solver as a variable to consider when comparing performance,
 reducing confounding factors.
 
 Given that the model checking algorithm deals with transition systems
-(discussed in Section \cite{prep:logic}), the implementation also requires a representation of
+(discussed in Section \ref{prep:logic}), the implementation also requires a representation of
 transition systems, which should correspond to the input hardware model.
 A further requirement is the implementation of the
 IC3 algorithm itself.
@@ -489,7 +489,8 @@ as version control and testing, and to otherwise ease the development of
 the project's code.
 
 \paragraph{Git}{
-The Git version control system was used for managing the project's code, and
+The Git version control system \cite{git}
+was used for managing the project's code, and
 GitHub \cite{github}, a widely-used hosting service for Git repositories, was used to
 keep backups of the code.
 The previous versions maintained by the system proved useful in
@@ -501,16 +502,16 @@ acquisition of project dependencies (i.e., MiniSat can be obtained by running
 \verb,git submodule init, after running \verb,git clone, to clone the repository).}
 
 \paragraph{Haddock}{
-The Haddock documentation tool for Haskell was used to generate documentation
-for the code \cite{haddock}. Haddock automatically generates documentation in
+The Haddock \cite{haddock} documentation tool for Haskell was used to generate documentation
+for the code. Haddock automatically generates documentation in
 several formats (e.g. HTML) from annotated Haskell code. It is commonly
 used to document Haskell code, being used for most packages available
 on the Haskell package database Hackage.
 }
 
 \paragraph{HUnit}{
-HUnit is a framework for writing unit tests in Haskell based on the JUnit framework
-for unit testing in Java \cite{hunit}.
+HUnit \cite{hunit} is a framework for writing unit tests in Haskell based on the
+JUnit framework for unit testing in Java.
 HUnit tests can be specified by using functions
 that return the \verb,Assertion, type to write \verb,TestCase,s. For example, the
 \verb,assertBool :: String -> Bool -> Assertion, function takes a \verb,String,
@@ -528,8 +529,7 @@ singly tree can then be treated as a test suite, and the whole tree
 of unit tests can be run.}
 
 \paragraph{Criterion}{
-Criterion is a library for performing benchmarking in Haskell
-\cite{criterion}.
+Criterion \cite{criterion} is a library for performing benchmarking in Haskell.
 Criterion can output benchmarking results in any format specified in the \verb,.tpl,
 template format, and by default outputs HTML.
 The \verb,.tpl, file can be configured such that
@@ -537,8 +537,8 @@ Criterion can, e.g., output benchmark sample results to a CSV file, as the
 \verb,.tpl, for benchmarking this project was configured.}
 
 \paragraph{Cabal}{
-Cabal is the standard package and dependency management system for Haskell
-\cite{cabal}, where a package may be a library or a complete piece of software.
+Cabal \cite{cabal} is the standard package and dependency management system for Haskell,
+where a package may be a library or a complete piece of software.
 A \verb,.cabal, file in the root directory of a project specifies
 information about the Cabal package, such as its version and dependencies,
 The \verb,.cabal, file may contain several sections, such as a
@@ -563,7 +563,7 @@ since Cabal provides a standard method for building the package that works
 across platforms.}
 
 \paragraph{hsc2hs}{
-The \verb,hsc2hs, preprocessor eases the writing of Haskell bindings to C
+The \verb,hsc2hs, preprocessor \cite{hsc2hs} eases the writing of Haskell bindings to C
 code by enabling the programmer to write a \verb,.hsc, file containing
 macros that the preprocessor can expand to, e.g., pointer offsets. The
 \verb,hsc2hs, expands the macros in a \verb,.hsc, file to produce a
@@ -571,15 +571,15 @@ macros that the preprocessor can expand to, e.g., pointer offsets. The
 }
 
 \paragraph{HLint}{
-The HLint tool suggests improvements for Haskell source code to improve
-the style of the code \cite{hlint}.
+The HLint tool \cite{hlint} suggests improvements for Haskell source code to improve
+the style of the code.
 The incorporation of HLint suggestions in
 this project resulted in simpler, more readable code.
 }
 
 \paragraph{Aiger Utilities}{
-Several tools provided in Aiger Utilities were used in this project
-\cite{aiger}. The
+Several tools provided in Aiger Utilities \cite{aiger} were used in this project.
+The
 AIGER parser provided was used for comparison with and as an alternative
 to the parser developed as part of this project. 
 
@@ -593,8 +593,8 @@ to circuits specified using the binary AIGER format, and the {\tt aigtoaig} tool
 to convert between the ASCII and binary AIGER formats. }
 
 \paragraph{MiniSat}{
-MiniSat is a SAT solver implemented in C++ that solves boolean satisfiability problems
-posed in conjunctive normal form \cite{minisat,een05}. Further details are given in section \ref{prep:minisat}.
+MiniSat is a SAT solver implemented in C++ that solves Boolean satisfiability problems
+posed in conjunctive normal form \cite{minisat,een05}. Further details are given in Section \ref{prep:minisat}.
 }
 
 \section{Symbolic Representation}
@@ -612,7 +612,7 @@ knowledge of propositional logic throughout.
 \paragraph{Logic}{
 A variable is a propositional symbol that can be assigned Boolean values {\it True}
 or {\it False}. A \emph{literal} is defined as being either an atom $a$ (which can
-be a variable or boolean value) or its negation $\neg a$.
+be a variable or Boolean value) or its negation $\neg a$.
 
 A \emph{cube} is defined to be a conjunction of literals and may be represented as the set
 of literals that occur in it. Similarly, a \emph{clause} is a disjunction of literals that
@@ -660,7 +660,7 @@ Relative inductiveness plays a key role in the IC3 algorithm.
 \paragraph{States}{
 A single state of the transition system (or a singleton set containing that state)
 is specified through the assignment of all variables in the transition system
-to boolean values, where a \emph{complete} assignment is represented as a cube such
+to Boolean values, where a \emph{complete} assignment is represented as a cube such
 that every variable appears in the formula exactly once.
 An incomplete assignment of variables in the transition system is a cube such that
 at least one variable in the transition system does not appear in the cube. Such an
@@ -730,14 +730,14 @@ I will refer to these nonnegative numbers as indices.
 
 For any variable named $x$, the index for positive literal $x$ is given by
 $2 \times x$, and the index for negative literals $\neg x$ is given by
-$2 \times x + 1$, i.e. a function to map from variable names $x$ and a boolean
+$2 \times x + 1$, i.e. a function to map from variable names $x$ and a Boolean
 value $b$ giving the sign of the literal would be as follows:
 $${\it index}(x, b) =
 \begin{cases}
 2x & {\rm if}~b \\
 2x + 1 & {\rm otherwise}
 \end{cases}$$
-The indices 0 and 1 are used to represent the constant boolean values {\it False}
+The indices 0 and 1 are used to represent the constant Boolean values {\it False}
 and {\it True}, respectively.
 
 Any index above 1 represents a literal and that for all such
@@ -1160,10 +1160,10 @@ frame $F_k$ allows $s$ to be generalized to $c$.
 \label{impl}
 
 The implementation can be broken up into four main components: the AIGER parser
-(section \ref{impl:aiger}), the
-MiniSat interface (section \ref{impl:minisat}), the hardware model representation
-(section \ref{impl:representation}), and the model checker
-(section \ref{impl:modelchecker}).
+(Section \ref{impl:aiger}), the
+MiniSat interface (Section \ref{impl:minisat}), the hardware model representation
+(Section \ref{impl:representation}), and the model checker
+(Section \ref{impl:modelchecker}).
 I implemented several variants of the model checker component that differ
 in overall structure, the finding of CTIs, the way that propagation is performed, and
 the way that CTIs are inductively generalized. The different variants and the
@@ -1217,10 +1217,10 @@ and invariant constraints. The data structure also stores latches and AND gates 
 lists of literal lists. I discuss the representation of literals, latches, and
 AND gates below.
 
-Literals are represented by \verb,Lit,s (defined in section \ref{prep:haskell}),
+Literals are represented by \verb,Lit,s (defined in Section \ref{prep:haskell}),
 which store decoded versions of AIGER indices. The {\tt Lit} datatype
 in {\tt Parser.AigModel} has constructor
-{\tt Boolean} that takes a {\tt Bool} argument that represents the boolean values
+{\tt Boolean} that takes a {\tt Bool} argument that represents the Boolean values
 corresponding with AIGER indices 0 and 1, constructor {\tt Var} that represents
 the positive literal of the variable whose name is given by the {\tt Word} it takes
 as an argument, and constructor {\tt Neg} that represents the negative literal
@@ -1353,15 +1353,15 @@ latches' next-state values.
 
 Consider a given \verb,Parser.AigModel.Latch, \verb.[latchVar, next, init]. representing the latch with
 output variable $l$ (represented by \verb,latchVar,), next-state $n$ (represented
-by \verb,next,) taken from the set of booleans and literals, and initial value (represented by \verb,init,)
-also taken from the set of booleans and literals. The \verb,makeLatches, function uses the
+by \verb,next,) taken from the set of Booleans and literals, and initial value (represented by \verb,init,)
+also taken from the set of Booleans and literals. The \verb,makeLatches, function uses the
 values of $l$, $n$, and $i$ to generate \verb,Clause,s that describe the latches' initial values and
 next-state values.
 
 Generating the initial value clause of the latch proceeds as follows: if $i = {\it True}$,
 then the singleton clause $\{l\}$ is generated for the initial value list, and if $i = {\it False}$,
 then the singleton clause $\{\neg l\}$ is generated.
-If $i$ is a literal rather than a boolean value, then the latch is
+If $i$ is a literal rather than a Boolean value, then the latch is
 uninitialized and no clauses are generated for its initial value.
 
 Generating next-state clauses proceeds similarly. If $n = {\it True}$, then the singleton clause
@@ -1390,16 +1390,16 @@ with output variable $a$ (represented by \verb,andVar,), and inputs $i_1$ and $i
 and \verb,in2,). The \verb,makeAnds, function uses the values of $a$, $i_1$, and $i_2$ to generate the appropriate
 \verb,Clause,s that describe the AND gates' values.
 
-If both $i_1$ and $i_2$ are booleans (corresponding to both \verb,in1, and \verb,in2, using the \verb,Boolean,
+If both $i_1$ and $i_2$ are Booleans (corresponding to both \verb,in1, and \verb,in2, using the \verb,Boolean,
 constructor for \verb,Parser.AigModel.Lit,s), then a singleton clause suffices to describe the AND gate.
 If $i_1 \wedge i_2$ holds, then the singleton clause $\{a\}$ describes the constantly {\it True} AND gate,
 and if not, then the singleton clause $\{\neg a\}$ describes the constantly {\it False} AND gate.
 
-If only one of the inputs ($i_1$ and $i_2$) is a boolean, then the clauses equivalent to $a \Leftrightarrow i$
-are generated, where $i$ is the input that is not a boolean value and the clauses to generate for $a \Leftrightarrow i$ 
+If only one of the inputs ($i_1$ and $i_2$) is a Boolean, then the clauses equivalent to $a \Leftrightarrow i$
+are generated, where $i$ is the input that is not a Boolean value and the clauses to generate for $a \Leftrightarrow i$ 
 are described in the explanation for generating clauses for latches.
 
-If neither of $i_1$ or $i_2$ are booleans, then the clauses generated are
+If neither of $i_1$ or $i_2$ are Booleans, then the clauses generated are
 $\{\neg a, i_1\}$, $\{\neg a, i_1\}$, and
 $\{\neg i_1,\neg i_2, a\}$. The conjunction of these clauses are, as needed,
 logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$:
@@ -1453,7 +1453,7 @@ that outlines the general structure shared by all the
 implementations of the model checker except {\it PriorityQueue}
 and compare this structure with figure \ref{overview}.
 I provide an explanation of the variant used in the
-{\it PriorityQueue} implementation in section
+{\it PriorityQueue} implementation in Section
 \ref{pqueue}.
 
 \SetKwProg{Let}{let }{ in}{end}
@@ -1510,7 +1510,7 @@ function instead where appropriate.
 The propagation phase of the algorithm is carried out by the {\it propagate} function.
 The actual implementation of the ${\it propagate}$ function returns type \verb,Maybe [Frame],,
 but for the sake of discussing the high level structure of the implementation,
-it is assumed here to return a pair of a boolean value indicating whether a fixed point
+it is assumed here to return a pair of a Boolean value indicating whether a fixed point
 has been found while pushing clauses and a list of the updated frames.
 
 In figure \ref{overview}, each iteration of the algorithm calls the propagation
@@ -1546,7 +1546,7 @@ clause $P$ makes use of the logical equivalence between
 $I \Rightarrow P$ and $\neg (\neg P \wedge I)$. The implementation
 also makes use of the fact that the formula $\neg (\neg P \wedge I)$ is true
 iff $\neg P \wedge I$ is unsatisfiable, and it uses de Morgan's laws (as described in
-section \ref{prep:logic}) to acquire the asumption cube by negating all the literals in
+Section \ref{prep:logic}) to acquire the asumption cube by negating all the literals in
 the \verb,prop, clause. The resulting implementation in \verb,IC3.hs, is the
 following:
 
@@ -1890,13 +1890,13 @@ The variants could not only solve all the handwritten examples correctly
 but also fifty of the HWMCC examples within ten minutes. Some
 variants were able to solve additional examples without timing out.
 
-Following a description of the output of the model checker (section \ref{eval:output}),
-I discuss the solving capabilities of the model-checker implementations (section
+Following a description of the output of the model checker (Section \ref{eval:output}),
+I discuss the solving capabilities of the model-checker implementations (Section
 \ref{eval:solving}), provide further details on how benchmarks were taken
-(section \ref{eval:benchmarking}) and compare
-their performance (section \ref{eval:variants}).
+(Section \ref{eval:benchmarking}) and compare
+their performance (Section \ref{eval:variants}).
 I also compare their performance with that of the reference implementation
-\emph{IC3ref} (section \ref{eval:ic3ref}).
+\emph{IC3ref} (Section \ref{eval:ic3ref}).
 
 \section{Output}
 \label{eval:output}
@@ -2138,8 +2138,8 @@ placed in the priority queue.
 \label{conc}
 
 This chapter summarizes the work done and goals met for this project.
-Following the summary in section \ref{conc:summary}, I give
-suggestions for further extensions to the project in section \ref{conc:extensions}.
+Following the summary in Section \ref{conc:summary}, I give
+suggestions for further extensions to the project in Section \ref{conc:extensions}.
 
 \section{Summary}
 \label{conc:summary}
