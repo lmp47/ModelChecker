@@ -719,8 +719,14 @@ The the binary version's assumptions on component ordering allow the format
 to be more compact. The HWMCC examples use the binary format.
 
 A new version of the AIGER format is currently under development, with
-examples from HWMCC'14 using the new version. The AIGER parser component
+examples from HWMCC'14 onward using the new version. The AIGER parser component
 of this project handles both the old and new versions of the format.
+
+I provide a description of how variables are represented in all AIGER formats
+followed by a description of the old ASCII version of the AIGER format, which
+is sufficient to understand the handwritten examples written directly
+in AIGER format. Descriptions of the other formats can be found in Appendix
+\ref{aiger}.
 
 \paragraph{AIGER Variables}{
 A variable's name in AIGER format is a positive integer. Variables themselves
@@ -746,7 +752,7 @@ represent negative literals. The representation thus allows an implementation
 use the least significant bit of an index to be used to find the sign of a literal,
 and a single bitwise right shift to find the variable name for the literal.
 
-\paragraph{Old version}{
+\paragraph{Old ASCII version}{
 All AIGER files in the old version begin with a header of the form
 \begin{verbatim}
 V M I L O A
@@ -777,6 +783,13 @@ for their variable name and the two indices that specify their input values.
 
 \begin{figure}[t]
 \centering
+\includegraphics[width=100mm]{circuit.png}
+\caption{The circuit represented in {\tt examples/simple3.aag}}
+\label{aagCircuit}
+\end{figure}
+
+For example, the circuit in figure \ref{aagCircuit} represented is represented
+as follows:
 \begin{verbatim}
 aag 3 0 2 1 1
 2 3
@@ -784,102 +797,11 @@ aag 3 0 2 1 1
 6
 6 2 4
 \end{verbatim}
-\caption{
-A circuit specified in the old ASCII AIGER format. The circuit has
-no inputs, two latches with indices $2$ and $4$ and one AND gate
+The circuit has no inputs, two latches with indices $2$ and $4$ and one AND gate
 with index $6$ that takes the outputs of the two latches as inputs.
 The output of the whole circuit is the output of the AND gate.
 }
-\label{aagCircuit}
-\end{figure}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=100mm]{circuit.png}
-\caption{The circuit represented by figure \ref{aagCircuit}, where
-the variable name for each component is directly to the left of that
-component, with the corresponding index in parenthesis.}
-\end{figure}
-}
-
-\paragraph{Binary version}{
-The binary version of the format assumes that variable indices
-occur in increasing order. Since each literal must be defined, this assumption
-allows for variable indices to be omitted when defining inputs or latches.
-
-Inputs are not explicitly listed; the input variables are inferred based on
-the value of \verb,I,.
-Similarly, latches are specified by only listing their next-state literals'
-representations.
-
-The binary format also assumes that AND gates occur in order of their
-variable indices and that inputs to an AND gate will
-have already been defined before that AND gate.
-These assumptions allow AND gates to be represented by two differences
-that tend to be small in practice:
-
-For an AND gate specified in the old format by \verb,lhs rhs0 rhs1,,
-where inputs \verb,rhs0, and \verb,rhs1, have been ordered such that
-$\verb,rhs0, \geq \verb,rhs1,$, define
-$$\delta_0 = \verb,lhs, - \verb,rhs0,$$
-and
-$$\delta_1 = \verb,lhs, - \verb,rhs1,$$
-
-The values $\delta_i$ are then represented with the following binary
-encoding, giving a more compact representation for AND gates than
-the ASCII version of the format:
-
-For 7-bit words $w_0, \ldots w_n$ with
-$$\delta_i = w_0 + 2^7w_1 + \ldots + 2^{7n}w_n,$$
-$\delta_i$ is represented as the sequence of $n + 1$ bytes
-$b_0, \ldots, b_n$, where
-\begin{itemize}
-\item for $0 \leq k < n$, $b_k$ is the byte obtained by setting the most
-significant bit to 1 and the rest of the bits to $w_k$, and
-\item $b_n$ is the byte obtained by setting the most
-significant bit to 0 and the rest of the bits to $w_n$
-\end{itemize}}
-
-
-\paragraph{New version} {
-The new AIGER format begins with a header of the form
-\begin{verbatim}
-V M I L O A B C J F
-\end{verbatim}
-where \verb,V,, \verb,M,, \verb,I,, \verb,L,, \verb,O,, \verb,A, are as
-in the old format, and
-\begin{itemize}
-\item \verb,B, gives the number of ``bad state'' properties
-\item \verb,C, gives the number of invariant constraints
-\item \verb,J, gives the number of justice properties
-\item \verb,F, gives the number of fairness constraints
-\end{itemize}
-
-The ``bad state'' properties allow for the specification of properties for
-a model checker to prove are unreachable separately from the outputs; in
-the old AIGER format, such properties had to be specified as outputs.
-The invariant constraints allow for the specification of properties that
-are true at all states up to and including the state where the ``bad state''
-is found.
-Justice and fairness constraints are not included in the model used by
-the model checker and will not be explained further.
-
-Components are specified after the header in the same order that their
-counts occur in the header with the exception of AND gates, which
-occur at the end of the file. Latches' initial values can also be specified
-now with an additional \verb,0, or \verb,1, after the next-state literal's
-index. The initial value may also be given as the index of the latch itself,
-in which case the latch is considered to be uninitialized.
-If the initial value is omitted, the initial value is assumed to be
-0, as in the old version of the format.
-
-The header can be truncated
-after giving the AND-gate count if all remaining counts are
-zero, allowing parsers for the new AIGER format to be
-backwards-compatible.
-
-The new version of the format is otherwise
-the same as the old format.}
 
 \section{MiniSat}
 \label{prep:minisat}
@@ -2209,40 +2131,130 @@ exhibit a similar improvement.
 % the appendices
 \appendix
 
+\chapter{AIGER Format}
+\label{aiger}
+This appendix describes the binary version of the old AIGER format by comparison
+with the ASCII version and the new version of the AIGER format by
+comparison with the old format.
+
+\paragraph{Binary version}{
+The binary version of the format assumes that variable indices
+occur in increasing order. Since each literal must be defined, this assumption
+allows for variable indices to be omitted when defining inputs or latches.
+Inputs are not explicitly listed. the input variables are inferred based on
+the value of \verb,I,.
+Similarly, latches are specified by only listing their next-state literals'
+representations.
+
+The binary format also assumes that AND gates occur in order of their
+variable indices and that inputs to an AND gate will
+have already been defined before that AND gate.
+These assumptions allow AND gates to be represented by two differences
+that tend to be small in practice:
+
+For an AND gate specified in the old format by \verb,lhs rhs0 rhs1,,
+where inputs \verb,rhs0, and \verb,rhs1, have been ordered such that
+$\verb,rhs0, \geq \verb,rhs1,$, define
+$$\delta_0 = \verb,lhs, - \verb,rhs0,$$
+and
+$$\delta_1 = \verb,lhs, - \verb,rhs1,$$
+
+The values $\delta_i$ are represented with the following binary
+encoding, giving a more compact representation for AND gates than
+the ASCII version of the format:
+
+For 7-bit words $w_0, \ldots w_n$ with
+$$\delta_i = w_0 + 2^7w_1 + \ldots + 2^{7n}w_n,$$
+$\delta_i$ is represented as the sequence of $n + 1$ bytes
+$b_0, \ldots, b_n$, where
+\begin{itemize}
+\item for $0 \leq k < n$, $b_k$ is the byte obtained by setting the most
+significant bit to 1 and the rest of the bits to $w_k$, and
+\item $b_n$ is the byte obtained by setting the most
+significant bit to 0 and the rest of the bits to $w_n$
+\end{itemize}}
+
+\paragraph{New version} {
+The new AIGER format begins with a header of the form
+\begin{verbatim}
+V M I L O A B C J F
+\end{verbatim}
+where \verb,V,, \verb,M,, \verb,I,, \verb,L,, \verb,O,, \verb,A, are as
+in the old format, and
+\begin{itemize}
+\item \verb,B, gives the number of ``bad state'' properties
+\item \verb,C, gives the number of invariant constraints
+\item \verb,J, gives the number of justice properties
+\item \verb,F, gives the number of fairness constraints
+\end{itemize}
+
+The ``bad state'' properties allow for the specification of properties for
+negated safety properties separately from the outputs; in
+the old AIGER format, such properties had to be specified as outputs.
+The invariant constraints allow for the specification of properties that
+are true at all states up to and including the state where the ``bad state''
+is found.
+Justice and fairness constraints are not included in the model used by
+the model checker and will not be explained further.
+
+Components are specified after the header in the same order that their
+counts occur in the header with the exception of AND gates, which
+occur at the end of the file. Latches' initial values can also be specified
+now with an additional \verb,0, or \verb,1, after the next-state literal's
+index. The initial value may also be given as the index of the latch itself,
+in which case the latch is considered to be uninitialized.
+If the initial value is omitted, the initial value is assumed to be
+0, as in the old version of the format.
+
+The header can be truncated
+after giving the AND-gate count if all remaining counts are
+zero, allowing parsers for the new AIGER format to be
+backwards-compatible.
+
+The new version of the format is otherwise
+the same as the old format.}
+
 \chapter{Benchmark Results}
 \label{benchmarks}
 
+In the following tables, ``Average Literals per Clause'' is abbreviated as
+``ALC,'' and ``Standard Deviation'' is abbreviated as ``SD.''
+
 \section{Basic}
 \csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
-    table head= \hline Name & Frames & Avg. Lits / Clause & CTIs & Queries & Mean Time (s) & Std. Dev. of Time (s)\\\hline,
+    table head= \hline Name & Frames & ALC & CTIs & Queries & Mean Time (s) & SD of
+Time(s)\\\hline,
     late after line=\\\hline]%
 {basic.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, queries = \queries, time = \time, stdev = \stdev}%
 {\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
 
 \section{BetterCTI}
 \csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
-    table head= \hline Name & Frames & Avg. Lits / Clause & CTIs & Queries & Mean Time (s) & Std. Dev. of Time (s)\\\hline,
+    table head= \hline Name & Frames & ALC & CTIs & Queries & Mean Time (s) & SD of Time
+(s)\\\hline,
     late after line=\\\hline]%
 {betterCTI.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, queries = \queries, time = \time, stdev = \stdev}%
 {\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
 
 \section{BetterPropagation}
 \csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
-    table head= \hline Name & Frames & Avg. Lits / Clause & CTIs & Queries & Mean Time (s) & Std. Dev. of Time (s)\\\hline,
+    table head= \hline Name & Frames & ALC & CTIs & Queries & Mean Time (s) & SD of Time
+(s)\\\hline,
     late after line=\\\hline]%
 {betterPropagation.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, queries = \queries, time = \time, stdev = \stdev}%
 {\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
 
 \section{PriorityQueue}
 \csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
-    table head= \hline Name & Frames & Avg. Lits / Clause & CTIs & Queries & Mean Time (s) & Std. Dev. of Time (s)\\\hline,
+    table head= \hline Name & Frames & ALC & CTIs & Queries & Mean Time (s) & SD of Time
+(s)\\\hline,
     late after line=\\\hline]%
 {priorityQueue.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, queries = \queries, time = \time, stdev = \stdev}%
 {\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
 
 \section{CTG}
 \csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|l|p{4.5em}|p{4em}|,
-    table head= \hline Name & Frames & Avg. Lits / Clause & CTIs & CTGs & Queries & Mean Time (s) & Std. Dev. of Time (s)\\\hline,
+    table head= \hline Name & Frames & ALC & CTIs & CTGs & Queries & Mean Time (s) & SD of Time (s)\\\hline,
     late after line=\\\hline]%
 {ctg.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, ctgs = \ctgs, queries = \queries, time = \time, stdev = \stdev}%
 {\name & \frames & \litspercls & \ctis & \ctgs & \queries & \time & \stdev}%
