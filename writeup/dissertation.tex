@@ -328,6 +328,8 @@ the necessary tools for implementing the components of the project
 and gaining the necessary knowledge about the symbolic representation
 of hardware models
 (Section \ref{prep:logic}) and the IC3 algorithm (Section \ref{prep:ic3}).
+Throughout this chapter and subsequent ones, I collective refer to the model checker
+variants implemented as part of this project as \emph{MC}.
 
 \section{Haskell}
 \label{prep:haskell}
@@ -456,19 +458,19 @@ modules, which is how library functions can be used.
 %Describe the requirements for the project: AIGER parser, Minisat interface,
 %transition system representation, algorithm implementation.
 
-The model checker requires a way of taking input models and, since
+The model checker \emph{MC} requires a way of taking input models and, since
 the IC3 algorithm uses a SAT solver as an internal subcomponent, also
 requires a way to solve SAT queries.
 I chose the AIGER format for representing the hardware models and the
 MiniSat SAT solver for answering SAT queries, resulting in a need for an
 AIGER parser and a Haskell interface to MiniSat. The choice of
-the AIGER format allows the model checker to be run on examples from
+the AIGER format allows \emph{MC} to be run on examples from
 the Hardware Model Checking Competition (HWMCC), since this is the format used
 to specify examples in the competitions. I chose the MiniSat SAT
-solver to allow for better comparison of this project's model checker
+solver to allow for better comparison of \emph{MC}
 with Aaron Bradley's reference implementation of IC3 (\emph{IC3ref})\cite{refic3}.
 Because MiniSat is the solver used by \emph{IC3ref}, using it as the solver
-for this project's model checker removes the
+for \emph{MC} removes the
 choice of SAT solver as a variable to consider when comparing performance,
 reducing confounding factors.
 
@@ -593,8 +595,9 @@ to circuits specified using the binary AIGER format, and the {\tt aigtoaig} tool
 to convert between the ASCII and binary AIGER formats. }
 
 \paragraph{MiniSat}{
-MiniSat is a SAT solver implemented in C++ that solves Boolean satisfiability problems
-posed in conjunctive normal form \cite{minisat,een05}. Further details are given in Section \ref{prep:minisat}.
+MiniSat \cite{minisat,een05}
+is a SAT solver implemented in C++ that solves Boolean satisfiability problems
+posed in conjunctive normal form. Further details are given in Section \ref{prep:minisat}.
 }
 
 \section{Symbolic Representation}
@@ -735,7 +738,7 @@ are used to represent literals.
 I will refer to these nonnegative numbers as indices.
 
 For any variable named $x$, the index for positive literal $x$ is given by
-$2 \times x$, and the index for negative literals $\neg x$ is given by
+$2 \times x$, and the index for negative literal $\neg x$ is given by
 $2 \times x + 1$, i.e. a function to map from variable names $x$ and a Boolean
 value $b$ giving the sign of the literal would be as follows:
 $${\it index}(x, b) =
@@ -746,10 +749,10 @@ $${\it index}(x, b) =
 The indices 0 and 1 are used to represent the constant Boolean values {\it False}
 and {\it True}, respectively.
 
-Any index above 1 represents a literal and that for all such
-indices, all even indices represent positive literals, and all odd indices
-represent negative literals. The representation thus allows an implementation
-use the least significant bit of an index to be used to find the sign of a literal,
+Any index above 1 represents a literal. For all such
+indices, even indices represent positive literals, and odd indices
+represent negative literals. The representation thus allows
+the least significant bit of an index to give the sign of a literal
 and a single bitwise right shift to find the variable name for the literal.
 
 \paragraph{Old ASCII version}{
@@ -806,6 +809,10 @@ The output of the whole circuit is the output of the AND gate.
 \section{MiniSat}
 \label{prep:minisat}
 
+MiniSat is the SAT solver used by the \emph{MC} implementations. The creation of a
+working interface to MiniSat required some background knowledge of how MiniSat
+works.
+
 To solve a SAT query, MiniSat creates an instance of a \verb,Solver, object,
 which contains a set of variables, sets of clauses, and possibly a model or a conflict vector.
 The set of variables in the \verb,Solver, gives all the variables that may appear in
@@ -836,8 +843,9 @@ If there has been at least one query made of the \verb,Solver, object, and the q
 unsatisfiable, the \verb,Solver,'s \verb,conflict, variable points to a set of literals that
 contains the assumed literals that caused the query to be unsatisfiable.
 
-This model checker uses instances of \verb,SimpSolver,, a subclass of the \verb,Solver, class
-that does simplification and returns full assignments.
+\emph{MC} uses instances of \verb,SimpSolver,, a subclass of the \verb,Solver, class
+that does simplification and returns full assignments, providing more useful results
+for the queries that IC3 makes.
 
 \section{The IC3 Algorithm}
 \label{prep:ic3}
@@ -927,13 +935,14 @@ counterexample can be added to frame $F_j$.
 If the shallowest possible depth $j = 0$ is reached, then
 {\it proveNegCTI} fails and returns {\it False}.
 
-The {\it proveNegCTI} pseudocode does not explicitly check for $I \Rightarrow
+The {\it proveNegCTI} pseudocode in figure \ref{proveNegCTI}
+does not explicitly check for $I \Rightarrow
 \neg s$. An explicit check is unnecessary because if
 $I \Rightarrow \neg s$ does not hold, then eventually ${\it proveNegCTI}$
 will be called recursively with $j = 0$ and the attempt to show that
 $\neg s$ is relatively inductive to $F_j$ fails.
 
-\begin{algorithm}[H]
+\begin{algorithm}[t]
 \DontPrintSemicolon
 \Fn{proveNegCTI$((i,x,I,T),s,j)$}{
   \lIf{$j = 0$}{\Return{False}}
@@ -943,6 +952,8 @@ $\neg s$ is relatively inductive to $F_j$ fails.
     \lElse{\Return{False}}
   }
 }
+\caption{Pseudocode for proving negated CTIs}
+\label{proveNegCTI}
 \end{algorithm}
 
 If $\neg c$ cannot be proven to hold at $k$ steps of
@@ -997,7 +1008,6 @@ is inductive relative to $F_i$
 is a clause $\neg c$ whose
 literals are the smallest subset of the literals in $\neg s$ such that
 $\neg c$ is also inductive relative to $F_i$.
-
 The minimal inductive subclause can be found by dropping each literal
 in $\neg s$ in turn and checking the resulting clause.
 
@@ -1024,7 +1034,7 @@ The clause $t$ can then be expanded to the clause $t \cap \neg p$
 formed by taking the common literals in $t$ and $\neg p$.
 The checking phase then repeats, checking the expanded clause $t \cap \neg p$.
 
-\begin{algorithm}[H]
+\begin{algorithm}[t]
 \DontPrintSemicolon
 \Fn{mic(cls,i)}{
   \ForEach{literal l in cls}{
@@ -1064,8 +1074,8 @@ $F_k$. In the original method of generalization described above,
 this means that $\neg s$ cannot be generalized to $\neg c$, and generalization
 proceeds without dropping $l$.
 
-It could be the case that the reason that the query
-$F_k \wedge T \wedge c \Rightarrow c'$ is unsatisfiable because
+The reason the query
+$F_k \wedge T \wedge c \Rightarrow c'$ is unsatisfiable might be that
 $F_k$ is too broad an approximation, similarly to why a consecution
 query at $F_k$ might fail. As with consecution queries, discovering a
 new clause that can be added to $F_k$ may allow the queries that
@@ -1088,7 +1098,7 @@ MiniSat interface (Section \ref{impl:minisat}), the hardware model representatio
 (Section \ref{impl:modelchecker}).
 I implemented several variants of the model checker component that differ
 in overall structure, the finding of CTIs, the way that propagation is performed, and
-the way that CTIs are inductively generalized. The different variants and the
+the way that CTIs are inductively generalized. The variants and the
 differences among them are given in figure \ref{implementationSummary}.
 
 The implementation of the AIGER parser, MiniSat interface, and \emph{Basic} version
