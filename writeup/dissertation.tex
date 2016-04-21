@@ -347,7 +347,8 @@ Unlike in Standard ML, there is no keyword in Haskell for defining functions. Ot
 Haskell function definitions are similar to Standard ML function definitions with the
 \verb,fun, keyword omitted. Anonymous functions in Haskell are also defined similarly
 as they are in Standard ML, using \verb,\, to bind variables analagously to Standard
-ML's \verb,fn, keyword.
+ML's \verb,fn, keyword. Similarly to Standard ML, Haskell performs pattern matching
+for function definitions and \verb,case, expressions.
 }
 
 \paragraph{Types}{
@@ -579,8 +580,8 @@ The incorporation of HLint suggestions in
 this project resulted in simpler, more readable code.
 }
 
-\paragraph{Aiger Utilities}{
-Several tools provided in Aiger Utilities \cite{aiger} were used in this project.
+\paragraph{AIGER Utilities}{
+Several tools provided in AIGER Utilities \cite{aiger} were used in this project.
 The
 AIGER parser provided was used for comparison with and as an alternative
 to the parser developed as part of this project. 
@@ -791,7 +792,7 @@ for their variable name and the two indices that specify their input values.
 \label{aagCircuit}
 \end{figure}
 
-For example, the circuit in figure \ref{aagCircuit} represented is represented
+For example, the circuit in Figure \ref{aagCircuit} represented is represented
 as follows:
 \begin{verbatim}
 aag 3 0 2 1 1
@@ -811,7 +812,7 @@ The output of the whole circuit is the output of the AND gate.
 
 MiniSat is the SAT solver used by the \emph{MC} implementations. The creation of a
 working interface to MiniSat required some background knowledge of how MiniSat
-works.
+works. The MiniSat code explained in this section is in C++.
 
 To solve a SAT query, MiniSat creates an instance of a \verb,Solver, object,
 which contains a set of variables, sets of clauses, and possibly a model or a conflict vector.
@@ -851,11 +852,14 @@ for the queries that IC3 makes.
 \label{prep:ic3}
 %Describe how the IC3 algorithm works when trying to prove a model has a property
 %$P$.
+I now describe the basic IC3 algorithm and some of its extensions, which are
+necessary to understand the following chapters.
 Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
 safety property $P$, IC3 aims either to prove inductively that $P$ holds
 at all reachable states from the initial state or
 to find a reachable $\neg P$ state.
-The pseudocode in \ref{overview} gives an overview of the basic IC3 algorithm.
+The pseudocode in Figure \ref{overview} gives an overview of the basic IC3 algorithm,
+which I refer to in the following explanation of the algorithm.
 
 \begin{algorithm}[!Ht]
 \DontPrintSemicolon
@@ -892,12 +896,12 @@ in the pseudocode).
 The deepest frame $F_k$ in the set of frames is the \emph{frontier}.
 
 %Initiation query
-The initiation query $I \Rightarrow P$ on line \ref{initiation} checks that the safety
-property holds in the initial state $I$.
+The \emph{initiation query} $I \Rightarrow P$ on line \ref{initiation} checks that
+the property holds in the initial state $I$.
 This query is run once at the start of
-the algorithm for the desired safety property.
+the algorithm for the desired property.
 If it fails (i.e. if it is {\it False}), then the algorithm terminates,
-as state in which $\neg P$ holds is reachable in 0 steps.
+as a state in which $\neg P$ holds is reachable in 0 steps.
 If it succeeds, then the algorithm proceeds to its main loop.
 
 The main loop of the algorithm is the while-loop beginning on line \ref{main}.
@@ -905,17 +909,17 @@ The algorithm only exits the loop when it has determined whether or not the
 safety property holds at all reachable states in the model.
 
 %Consecution query
-The consecution query $F_k \wedge T \Rightarrow P'$ on line \ref{consecution} is
+The \emph{consecution query} $F_k \wedge T \Rightarrow P'$ on line \ref{consecution} is
 is used to check whether the property $P$ necessarily holds in the next
 frame. If it succeeds (i.e., if it is {\it True}), then IC3 creates a new
 frontier frame $F_{k + 1}$.
 %Describe what happens when a consecution query fails
+
 If a consecution query $F_k \wedge T \Rightarrow P'$ fails, then that means that
 there is an $F_k$ state that is a predecessor of the $\neg P'$ state,
 i.e. there is an $F_k$ state $s$ and a $\neg P'$ state $v$ with $T(i,s,v')$.
 The state $s$ is called a \emph{counterexample to induction} (CTI) state.
-
-The algorithm aims to refine the approximation $F_k$ of the set of states
+The algorithm then aims to refine the approximation $F_k$ of the set of states
 reachable in at most $k$ steps by showing that all states that are
 reachable in at most $k$ steps are $\neg s$ states.
 
@@ -935,7 +939,7 @@ counterexample can be added to frame $F_j$.
 If the shallowest possible depth $j = 0$ is reached, then
 {\it proveNegCTI} fails and returns {\it False}.
 
-The {\it proveNegCTI} pseudocode in figure \ref{proveNegCTI}
+The {\it proveNegCTI} pseudocode in Figure \ref{proveNegCTI}
 does not explicitly check for $I \Rightarrow
 \neg s$. An explicit check is unnecessary because if
 $I \Rightarrow \neg s$ does not hold, then eventually ${\it proveNegCTI}$
@@ -982,7 +986,10 @@ same as $F_i$, since all the the clauses in $F_i$ and therefore $F_{i + 1}$
 can be pushed.
 Because $F_i$ contains the safety property $P$ as one of its clauses,
 this means that $P$ holds in all reachable states from the initial state,
-and the algorithm terminates (line \ref{fixed}).
+and the algorithm terminates (line \ref{fixed}). Because the number of
+clauses in each frame $F_i$ decreases monotonically as $i$ increases and the
+frame $F_0$ can only have finitely many states, the algorithm always
+terminates.
 
 \subsection{Inductive Generalization}
 
@@ -1011,7 +1018,7 @@ $\neg c$ is also inductive relative to $F_i$.
 The minimal inductive subclause can be found by dropping each literal
 in $\neg s$ in turn and checking the resulting clause.
 
-The checking phase (described by {\it down} in figure \ref{mic})
+The checking phase (described by {\it down} in Figure \ref{mic})
 performs the normal queries
 for determining whether the subclause is inductive relative to
 $F_k$: for a subclause $t = \neg s \ \{l\}$ found by dropping
@@ -1099,7 +1106,7 @@ MiniSat interface (Section \ref{impl:minisat}), the hardware model representatio
 I implemented several variants of the model checker component that differ
 in overall structure, the finding of CTIs, the way that propagation is performed, and
 the way that CTIs are inductively generalized. The variants and the
-differences among them are given in figure \ref{implementationSummary}.
+differences among them are given in Figure \ref{implementationSummary}.
 
 The implementation of the AIGER parser, MiniSat interface, and \emph{Basic} version
 of the IC3 algorithm satisfy the project aims to implement these components. As
@@ -1374,22 +1381,22 @@ follows.
 \subsection{Overall structure}
 
 The general structure of the algorithm in the implementations is similar
-to the structure given in figure \ref{overview}; however, there are
+to the structure given in Figure \ref{overview}; however, there are
 small differences that result from implementing the algorithm in a
 functional language and an adjustment to how the propagation phase is
 carried out.
 
 To explain the modifications to the structure of the algorithm,
-I give pseudocode in figure \ref{recstr}
+I give pseudocode in Figure \ref{recstr}
 that outlines the general structure shared by all the
 implementations of the model checker except {\it PriorityQueue}
-and compare this structure with figure \ref{overview}.
+and compare this structure with Figure \ref{overview}.
 I provide an explanation of the variant used in the
 {\it PriorityQueue} implementation in Section
 \ref{pqueue}.
 
 \SetKwProg{Let}{let }{ in}{end}
-\begin{algorithm}[!Ht]
+\begin{algorithm}[t]
 \DontPrintSemicolon
 \Fn{prove$(M,P)$}{
   \lIf{$\neg (I \Rightarrow P)$}{
@@ -1423,11 +1430,11 @@ Because the implementation of the model checker is in Haskell, the overall
 structure of the algorithm has been modified to be recursive rather than iterative.
 The {\it prove} function makes an initiation query, and, if it succeeds, calls
 {\it prove'}, which corresponds to a recursive version of the main while loop
-in line \ref{main} of figure \ref{overview}. Here, {\it proveNegCTI}
+in line \ref{main} of Figure \ref{overview}. Here, {\it proveNegCTI}
 does not correspond just to the {\it proveNegCTI} algorithm in \ref{overview} but rather
 to the while loop that contains that function.
 
-Because functions in Haskell are pure, the assumption made in figure \ref{overview}
+Because functions in Haskell are pure, the assumption made in Figure \ref{overview}
 that function can could modify the set of (passed-by-reference) frames can no longer be made.
 Instead, the updated values of frames are returned explicitly from the function call in
 a tuple along with any other values needed from the function call. For example,
@@ -1445,7 +1452,7 @@ but for the sake of discussing the high level structure of the implementation,
 it is assumed here to return a pair of a Boolean value indicating whether a fixed point
 has been found while pushing clauses and a list of the updated frames.
 
-In figure \ref{overview}, each iteration of the algorithm calls the propagation
+In Figure \ref{overview}, each iteration of the algorithm calls the propagation
 phase; however, if the consecution query succeeds and a new frontier frame $F_k$
 is added in that iteration, then none of the frames have had any new clauses
 added to them. As a result, the only frame that modified during the propagation phase
@@ -1459,7 +1466,7 @@ In the case that the consecution query succeeds, considering pairs of frames oth
 than $(F_{k - 1}, F_k)$ is unecessary work. The modified algorithm is such that
 that when the consecution query succeeds, it calls the ${\it pushFrame}$ function that
 checks only a single pair of frames (which also makes the recursive call to ${\it prove}$).
-When the consecution query fails, the adjusted algorithm, like the original in figure \ref{overview},
+When the consecution query fails, the adjusted algorithm, like the original in Figure \ref{overview},
 calls the ${\it propagate}$ function to handle the updates to the frames made by ${\it proveNegCTI}$.
 
 \subsection{Frames}
@@ -1536,8 +1543,8 @@ the current-state literals from $q$ to obtain the CTI.
 \subsection{Propagation}
 
 Both the implementation of the {\it pushFrame} function and the implementation of the
-{\it propagate} function in figure \ref{recstr} and figure \ref{pqueuestr} (which
-describes the structure of the {\it priorityQueue} implementation)
+{\it propagate} function in Figure \ref{recstr} and Figure \ref{pqueuestr} (which
+describes the structure of the \emph{PriorityQueue} implementation)
 rely on the implementation of the
 {\it push} function, which has two variants described below.
 
@@ -1613,7 +1620,7 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
 \caption{The {\tt inductiveGeneralization} function that approximates the {\it mic} algorithm.}
 \end{figure}
 
-This corresponds to the algorithm described in figure \ref{mic}, but where {\it down} simply
+This corresponds to the algorithm described in Figure \ref{mic}, but where {\it down} simply
 checks for the relative inductiveness of the subclause and does not attempt to expand it.
 
 \subsubsection{Minimal Inductive Subclauses and Counterexamples to Generalization}
@@ -1841,7 +1848,7 @@ In particular, all variants' outputs give the number of frames, the average numb
 literals per clause, the number of CTIs found, and the number of queries made for solving
 that example. The {\it CTG} implementation also reports the number of CTGs found. Sample output
 for the {\it CTG} implementation run on example \verb,counters3.aig,
-is given in figure \ref{sampleoutput}.
+is given in Figure \ref{sampleoutput}.
 
 \begin{figure}[t]
 \centering
@@ -2059,7 +2066,7 @@ to be as expensive for \emph{IC3ref} as the Haskell implementations, probably as
 result of aforementioned differences.
 The reference implementation also does not
 enqueue a new proof obligation $(s, i+1)$ each time a proof obligation $(s, i)$ has been
-fulfilled as the {\it priorityQueue} implementation does,
+fulfilled as the \emph{PriorityQueue} implementation does,
 so CTIs need to be rediscovered. The efficiency of \emph{IC3ref} otherwise compensates
 for the performance disadvantage of rediscovering CTIs.
 The safety property is maintained and
