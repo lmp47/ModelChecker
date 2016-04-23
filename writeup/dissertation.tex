@@ -142,34 +142,54 @@ by a discussion of symbolic model checking and SAT-based model checking.
 I then highlight some of the important features of the IC3 algorithm and its more
 recent uses.
 
+Software and hardware bugs can be costly. The Pentium FDIV hardware bug cost an
+estimated \$475 million \cite{pratt95}, and the Ariane 5 software bug cost
+approximately \$370 million \cite{dowson97}.
+The cost of such bugs catalyzed the adoption of new techniques for developing systems
+that would help reduce the number of residual bugs.
+In particular, the Pentium FDIV bug encouraged the use of formal verification in
+hardware design.
+
+Formal methods is the use of mathematics and logic to specify and verify hardware and
+software systems. Formal verification in particular focuses on proving properties of
+systems.
+For example, type checking provides a widely-used form of software verification,
+proving that programs are well-typed. The formal verification technique of model
+checking has been used to verify that circuits correctly implement the algorithm that
+the Pentium processors with the FDIV bug did not \cite{clarke96}.
+
+Given a model and a specification of a system, a model checker will check whether or
+not the system satisfies the specification.
+Model checking is fully automated, unlike formal verification techniques that employ
+Hoare Logic or proof assistants, which require user guidance.
 %Provide a brief description of model checking in general.
 
-Formal verification is the use of mathematics and logic to prove properties of
-hardware and software systems. Formal verification techniques are
-employed in several domains where the correctness of a system is
-crucial, such as in hardware design and aviation.
-Guaranteeing that there are no errors in hardware designs before
-manufacturing begins can help avoid the high costs associated with needing to
-remanufacture the hardware if the design needs to be corrected.
-Additionally, the ability to prove that certain kinds of errors do not
-occur are important for ensuring safety in safety-critical systems such
-as those in airplanes and medical devices.
+%Formal verification is the use of mathematics and logic to prove properties of
+%hardware and software systems. Formal verification techniques are
+%employed in several domains where the correctness of a system is
+%crucial, such as in hardware design and aviation.
+%Guaranteeing that there are no errors in hardware designs before
+%manufacturing begins can help avoid the high costs associated with needing to
+%remanufacture the hardware if the design needs to be corrected.
+%Additionally, the ability to prove that certain kinds of errors do not
+%occur are important for ensuring safety in safety-critical systems such
+%as those in airplanes and medical devices.
 
-One formal verification technique is model checking.
-Given a model of the system
-and a specified property, a model checker will check
-whether all reachable states in the system satisfy this property.
-Unlike formal verification techniques that require user guidance
-such as those that employ Hoare Logic or proof assistants, model
-checking is fully automated.
+%One formal verification technique is model checking.
+%Given a model of the system
+%and a specified property, a model checker will check
+%whether all reachable states in the system satisfy this property.
+%Unlike formal verification techniques that require user guidance
+%such as those that employ Hoare Logic or proof assistants, model
+%checking is fully automated.
 
-In addition to being automated, because model checkers prove
-properties by considering reachable states, when a model checker
-discovers that a property does not hold, the model checker has
-necessarily discovered a reachable state that violates the property.
-A counterexample trace can, in such cases, be provided, giving
-greater insight into why the property does not hold for that
-model.
+%In addition to being automated, because model checkers prove
+%properties by considering reachable states, when a model checker
+%discovers that a property does not hold, the model checker has
+%necessarily discovered a reachable state that violates the property.
+%A counterexample trace can, in such cases, be provided, giving
+%greater insight into why the property does not hold for that
+%model.
 
 
 \section{Symbolic Model Checking}
@@ -303,16 +323,22 @@ small examples. Additionally, the project is meant to give me an opportunity
 to learn and use Haskell, to understand formal methods and especially model
 checking more deeply, and to put into practice software engineering techniques.
 
-I successfully implemented not only a basic form of the IC3 algorithm,
-which can correctly check several examples from the hardware model checking
-competition in addition to the small hardware models I initially set out
-to check, but also several variants of the algorithm.
+%I successfully implemented not only a basic form of the IC3 algorithm,
+%which can correctly check several examples from the hardware model checking
+%competition in addition to the small hardware models I initially set out
+%to check, but also several variants of the algorithm.
 
-I discuss the background knowledge about Haskell, the IC3 algorithm, and software
-development tools in Section \ref{prep}; the implementation of the components of
-the model checker and the different variants of the model checker in Section
-\ref{impl}; and the model-checking capabilities of the implementations in
-\ref{eval}. Finally I provide a summary of the completed work and ideas for
+The project aims have been achieved through my completion of the following items:
+\begin{itemize}
+\item I gained background knowledge about Haskell, the IC3 algorithm, and software
+development tools (Section \ref{prep}).
+\item I implemented the components of the model checker, including several variants of
+the IC3 algorithm (Section \ref{impl}).
+\item I evaluated the model-checking capabilities of the implementations
+(Section \ref{eval}).
+\end{itemize}
+
+I provide a summary of the completed work and ideas for
 future work in Section \ref{conc}.
 
 \chapter{Preparation}
@@ -788,7 +814,7 @@ for their variable name and the two indices that specify their input values.
 \begin{figure}[t]
 \centering
 \includegraphics[width=100mm]{circuit.png}
-\caption{The circuit represented in {\tt examples/simple3.aag}}
+\caption{The circuit represented in {\tt examples/simple3.aag}.}
 \label{aagCircuit}
 \end{figure}
 
@@ -956,7 +982,7 @@ $\neg s$ is relatively inductive to $F_j$ fails.
     \lElse{\Return{False}}
   }
 }
-\caption{Pseudocode for proving negated CTIs}
+\caption{Pseudocode for proving negated CTIs.}
 \label{proveNegCTI}
 \end{algorithm}
 
