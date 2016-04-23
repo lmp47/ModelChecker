@@ -155,42 +155,13 @@ software systems. Formal verification in particular focuses on proving propertie
 systems.
 For example, type checking provides a widely-used form of software verification,
 proving that programs are well-typed. The formal verification technique of model
-checking has been used to verify that circuits correctly implement the algorithm that
-the Pentium processors with the FDIV bug did not \cite{clarke96}.
+checking has been used to verify that circuits correctly implement the SRT
+algorithm that the Pentium processors with the FDIV bug did not \cite{clarke96}.
 
 Given a model and a specification of a system, a model checker will check whether or
 not the system satisfies the specification.
 Model checking is fully automated, unlike formal verification techniques that employ
 Hoare Logic or proof assistants, which require user guidance.
-%Provide a brief description of model checking in general.
-
-%Formal verification is the use of mathematics and logic to prove properties of
-%hardware and software systems. Formal verification techniques are
-%employed in several domains where the correctness of a system is
-%crucial, such as in hardware design and aviation.
-%Guaranteeing that there are no errors in hardware designs before
-%manufacturing begins can help avoid the high costs associated with needing to
-%remanufacture the hardware if the design needs to be corrected.
-%Additionally, the ability to prove that certain kinds of errors do not
-%occur are important for ensuring safety in safety-critical systems such
-%as those in airplanes and medical devices.
-
-%One formal verification technique is model checking.
-%Given a model of the system
-%and a specified property, a model checker will check
-%whether all reachable states in the system satisfy this property.
-%Unlike formal verification techniques that require user guidance
-%such as those that employ Hoare Logic or proof assistants, model
-%checking is fully automated.
-
-%In addition to being automated, because model checkers prove
-%properties by considering reachable states, when a model checker
-%discovers that a property does not hold, the model checker has
-%necessarily discovered a reachable state that violates the property.
-%A counterexample trace can, in such cases, be provided, giving
-%greater insight into why the property does not hold for that
-%model.
-
 
 \section{Symbolic Model Checking}
 
@@ -206,7 +177,7 @@ considering each reachable state in the model.
 Symbolic model checking arose as a method of mitigating the effects of
 the state explosion problem. By representing
 states and the transition relation between them as logical formulas
-(described further in Section \ref{prep:logic},
+(details of which are provided in Section \ref{prep:logic}),
 symbolic model checking allows sets of states to be
 represented efficiently as logical formulas involving state variables
 instead of as an explicit list of each individual state in the set
@@ -236,20 +207,6 @@ Such techniques include bounded model checking (BMC)
 \cite{biere99a}, $k$-induction \cite{sheeran00},
 and the IC3 algorithm that is the focus of this project.
 
-Many modern SAT-based model checkers are based on BMC, which begins at the
-initial state of the transition system that represents the hardware
-and searches for paths of length $k$ from the initial state that violate
-the safety property.
-If no path of length $k$ is found, BMC increments $k$ and searches again.
-BMC is effective at finding counterexamples, but for some large systems,
-BMC is incomplete unless it is allowed to reach the point at which $k$ is
-the maximal path length.
-
-The $k$-induction algorithm is similar to BMC in its unrolling of the
-transition relation to consider paths of length $k$, but it also
-incorporates induction. At each depth $k$, the algorithm asserts that the
-desired property holds at each state before the final state.
-
 % Understanding IC3
 
 \section{The IC3 Algorithm}
@@ -259,61 +216,40 @@ desired property holds at each state before the final state.
 
 The IC3 algorithm (also called PDR \cite{een11}) is a SAT-based model-checking
 algorithm for proving the safety properties (i.e. properties that must hold
-in all reachable states) of hardware.
+in all reachable states) of hardware. In this section, I outline some of the
+merits of the IC3 algorithm, with a description of IC3 following in Section
+\ref{prep:ic3}.
+
 The first implementation of the algorithm \verb,ic3, placed third in
-the 2010 Hardware Model Checking Competition (HWMCC'10), a competitive event
-that receives model checker and benchmark submissions from industry and
+the 2010 Hardware Model Checking Competition (HWMCC'10) \cite{hwmcc10},
+a competitive event that receives model checker and benchmark submissions from
+industry and
 academia. Its performance at HWMCC'10 generated interest in the algorithm, and
 since then, several variants of the algorithm have been developed.
 %2015 paper
 
-As in $k$-induction, properties are proved through induction:
-the algorithm considers sets of states reachable in at most $k$ steps from the
-initial state until reaching a fixed point.
-% Note: find when k-induction started using counterexamples
-As with later variants of $k$-induction, the IC3 algorithm also discovers
-new invariants if the initial assumptions are not strong enough to prove
-the desired property, but unlike $k$-induction, the safety property guides
-the discovery of the invariants. As a result, the discovered invariants
-are more relevant for proving the safety property \cite{bradley12}.
-
+The IC3 algorithm has advantages when compared to other model checking
+techniques such as $k$-induction and BMC that allow it to prove more
+properties more efficiently. Unlike in $k$-induction, the IC3 algorithm
+discovers new invariants based on the safety property. As a result, these
+invariants are more relevant to proving the property \cite{bradley12}.
 Furthermore, IC3 does not unroll the transition relation as $k$-induction
 or other BMC-based methods do, but instead considers at most one step
 of the transition relation at a time, leading to smaller,
 simpler SAT queries. As a result, IC3 requires less memory than BMC-based
 methods in practice \cite{bradley12}.
 
-
-\section{Further Work}
-
 %Mention other applications of the IC3 algorithm, e.g. to checking
 %LTL properties and to software model checking.
 
-%Mention IIV?
-
-While IC3 algorithm is for model checking safety properties of hardware,
-there are applications of the algorithm in model checking more
+While the IC3 algorithm is for model checking safety properties of hardware,
+it has been applied to model checking more
 elaborate properties expressing temporal constraints (e.g. LTL and CTL
-properties) and model checking software \cite{bradley12}.
-
-%The FAIR model-checking algorithm, which checks $\omega$-regular
-%properties, uses a safety model checker such as IC3, and IICTL,
-%which checks CTL formulas \cite{hassan12}, uses both a
-%safety model checker such as IC3 and a fair-cycle finder such as
-%FAIR.
-
-Other work generalizes IC3 to use an underlying SMT solver rather than a
-SAT solver. This generalization has been used in the verification of software
-\cite{cimatti12}. Results for more recent developments of software verification
+properties) and model checking software
+\cite{bradley12,cimatti12}.
+Results for more recent developments of software verification
 techniques based on IC3 suggest that these techniques are competitive with
 established software verification methods \cite{birgmeier14}.
-%This generalization has been used to check control-flow
-%graphs of programs \cite{cimatti12}.
-%More recently, Johannes Birgmeier, Aaron Bradley, and Georg Weissenbacher
-%introduced CTIGAR, a method of abstraction-refinement based on IC3's
-%counterexamples to induction rather than the counterexamples in CEGAR,
-%which experiments suggest is competitive with CEGAR-based techniques for
-%software verification \cite{birgmeier14}.
 
 \section{Project Aims}
 
