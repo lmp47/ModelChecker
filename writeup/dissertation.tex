@@ -1026,7 +1026,7 @@ to be passed by reference.}
 
 An improvement to the generalization provided by finding minimal
 inductive subclauses in this way incorporates the use of counterexamples
-to generalization.
+to generalization \cite{hassan13}.
 
 \subsubsection{Counterexamples to Generalization}
 
@@ -1060,14 +1060,31 @@ The implementation can be broken up into four main components: the AIGER parser
 MiniSat interface (Section \ref{impl:minisat}), the hardware model representation
 (Section \ref{impl:representation}), and the model checker
 (Section \ref{impl:modelchecker}).
-I implemented several variants of the model checker component that differ
+The implementation of the AIGER parser, MiniSat interface, and \emph{Basic} version
+of the IC3 algorithm satisfy the project aims to implement these components. As
+extensions, I have implementated additional variants of the IC3 algorithm.
+
+The variants of the model checker component differ
 in overall structure, the finding of CTIs, the way that propagation is performed, and
 the way that CTIs are inductively generalized. The variants and the
 differences among them are given in Figure \ref{implementationSummary}.
 
-The implementation of the AIGER parser, MiniSat interface, and \emph{Basic} version
-of the IC3 algorithm satisfy the project aims to implement these components. As
-extensions, I have implementated additional variants of the IC3 algorithm.
+
+I now briefly explain the motivations for the deviations from the \emph{Basic} implementation in
+Figure \ref{implementationSummary}. The details of these deviations are given in
+Section \ref{impl:modelchecker}.
+The ``Priority Queue'' alteration was based on observations that using priority
+queues to keep track of proof obligations is more efficient than the simple
+recursive implementation of the IC3 algorithm \cite{een11,griggio14}.
+The ``Smaller CTIs'' alteration was based on observations that it is better to
+find predecessors to counterexamples that describe sets of several states rather
+than singleton states \cite{griggio14}.
+The ``Subsumed Clauses'' alteration was based on the observation that subsumed clauses slow
+down the SAT-solver and should be eliminated to achieve better performance
+\cite{een11}.
+The ``Generalization with CTGs'' alteration was based on the description of an algorithm
+that improves upon the basic inductive generalization algorithm \cite{hassan13}.
+
 
 \begin{figure}[!ht]
 \centering
@@ -1927,7 +1944,11 @@ the reference implementation performs better overall with CTG-handling disabled.
 
 \paragraph{Priority Queues}{
 The \emph{PriorityQueue} implementation generally does not perform as well as the
-implementations that do not use priority queues (with the exception of \emph{CTG}). There are
+implementations that do not use priority queues (with the exception of \emph{CTG}).
+This result disagrees with findings that implementations of the IC3 algorithm that
+use priority queues are more efficient than simple recursive implementations
+\cite{een11,griggio14}.
+There are
 two features of the variant in particular that may account for its worse performance: accumulating
 CTIs and early generalization.
 
