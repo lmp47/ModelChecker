@@ -87,17 +87,17 @@ solve several small example hardware models correctly.
 
 \section*{Work Completed}
 
-I implemented the basic IC3 algorithm as part of a model checker,
+I implemented the basic IC3 algorithm as part of a new model checker,
 which involved implementing several additional components: the AIGER parser,
-MiniSat interface, hardware model representation.
-As an extension, I implemented other variants of the algorithm.
-I benchmarked the variants on fourteen handwritten examples and roughly
-fifty examples from the Hardware
-Model Checking Competition and compared the results with those for
+MiniSat interface, and hardware model representation.
+As an extension, I implemented other variants of the IC3 algorithm.
+I benchmarked the variants on fourteen handwritten examples and
+fifty-six examples from the Hardware
+Model Checking Competition and compared results with those for
 the IC3 reference implementation. The implementation of
-the basic algorithm and its ability to solve
+the basic IC3 algorithm and its ability to solve
 the handwritten examples meets the project's goals;
-the implementation of other variants and the variants' ability to solve
+the implementation of other variants and their ability to solve
 additional examples exceeds these goals.
 
 \section*{Special Difficulties}
@@ -135,7 +135,8 @@ extent for a comparable purpose.
 
 \chapter{Introduction}
 
-This project focuses on implementing the IC3 algorithm, a SAT-based model checker.
+This project focuses on implementing the IC3 algorithm, a SAT-based model-checking
+algorithm.
 To provide context for the project,
 I provide a brief introduction to formal verification and model checking, followed
 by a discussion of symbolic model checking and SAT-based model checking.
@@ -146,9 +147,9 @@ Software and hardware bugs can be costly. The Pentium FDIV hardware bug cost an
 estimated \$475 million \cite{pratt95}, and the Ariane 5 software bug cost
 approximately \$370 million \cite{dowson97}.
 The cost of such bugs catalyzed the adoption of new techniques for developing systems
-that would help reduce the number of residual bugs.
+that would help reduce the number of or mitigate the effects of residual bugs.
 In particular, the Pentium FDIV bug encouraged the use of formal verification in
-hardware design.
+hardware design throughout the semi-conductor industry.
 
 Formal methods is the use of mathematics and logic to specify and verify hardware and
 software systems. Formal verification in particular focuses on proving properties of
@@ -277,14 +278,16 @@ future work in Chapter \ref{conc}.
 
 This chapter describes the knowledge gained and plans made while preparing
 to begin writing code for the project.
-The preparation for the project involved learning Haskell (Section \ref{prep:haskell}),
+The preparation for the project involved learning purely functional
+programming language Haskell (Section \ref{prep:haskell}),
 an analysis that distinguishes the main components of the project
 (Section \ref{prep:requirements}), choosing and learning how to use
 the necessary tools for implementing the components of the project
 (Sections \ref{prep:tools}, \ref{prep:aiger}, \ref{prep:minisat}),
 and gaining the necessary knowledge about the symbolic representation
 of hardware models
-(Section \ref{prep:logic}) and the IC3 algorithm (Section \ref{prep:ic3}).
+(Section \ref{prep:logic}) and the IC3 algorithm (Section \ref{prep:ic3}) to
+adequately complete my project.
 Throughout this chapter and subsequent ones, I collective refer to the model checker
 variants implemented as part of this project as \emph{MC}.
 
@@ -300,12 +303,14 @@ language that will make the rest of the report easier to follow.
 I assume a working knowledge of Standard ML.
 
 \paragraph{Functions}{
-Unlike in Standard ML, there is no keyword in Haskell for defining functions. Otherwise,
+Unlike in Standard ML, there is no keyword in Haskell for defining functions. Instead,
+Haskell functions are defined as a series of equations. Otherwise,
 Haskell function definitions are similar to Standard ML function definitions with the
 \verb,fun, keyword omitted. Anonymous functions in Haskell are also defined similarly
 as they are in Standard ML, using \verb,\, to bind variables analagously to Standard
 ML's \verb,fn, keyword. Similarly to Standard ML, Haskell performs pattern matching
-for function definitions and \verb,case, expressions.
+for function definitions and \verb,case, expressions. The pattern languages Standard
+ML and Haskell are identical.
 }
 
 \paragraph{Types}{
@@ -314,8 +319,8 @@ Haskell is a strongly- and statically-typed language.
 Haskell type constructors and datatype declarations are largely similar to those in
 Standard ML. A new Haskell datatype is declared using the \verb,data, keyword, an analogue
 of Standard ML's \verb,datatype, keyword.
-Haskell also provides record syntax for creating new types, allowing components
-to be named.
+Haskell also provides record syntax for creating new record types, allowing components
+of a product type to be named.
 
 %Type signature syntax
 Though Haskell compilers perform type inference, type
@@ -329,7 +334,7 @@ signature must be an instance of a certain type class.
 
 
 %Type classes
-Haskell's type classes allow for ad hoc polymorphism.
+Haskell's type classes facilitate ad hoc polymorphism \cite{hall94}.
 Functions specified within the definition of a type class
 must be supported for any type that is an instance of that type class.
 Haskell compilers are able to automatically provide instances of standard
@@ -352,23 +357,24 @@ structures that describe computations. These computations
 may have side effects, and Haskell programs use instances of the
 \verb,Monad, class to achieve side effects such as I/O.
 
-Monads can be created with the function
+Monadic values can be created with the function
 \verb,return :: Monad m => a -> m a,, which takes a Haskell
 value of some type \verb,a, and returns an instance \verb,m, of the
 \verb,Monad, class containing that value.
-The \verb,>>=, infix operator allows computations to be composed.
+The \verb,>>=, infix operator (`bind') allows computations to be composed.
 As expected given its type signature
 \verb,(>>=) :: Monad m => m a -> (a -> m b) -> m b,, the function
-takes a \verb,Monad, containing a computation that produces a value of type
+takes a Monadic value containing a computation that produces a value of type
 \verb,a, and a function that takes values of type \verb,a, and returns
-monads, and returns the result of applying the function to the value.
-The \verb,>>, infix operator also allows computations to be composed,
+monadic values, and returns the result of applying the function to the value.
+The \verb,>>, infix operator, which has type signature
+\verb,(>>) :: Monad m => m a -> m b -> m b,, also allows computations to be composed,
 but the output of the first action is ignored by the second.
 
 To avoid unwieldy code resulting from composing several
 computations with \verb,>>=,, Haskell provides syntactic sugar
-in the form of \verb,do,-notation, which allows computations
-inside \verb,Monad,s to be written in a more imperative fashion.
+in the form of \verb,do,-notation, which allows monadic computations
+to be written in an imperative fashion.
 
 For example, the \verb,addClause', function in \verb,Minisat/Minisat.hs, could
 be written as follows:
@@ -393,8 +399,8 @@ addClause' solver clause =
 }
 
 %List syntax
-\paragraph{Lists}{
-List types in Haskell are denoted using square brackets, e.g.,
+\paragraph{Lists and Tuples}{
+List types and values in Haskell are denoted using square brackets, e.g.,
 a list of \verb,Lit,s has type \verb,[Lit],.
 Lists can be appended using the \verb,++, infix operator, and elements
 can be prepended to lists using the \verb,:, infix operator.
@@ -402,11 +408,19 @@ For example, \verb.1:[2,3,4] ++ [5,6]. gives the Haskell equivalent to
 \verb.1::[2,3,4] @ [5,6]. in Standard ML, both of which result in
 the value \verb.[1,2,3,4,5,6]..
 
+Tuples in Haskell are syntactically the same as in Standard ML, but the
+Standard ML product type \verb,a * b * c, has Haskell type \verb.(a, b, c).
+as its analogue.
+}
+
 %Modules
 \paragraph{Modules}{
 A Haskell program consists of modules, which organize code.
 Modules (or just selected functions from modules) can be imported into other
-modules, which is how library functions can be used.
+modules, which is how library functions can be used. Modules can be referred
+to (e.g. in import statements) by names that incorporate where they are
+stored in the directory structure. For example, the \verb,Model, module in file
+\verb,Model/Model.hs, ca be referred to as \verb,Model.Model,.
 }
 
 
@@ -471,7 +485,7 @@ on the Haskell package database Hackage.
 
 \paragraph{HUnit}{
 HUnit \cite{hunit} is a framework for writing unit tests in Haskell based on the
-JUnit framework for unit testing in Java.
+JUnit framework \cite{junit} for unit testing in Java.
 HUnit tests can be specified by using functions
 that return the \verb,Assertion, type to write \verb,TestCase,s. For example, the
 \verb,assertBool :: String -> Bool -> Assertion, function takes a \verb,String,
@@ -485,7 +499,7 @@ TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
 
 The \verb,Test, datatype in HUnit allows \verb,Test,s to be grouped
 and built up hierarchically. Tests that have been assembled into a
-singly tree can then be treated as a test suite, and the whole tree
+single tree can then be treated as a test suite, and the whole tree
 of unit tests can be run.}
 
 \paragraph{Criterion}{
@@ -498,7 +512,7 @@ Criterion can, e.g., output benchmark sample results to a CSV file, as the
 
 \paragraph{Cabal}{
 Cabal \cite{cabal} is the standard package and dependency management system for Haskell,
-where a package may be a library or a complete piece of software.
+where a package may be a library or a complete piece of executable software.
 A \verb,.cabal, file in the root directory of a project specifies
 information about the Cabal package, such as its version and dependencies,
 The \verb,.cabal, file may contain several sections, such as a
@@ -527,12 +541,12 @@ The \verb,hsc2hs, preprocessor \cite{hsc2hs} eases the writing of Haskell bindin
 code by enabling the programmer to write a \verb,.hsc, file containing
 macros that the preprocessor can expand to, e.g., pointer offsets. The
 \verb,hsc2hs, expands the macros in a \verb,.hsc, file to produce a
-\verb,.hs, file that can then be compiled with a Haskell compiler and run.
+Haskell source (\verb,.hs,) file that can then be compiled with a Haskell compiler and run.
 }
 
 \paragraph{HLint}{
-The HLint tool \cite{hlint} suggests improvements for Haskell source code to improve
-the style of the code.
+The HLint tool \cite{hlint} is a linting tool that suggests improvements to Haskell source
+code to improve the style of the code.
 The incorporation of HLint suggestions in
 this project resulted in simpler, more readable code.
 }
@@ -579,7 +593,7 @@ A \emph{cube} is defined to be a conjunction of literals and may be represented 
 of literals that occur in it. Similarly, a \emph{clause} is a disjunction of literals that
 may also be represented as the set of literals that occur in it.
 
-Given a cube $c$, a $d$ is a \emph{subcube} of $c$ (written $d \subset c$)
+Given a cube $c$, a cube $d$ is a \emph{subcube} of $c$ (written $d \subset c$)
 iff the set of literals in $d$ are a subset of the set of literals in $c$.
 Similarly, given a clause $c$, a clause $d$ is a \emph{subclause} of $c$ (also
 denoted $d \subset c$) iff the set of literals in $d$ are a subset of
@@ -598,7 +612,8 @@ a clause is specified by the set obtained by negating each literal in the clause
 A propositional formula is in \emph{conjunctive normal form} (CNF) iff it is a conjunction 
 $\bigwedge_i D_i$ of disjunctions $D_i$ of literals (i.e. clauses). A set of clauses
 can be interpreted as the CNF formula resulting from the conjunction
-of the clauses.}
+of the clauses. Any propositional formula can be easily converted to an equivalent CNF
+form.}
 
 \paragraph{Transition Systems}{
 A \emph{transition system} is a tuple $(i,x,I,T)$ consisting of a set of input
@@ -611,6 +626,9 @@ For each state variable $v$, $v'$ denotes the corresponding next-state variable.
 For example, a transition relation that states that all variables that are
 currently {\it True} should become {\it False} in the next state is as follows:
 $$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$
+In a similar fashion, for a formula $X$ involving only current-state variables,
+the formula $X'$ is the formula $X$ where each current-state variable $v$ has
+been replaced by the corresponding next-state variable $v'$.
 
 Given transition relation $(i,x,I,T)$, a logical formula $C$ is, by definition,
 \emph{inductive relative} to another logical formula $F$ if both
@@ -676,7 +694,7 @@ ascending order of their variable names in the binary format. Another
 example is that AND gates' inputs can occur in any order in the ASCII
 format, but the binary format encodes AND gates under the assumption
 that inputs' indices are in ascending order.
-The the binary version's assumptions on component ordering allow the format
+The binary version's assumptions on component ordering allow the format
 to be more compact. The HWMCC examples use the binary format.
 
 A new version of the AIGER format is currently under development, with
@@ -749,7 +767,7 @@ for their variable name and the two indices that specify their input values.
 \label{aagCircuit}
 \end{figure}
 
-For example, the circuit in Figure \ref{aagCircuit} represented is represented
+For example, the circuit in Figure \ref{aagCircuit} is represented
 as follows:
 \begin{verbatim}
 aag 3 0 2 1 1
@@ -929,7 +947,7 @@ the process of finding the new counterexample to induction state(s) $d$ and tryi
 prove that $\neg d$ holds at depth $k$ repeats. Upon the success of the consecution
 query, the algorithm moves to the propagation phase.
 
-Pushing a clause $c$ from a frame $F_i$ to frame $F_{i + 1}$ refers to the act
+\emph{Pushing} a clause $c$ from a frame $F_i$ to frame $F_{i + 1}$ refers to the act
 of setting $F_{i + 1} := F_{i + 1} \cup \{ c \}$.
 A clause $c$ can be pushed from a frame $F_i$ to the next frame $F_{i + 1}$
 if the consecution query $F_i \wedge T \Rightarrow c'$ holds.
@@ -1055,6 +1073,7 @@ frame $F_k$ allows $s$ to be generalized to $c$.
 \chapter{Implementation}
 \label{impl}
 
+This chapter describes my implementation of the \emph{MC} model checkers.
 The implementation can be broken up into four main components: the AIGER parser
 (Section \ref{impl:aiger}), the
 MiniSat interface (Section \ref{impl:minisat}), the hardware model representation
@@ -1067,12 +1086,22 @@ extensions, I have implementated additional variants of the IC3 algorithm.
 The variants of the model checker component differ
 in overall structure, the finding of CTIs, the way that propagation is performed, and
 the way that CTIs are inductively generalized. The variants and the
-differences among them are given in Figure \ref{implementationSummary}.
+differences among them are given in the following table:
+
+\begin{tabular}{l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em}}
+& Priority Queue & Smaller CTIs & Subsumed Clauses & Basic Generalization & Generalization with CTGs\\
+\hline
+\emph{Basic} & & & & \checkmark & \\
+\emph{BetterCTI} & & \checkmark & & \checkmark & \\
+\emph{BetterPropagation} & & \checkmark & \checkmark & \checkmark &\\
+\emph{PriorityQueue} & \checkmark & \checkmark & \checkmark & \checkmark & \\
+\emph{CTG} & & \checkmark & \checkmark & & \checkmark
+\end{tabular}
 
 
-I now briefly explain the motivations for the deviations from the \emph{Basic} implementation in
-Figure \ref{implementationSummary}. The details of these deviations are given in
-Section \ref{impl:modelchecker}.
+
+I now briefly explain the motivations for the deviations from the \emph{Basic}
+implementation. The details of these deviations are given in Section \ref{impl:modelchecker}.
 The ``Priority Queue'' alteration was based on observations that using priority
 queues to keep track of proof obligations is more efficient than the simple
 recursive implementation of the IC3 algorithm \cite{een11,griggio14}.
@@ -1086,21 +1115,6 @@ The ``Generalization with CTGs'' alteration was based on the description of an a
 that improves upon the basic inductive generalization algorithm \cite{hassan13}.
 
 
-\begin{figure}[!ht]
-\centering
-\begin{tabular}{l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em}}
-& Priority Queue & Smaller CTIs & Subsumed Clauses & Basic Generalization & Generalization with CTGs\\
-\hline
-\emph{Basic} & & & & \checkmark & \\
-\emph{BetterCTI} & & \checkmark & & \checkmark & \\
-\emph{BetterPropagation} & & \checkmark & \checkmark & \checkmark &\\
-\emph{PriorityQueue} & \checkmark & \checkmark & \checkmark & \checkmark & \\
-\emph{CTG} & & \checkmark & \checkmark & & \checkmark
-\end{tabular}
-\caption{A summary of the different model-checker variants implemented.}
-\label{implementationSummary}
-\end{figure}
-
 In this chapter, I provide an explanation of the implementation of each of the
 four main components in turn. 
 
@@ -1111,6 +1125,7 @@ four main components in turn.
 %the ASCII and binary versions of the format and the representation
 %of AIG models.
 
+The relevant files for this section can be found in the \verb,Parser, directory.
 The parser component parses ASCII or binary-formatted AIGER files and
 assumes that the new format is used (because all old format AIGER files are also
 new instances of the new format). The parser ignores the
@@ -1125,7 +1140,7 @@ which stores the components specified in the AIGER file.
 \subsection{Model}
 
 The \verb,Model, data structure stores the number of variables and
-number of inputs. It also stores as a list of literals the outputs, bad states,
+number of inputs. It also stores lists of literals that represent the outputs, bad states,
 and invariant constraints. The data structure also stores latches and AND gates as
 lists of literal lists. I discuss the representation of literals, latches, and
 AND gates below.
@@ -1187,16 +1202,15 @@ struct result {
 } res = {0, 0, 0, 0, 0};
 \end{lstlisting}
 
-The wrapper function \verb,solveWithAssumps, for the version of \verb,solve(),
-that takes an assumption
-vector as an argument and returns a pointer to a \verb,result, struct
-rather than just whether or not the query was satisfiable.
-
+The function \verb,solveWithAssumps,, a wrapper for the version of \verb,solve(),
+that takes an assumption vector as an argument, returns a pointer to a
+\verb,result, struct rather than just whether or not the query was satisfiable.
 The Haskell interface uses the Haskell FFI and the \verb,hsc2hs, preprocessor
 for handling the \verb,result, struct.
 
 Using just the Haskell FFI for calling the C functions does not provide a
-sufficient abstraction for use by the rest of the model checker.
+sufficient abstraction for use by the rest of the model checker, since all
+calls to C functions must occur inside of \verb,Monad, instances.
 I wrote further functions to allow for a more natural interface to MiniSat,
 making use of \verb,unsafePerformIO, to have the functions return
 values outside the \verb,IO, monad.
@@ -1378,7 +1392,7 @@ I provide an explanation of the variant used in the
   }
   \Return ${\it prove'}(M,P,I,{\rm nil})$
 }
-\Fn{prove'$(M,P,F_k,[F_0,\ldots,F_{k - 1}])$}{
+\Fn{${\it prove'}(M,P,F_k,[F_0,\ldots,F_{k - 1}])$}{
   \eIf{$F_k \wedge T \Rightarrow P'$}
   {\Return{{\it pushFrame}$(F_k, \emptyset,M,P,[F_0,\ldots,F_{k - 1}])$}}
   {\Let{{\it cti} = {\it nextCTI}$(F_k \wedge T \Rightarrow P')$, \;
@@ -1395,7 +1409,7 @@ I provide an explanation of the variant used in the
   \lIf{\it fixed}{\Return{True}}
   \lElse{\Return{${\it prove'}(M, P, G_k, [F_0,\ldots,F_{k - 2},F_{k - 1}])$}}}
 }
-\caption{General structure of the algorithm implementation. The transition relation $T$ is acquired
+\caption{General structure of the algorithm implementation in Haskell. The transition relation $T$ is acquired
 from the model $M$}
 \label{recstr}
 \end{algorithm}
@@ -1437,7 +1451,7 @@ since all pairs of consecutive frames except $(F_{k - 1}, F_k)$ have been checke
 equality.
 
 In the case that the consecution query succeeds, considering pairs of frames other
-than $(F_{k - 1}, F_k)$ is unecessary work. The modified algorithm is such that
+than $(F_{k - 1}, F_k)$ is unnecessary work. The modified algorithm is such that
 that when the consecution query succeeds, it calls the ${\it pushFrame}$ function that
 checks only a single pair of frames (which also makes the recursive call to ${\it prove}$).
 When the consecution query fails, the adjusted algorithm, like the original in Figure \ref{overview},
@@ -1459,7 +1473,7 @@ clause $P$ makes use of the logical equivalence between
 $I \Rightarrow P$ and $\neg (\neg P \wedge I)$. The implementation
 also makes use of the fact that the formula $\neg (\neg P \wedge I)$ is true
 iff $\neg P \wedge I$ is unsatisfiable, and it uses de Morgan's laws (as described in
-Section \ref{prep:logic}) to acquire the asumption cube by negating all the literals in
+Section \ref{prep:logic}) to acquire the assumption cube by negating all the literals in
 the \verb,prop, clause. The resulting implementation in \verb,IC3.hs, is the
 following:
 
@@ -1591,7 +1605,7 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
           then generalize cs f0 fk needed k
           else generalize cs f0 fk (c:needed) ( k - 1 ) 
 \end{lstlisting}
-\caption{The {\tt inductiveGeneralization} function that approximates the {\it mic} algorithm.}
+\caption{The {\tt inductiveGeneralization} Haskell function that approximates the {\it mic} algorithm.}
 \end{figure}
 
 This corresponds to the algorithm described in Figure \ref{mic}, but where {\it down} simply
