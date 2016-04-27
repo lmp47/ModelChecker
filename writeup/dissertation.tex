@@ -396,6 +396,9 @@ addClause' solver clause =
      deleteMinisatVecLit veclit
      return solver
 \end{lstlisting}
+
+Values inside the \verb,IO, instances of the \verb,Monad, class can be extracted
+using \verb,unsafePerformIO, at the expense of guaranteed type safety.
 }
 
 %List syntax
@@ -993,10 +996,11 @@ $\neg c$ is also inductive relative to $F_i$.
 The minimal inductive subclause can be found by dropping each literal
 in $\neg s$ in turn and checking the resulting clause.
 
-The checking phase (described by {\it down} in Figure \ref{mic})
+The checking phase (described by {\it down} in Figure \ref{mic},
+which takes a clause ${\it cls} = \neg s$ and a depth $i$ as arguments)
 performs the normal queries
 for determining whether the subclause is inductive relative to
-$F_k$: for a subclause $t = \neg s \ \{l\}$ found by dropping
+$F_i$: for a subclause $t = \neg s \ \{l\}$ found by dropping
 literal $l$ from $\neg s$, it checks that
 $I \Rightarrow t$ and $F_i \wedge t \wedge T \Rightarrow t$ both hold.
 
@@ -1088,14 +1092,16 @@ in overall structure, the finding of CTIs, the way that propagation is performed
 the way that CTIs are inductively generalized. The variants and the
 differences among them are given in the following table:
 
-\begin{tabular}{l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em}}
+\begin{tabular}{| l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em} |}
+\hline
 & Priority Queue & Smaller CTIs & Subsumed Clauses & Basic Generalization & Generalization with CTGs\\
 \hline
 \emph{Basic} & & & & \checkmark & \\
 \emph{BetterCTI} & & \checkmark & & \checkmark & \\
 \emph{BetterPropagation} & & \checkmark & \checkmark & \checkmark &\\
 \emph{PriorityQueue} & \checkmark & \checkmark & \checkmark & \checkmark & \\
-\emph{CTG} & & \checkmark & \checkmark & & \checkmark
+\emph{CTG} & & \checkmark & \checkmark & & \checkmark \\
+\hline
 \end{tabular}
 
 
@@ -1209,8 +1215,12 @@ The Haskell interface uses the Haskell FFI and the \verb,hsc2hs, preprocessor
 for handling the \verb,result, struct.
 
 Using just the Haskell FFI for calling the C functions does not provide a
-sufficient abstraction for use by the rest of the model checker, since all
-calls to C functions must occur inside of \verb,Monad, instances.
+sufficient abstraction for use by the rest of the model checker. All
+calls to C functions must occur inside of \verb,IO, monads, but having
+the interface functions return \verb,IO, monads means that any functions
+that use the interface functions to get values from MiniSat would need to
+perform all their computations inside monads as well, requiring them to
+be written imperatively.
 I wrote further functions to allow for a more natural interface to MiniSat,
 making use of \verb,unsafePerformIO, to have the functions return
 values outside the \verb,IO, monad.
