@@ -356,7 +356,8 @@ that allow instances to be ordered.
 Haskell's \verb,Monad, class encompasses composable
 structures that describe computations. These computations
 may have side effects, and Haskell programs use instances of the
-\verb,Monad, class to achieve side effects such as I/O.
+\verb,Monad, class to achieve side effects such as I/O, which is
+achieved using the \verb,IO, monad.
 
 Monadic values can be created with the function
 \verb,return :: Monad m => a -> m a,, which takes a Haskell
@@ -399,7 +400,9 @@ addClause' solver clause =
 \end{lstlisting}
 
 Values inside the \verb,IO, instances of the \verb,Monad, class can be extracted
-using \verb,unsafePerformIO, at the expense of guaranteed type safety.
+using \verb,unsafePerformIO, at the expense of guaranteed type safety; for pure
+computations, the use of \verb,unsafePerformIO, does not compromise the type
+safety of the program.
 }
 
 %List syntax
@@ -424,7 +427,7 @@ Modules (or just selected functions from modules) can be imported into other
 modules, which is how library functions can be used. Modules can be referred
 to (e.g. in import statements) by names that incorporate where they are
 stored in the directory structure. For example, the \verb,Model, module in file
-\verb,Model/Model.hs, ca be referred to as \verb,Model.Model,.
+\verb,Model/Model.hs, can be referred to as \verb,Model.Model,.
 }
 
 
@@ -811,7 +814,7 @@ by the \verb,Solver,'s clauses: if the \verb,Solver,'s clauses form some CNF que
 containing all the literals in some set $A$, then the SAT query is $C \wedge \bigwedge_{l \in A} l$.
 
 If at least one query to a \verb,Solver, has been made, then if the last query to the
-\verb,Solver, was satisfiable, the \verb Solver, provides a \verb,model, pointer
+\verb,Solver, was satisfiable, the \verb, Solver, provides a \verb,model, pointer
 to a set of satisfying variable assignments for that query, or, if the last query to the solver
 was not satisfiable, the \verb,conflict, pointer to a set of literals from the assumption
 vector provided in the query that contributed to the query being unsatisfiable.
@@ -1236,8 +1239,17 @@ whether or not the query was satisfiable and the model or conflict vector (if an
 The information kept in a \verb,Result, is taken directly from the \verb,result, returned by
 the C Wrapper functions. I used the \verb,hsc2hs, preprocessor to help handle pointer offsets
 when unmarshalling from the C struct. Beyond straightforward unmarshalling, some additional work
-to convert from the MiniSat representation of literals to the model checker’s representation of
+to convert from the MiniSat representation of literals to the \emph{MC} representation of
 literals was necessary.
+
+I chose to represent a variable with name $x$ taken from the nonnegative integers with
+the MiniSat variable $2 \times x$ and its corresponding next-state variable $x'$
+with MiniSat variable $(2 \times x) + 1$. The model returned in the \verb,result, struct
+points to an array of three-valued boolean (the normal boolean values including an
+\emph{undefined} value) \verb,lbool, values indexed by MiniSat variable indices.
+To extract models, the array values are accessed, and for each \emph{True} or \emph{False}
+value the corresponding positive or negative literal for that index is added to the
+\verb,Lit, list representing the model.
 
 \section{Hardware Models}
 \label{impl:representation}
