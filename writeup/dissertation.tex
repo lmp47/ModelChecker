@@ -151,8 +151,10 @@ that would help reduce the number of or mitigate the effects of residual bugs.
 In particular, the Pentium FDIV bug encouraged the use of formal verification in
 hardware design throughout the semi-conductor industry.
 
-Formal methods is the use of mathematics and logic to specify and verify hardware and
-software systems. Formal verification in particular focuses on proving properties of
+Formal methods is an umbrella term that refers to any application of mathematics or logic
+in the improvement of the design or implementation of hardware or software systems.
+One such technique falling under the ``formal methods'' banner is formal verification,
+which focuses on proving properties of
 systems.
 For example, type checking provides a widely-used form of software verification,
 proving that programs are well-typed. The formal verification technique of model
@@ -190,7 +192,7 @@ representation of propositional formulas. For a particular variable
 ordering, a unique BDD represents each formula (and all equivalent formulas).
 An implementation that only stores each BDD once and uses pointers appropriately
 can result in less space being used.
-The efficiency of BDDs in storing propositional formulas allows for the model
+The efficiency of BDDs in storing propositional formulas facilitates the model
 checking of systems with larger numbers of states than could be handled
 by explicit-state model checking \cite{mcmillan92}.
 
@@ -215,13 +217,15 @@ and the IC3 algorithm that is the focus of this project.
 %Give context for the IC3/PDR algorithm, e.g. history and comparisons
 %with other SAT-based model checking algorithms such as BMC and $k$-induction.
 
-The IC3 algorithm (also called PDR \cite{een11}) is a SAT-based model-checking
+The IC3 (Incremental Construction of Inductive Clauses for Indubitable Correctness)
+algorithm (also called Property-Directed Reachability \cite{een11}) is a state-of-the-art,
+SAT-based model-checking
 algorithm for proving the safety properties (i.e. properties that must hold
-in all reachable states) of hardware. In this section, I outline some of the
+in all reachable states) of hardware \cite{bradley11}. In this section, I outline some of the
 merits of the IC3 algorithm, with a description of IC3 following in Section
 \ref{prep:ic3}.
 
-The first implementation of the algorithm \verb,ic3, placed third in
+The first implementation of the algorithm \verb,ic3, written by Aaron Bradley placed third in
 the 2010 Hardware Model Checking Competition (HWMCC'10) \cite{hwmcc10},
 a competitive event that receives model checker and benchmark submissions from
 industry and
@@ -231,9 +235,11 @@ since then, several variants of the algorithm have been developed.
 
 The IC3 algorithm has advantages when compared to other model checking
 techniques such as $k$-induction and BMC that allow it to prove more
-properties more efficiently. Unlike in $k$-induction, the IC3 algorithm
-discovers new invariants based on the safety property. As a result, these
-invariants are more relevant to proving the property \cite{bradley12}.
+properties more efficiently. Unlike $k$-induction, the IC3 algorithm
+discovers new invariants based on the safety property that it is trying to
+establish of the system. As a result, these
+invariants are more relevant to proving the property than those found
+by $k$-induction \cite{bradley12}.
 Furthermore, IC3 does not unroll the transition relation as $k$-induction
 or other BMC-based methods do, but instead considers at most one step
 of the transition relation at a time, leading to smaller,
@@ -243,7 +249,7 @@ methods in practice \cite{bradley12}.
 %Mention other applications of the IC3 algorithm, e.g. to checking
 %LTL properties and to software model checking.
 
-While the IC3 algorithm is for model checking safety properties of hardware,
+While the IC3 algorithm was designed for model checking safety properties of hardware,
 it has been applied to model checking more
 elaborate properties expressing temporal constraints (e.g. LTL and CTL
 properties) and model checking software
@@ -254,24 +260,26 @@ established software verification methods \cite{birgmeier14}.
 
 \section{Project Aims}
 
-This project's main aim is to implement a basic form of the IC3 algorithm in
+The main aim in this project is to implement a basic form of the IC3 algorithm in
 Haskell that can correctly check several
-small examples. Additionally, the project is meant to give me an opportunity
-to learn and use Haskell, to understand formal methods and especially model
-checking more deeply, and to put into practice software engineering techniques.
+small examples. Additionally, the project is intended to provide an opportunity
+for me to learn and use Haskell, to understand formal methods and especially model
+checking more deeply, and to put into practice software engineering and design techniques.
 
 The project aims have been achieved through the completion of the following:
 \begin{itemize}
 \item I gained background knowledge about Haskell, the IC3 algorithm, and software
-development tools (Chapter \ref{prep}).
-\item I implemented the components of the model checker, including several variants of
+development tools widely used in industry, such as Git (Chapter \ref{prep}).
+\item I implemented the components of a model checker, including several variants of
 the IC3 algorithm (Chapter \ref{impl}).
-\item I evaluated the model-checking capabilities of the implementations
+\item I empirically evaluated the model-checking capabilities of the implementations,
+and attempt to draw some conclusions from my empirical data
 (Chapter \ref{eval}).
 \end{itemize}
 
 I provide a summary of the completed work and ideas for
-future work in Chapter \ref{conc}.
+future work in Chapter \ref{conc}. With reference to the project aims submitted in my
+project proposal, I have met and exceeded all aims.
 
 \chapter{Preparation}
 \label{prep}
