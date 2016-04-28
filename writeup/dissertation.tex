@@ -1089,7 +1089,7 @@ MiniSat interface (Section \ref{impl:minisat}), the hardware model representatio
 (Section \ref{impl:modelchecker}).
 The implementation of the AIGER parser, MiniSat interface, and \emph{Basic} version
 of the IC3 algorithm satisfy the project aims to implement these components. As
-extensions, I have implementated additional variants of the IC3 algorithm.
+extensions, I have implemented additional variants of the IC3 algorithm.
 
 The variants of the model checker component differ
 in overall structure, the finding of CTIs, the way that propagation is performed, and
@@ -1137,14 +1137,13 @@ four main components in turn.
 
 The relevant files for this section can be found in the \verb,Parser, directory.
 The parser component parses ASCII or binary-formatted AIGER files and
-assumes that the new format is used (because all old format AIGER files are also
-new instances of the new format). The parser ignores the
-justice properties and fairness constraints, which are not used by any of the model
-checker implementations.
+assumes that the new format is used (because the new format is backward compatible)
+. Justice properties and fairness constraints are not handled by \emph{MC}, so
+the parser ignores them.
 
-Both the \verb,Parser.AigerParser, module that implements the parser in Haskell and
-the \verb,Parser.AigerTools, module that calls the Aiger Utilities' parser's functions
-parse the AIGER file into the \verb,Model, data structure in \verb,Parser.AigModel,,
+Both the \verb,Parser.AigerParser, module, which implements the parser in Haskell, and
+the \verb,Parser.AigerTools, module, which calls the Aiger Utilities' parser's functions,
+convert the AIGER file into the \verb,Model, data structure in \verb,Parser.AigModel,,
 which stores the components specified in the AIGER file.
 
 \subsection{Model}
@@ -1176,21 +1175,26 @@ of the latch. For AND gates, the first element gives the variable name of the AN
 (as a positive literal), and the next two elements give the literals whose values are taken
 as inputs to the AND gate.
 
+For example, the AIGER representation for the circuit in Figure \ref{circuit} is
+as follows:
+.
+
 \section{MiniSat Interface}
 \label{impl:minisat}
 %Describe the process of implementing the Haskell bindings for Minisat
 %functions, including the wrapper functions for Minisat written in C.
 
-MiniSat serves as the SAT solver for this project's implementations of the IC3 algorithm.
+The SAT solver for \emph{MC} is MiniSat.
 Because the Haskell Foreign Function Interface (FFI) cannot interface with C++ directly,
 the interface to the MiniSat SAT solver is composed of a C wrapper for the relevant
 MiniSat functions and classes and a Haskell interface to the C wrapper.
 
-Much of the C wrapper is straightforwardly as follows:
+In the C wrapper,
 every MiniSat class is replaced with a C
 type, and every MiniSat function is replaced with a function with an \verb,extern C, function that
-calls the MiniSat C++ function, as in the following function
-from \verb,Minisat/CSolver.cpp,:
+calls the MiniSat C++ function. For instance, the following function is
+in \verb,Minisat/CSolver.cpp, is a wrapper for the \verb,addClause, in the \verb,Solver,
+class:
 \begin{lstlisting}[language = C++]
 extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
                                  Minisat::vec<Minisat::Lit>* ps) {
@@ -1198,10 +1202,10 @@ extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
 }
 \end{lstlisting}
 
-I also added a \verb,result, struct to \verb,Minisat/CSolver.h, to
-allow a single function call to return
-all the results of a SAT query. The struct contains not only an indication of
-whether the SAT query was satisfiable but also contains pointers to the model and conflict vector (if any) of the \verb,Solver,:
+The \verb,result, struct to \verb,Minisat/CSolver.h,
+allows a single function call to return
+all the results of a SAT query. The struct contains an indication of query satisfiability
+and pointers to the model and conflict vector (if any) of the \verb,Solver,:
 \begin{lstlisting}[language=C]
 struct result {
   unsigned solved;
@@ -1255,7 +1259,7 @@ value the corresponding positive or negative literal for that index is added to 
 \label{impl:representation}
 \subsection{Representation}
 \subsubsection{Literals and Clauses}
-The \verb,Lit, data structure in \verb,Model.Model, gives the representation for literals in
+The \verb,Lit, data structure in \verb,Model.Model, represents literals in
 the model checker.
 The \verb,Var, constructor gives positive current-state (unprimed) literals, the \verb,Neg,
 constructor gives negative current-state literals, and the \verb,Var', and \verb,Neg', constructors
@@ -1279,7 +1283,7 @@ The inputs $i$ and state variables $x$ in the transition system $T(i,x,I,T)$
 are not distinguished, and the total count of variables is kept in \verb,vars,.
 Clauses that specify the initial state $I$ are kept in \verb,initial,.
 The \verb,transition, list of clauses that specify latches and clauses that specify AND
-gates captures the transition relation $T$.
+gates capture the transition relation $T$.
 The literal that gives the safety property is given by \verb,safe,.
 
 \subsection{Construction}
@@ -1287,12 +1291,13 @@ The literal that gives the safety property is given by \verb,safe,.
 
 The \verb,Model.Model, module contains functions to convert the \verb,Model, data
 structure from the \verb,Parser.AigModel, module into the hardware model representation used by
-the model checker. In particular, the \verb,toModel, function takes an \verb,Parser.AigModel.Model,
+the model checker. In particular, the \verb,toModel, function takes a \verb,Parser.AigModel.Model,
 and outputs a \verb,Model.Model.Model,. As mentioned before, the \verb,Model.Model.Lit,
 data structure only has constructors for variables and their negations; \verb,Lit,s from
 the \verb,Parser.AigModel, module are either converted to \verb,Model.Model.Lit,s or, in the case
 that they use the \verb,Boolean, constructor, are removed from the model during the conversion of
-the \verb,Latch, and \verb,And, components to \verb,Clause,s in \verb,Model.Model,.
+the \verb,Latch, and \verb,And, components to \verb,Clause,s in \verb,Model.Model, because
+Boolean values are not used in these representations.
 
 \subsubsection{Latches}
 The \verb,makeLatches, function generates a pair of \verb,Clause, lists
@@ -1301,9 +1306,9 @@ clauses whose conjunction describes the latches' initial values,
 and the second contains a clauses whose conjunction describes the
 latches' next-state values.
 
-Consider a given \verb,Parser.AigModel.Latch, \verb.[latchVar, next, init]. representing the latch with
-output variable $l$ (represented by \verb,latchVar,), next-state $n$ (represented
-by \verb,next,) taken from the set of Booleans and literals, and initial value (represented by \verb,init,)
+Consider a given \verb,Parser.AigModel.Latch, \verb.[l, n, init]. representing the latch with
+output variable $l$ (represented by \verb,l,), next-state $n$ (represented
+by \verb,n,) taken from the set of Booleans and literals, and initial value (represented by \verb,init,)
 also taken from the set of Booleans and literals. The \verb,makeLatches, function uses the
 values of $l$, $n$, and $i$ to generate \verb,Clause,s that describe the latches' initial values and
 next-state values.
@@ -1314,12 +1319,16 @@ then the singleton clause $\{\neg l\}$ is generated.
 If $i$ is a literal rather than a Boolean value, then the latch is
 uninitialized and no clauses are generated for its initial value.
 
-Generating next-state clauses proceeds similarly. If $n = {\it True}$, then the singleton clause
+Generating next-state clauses proceeds similarly.
+By the semantics of a latch, the clauses generated for the next state should have
+a conjunction logically equivalent to $n \Leftrightarrow l'$.
+If $n = {\it True}$, then the singleton clause
 $\{l'\}$ is generated because the next-state value for the variable is a constant-{\it True} value,
 and if $n = {\it False}$, then the singleton clause $\{\neg l'\}$ is generated.
-Otherwise, the next-value clauses generated for $l$, are $\{l', \neg n\}$
-and $\{\neg l,, n\}$. The conjunction of these clauses are, as needed, logically equivalent
-to $n \Rightarrow l'$, i.e., where $\simeq$ denotes logical equivalence,
+Otherwise, if $n$ is not a Boolean value,
+the next-value clauses generated for $l$, are $\{l', \neg n\}$
+and $\{\neg l, n\}$. The conjunction of these clauses are, as needed, logically equivalent
+to $n \Leftrightarrow l'$, i.e., where $\simeq$ denotes logical equivalence,
 the following hold:
 \begin{align*}
 l' \Leftrightarrow n &\simeq (l' \Rightarrow n) \wedge (n \Rightarrow l')\\
@@ -1328,17 +1337,22 @@ n \Rightarrow l' &\simeq l' \vee \neg n.
 \end{align*}
 It follows that the original double implication is equivalent to the 
 the CNF formula that corresponds to the generated clauses:
-$$l' \Rightarrow n \simeq (\neg l' \vee n) \wedge l' \vee \neg n.$$
+$$l' \Leftrightarrow n \simeq (\neg l' \vee n) \wedge (l' \vee \neg n.$$
 
 \subsubsection{AND gates}
 The \verb,makeAnds, function generates a single \verb,Clause, list for a list of \verb,Parser.AigModel.And,s,
 where the conjunction of the clauses in the list describes the relationship between the AND-gate output
 and the AND-gate inputs.
 
-Consider a \verb,Parser.AigModel.And,, of the form \verb.[andVar, in1, in2]., representing the AND gate
-with output variable $a$ (represented by \verb,andVar,), and inputs $i_1$ and $i_2$ (represented by \verb,in1,
+Consider a \verb,Parser.AigModel.And,, of the form \verb.[out, in1, in2]., representing the AND gate
+with output variable $a$ (represented by \verb,out,), and inputs $i_1$ and $i_2$ (represented by \verb,in1,
 and \verb,in2,). The \verb,makeAnds, function uses the values of $a$, $i_1$, and $i_2$ to generate the appropriate
 \verb,Clause,s that describe the AND gates' values.
+By the semantics of AND gates, the current-state clauses generated should have a conjunction
+logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$ and the next-state
+clauses generated should have a conjunction logically equivalent to
+$a' \Leftrightarrow i_1' \wedge i_2'$. To achieve the necessary logical equivalence
+for the next-state clauses, the generated current-state clauses are primed.
 
 If both $i_1$ and $i_2$ are Booleans (corresponding to both \verb,in1, and \verb,in2, using the \verb,Boolean,
 constructor for \verb,Parser.AigModel.Lit,s), then a singleton clause suffices to describe the AND gate.
@@ -1354,18 +1368,19 @@ $\{\neg a, i_1\}$, $\{\neg a, i_1\}$, and
 $\{\neg i_1,\neg i_2, a\}$. The conjunction of these clauses are, as needed,
 logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$:
 \begin{align*}
-a \Leftrightarrow i_1 \wedge i_2 &\simeq (a \Rightarrow i_1 \wedge i_2) \wedge (i_1 \wedge i_2 \Rightarrow a)\\
-a \Rightarrow i_1 \wedge i_2 &\simeq \neg a \vee (i_1 \wedge i_2)\\
-i_1 \wedge i_2 \Rightarrow a &\simeq \neg (i_1 \wedge i_2) \vee a
+a \Leftrightarrow (i_1 \wedge i_2) &\simeq (a \Rightarrow i_1 \wedge i_2) \wedge (i_1 \wedge i_2 \Rightarrow a)\\
+a \Rightarrow (i_1 \wedge i_2) &\simeq \neg a \vee (i_1 \wedge i_2)\\
+(i_1 \wedge i_2) \Rightarrow a &\simeq \neg (i_1 \wedge i_2) \vee a
 \end{align*}
-Distributing $\vee$ over $\wedge$ gives further equivalence
-$$\neg a \vee (i_1 \wedge i_2) \simeq
-(\neg a \vee i_1) \wedge (\neg a \vee i_2),$$
-and using de Morgan's laws gives equivalence
-$$\neg (i_1 \wedge i_2) \vee a \simeq
-\neg i_1 \vee \neg i_2 \vee a.$$
+%Distributing $\vee$ over $\wedge$ gives further equivalence
+%$$\neg a \vee (i_1 \wedge i_2) \simeq
+%(\neg a \vee i_1) \wedge (\neg a \vee i_2),$$
+%and using de Morgan's laws gives equivalence
+%$$\neg (i_1 \wedge i_2) \vee a \simeq
+%\neg i_1 \vee \neg i_2 \vee a.$$
 
-It follows that the original double implication is equivalent to the CNF
+It follows from distribution and application of de Morgan's laws
+that the original double implication is equivalent to the CNF
 formula corresponding to the generated clauses:
 $$a \Leftrightarrow i_1 \wedge i_2 \simeq
 (\neg a \vee i_1) \wedge (\neg a \vee i_2) \wedge (\neg i_1 \vee \neg i_2 \vee a).$$
@@ -1401,19 +1416,17 @@ To explain the modifications to the structure of the algorithm,
 I give pseudocode in Figure \ref{recstr}
 that outlines the general structure shared by all the
 implementations of the model checker except {\it PriorityQueue}
-and compare this structure with Figure \ref{overview}.
-I provide an explanation of the variant used in the
-{\it PriorityQueue} implementation in Section
-\ref{pqueue}.
+and compare this structure with Figure \ref{overview} (see Section
+\ref{pqueue} for \emph{PriorityQueue}).
 
 \SetKwProg{Let}{let }{ in}{end}
 \begin{algorithm}[t]
 \DontPrintSemicolon
-\Fn{prove$(M,P)$}{
-  \lIf{$\neg (I \Rightarrow P)$}{
+\Fn{prove$(M,P)$}{ \label{recstr:prove}
+  \lIf{$\neg (I \Rightarrow P)$}{ \label{recstr:init}
     \Return{False}
   }
-  \Return ${\it prove'}(M,P,I,{\rm nil})$
+  \Return ${\it prove'}(M,P,I,{\rm nil})$ \label{recstr:prove'call}
 }
 \Fn{${\it prove'}(M,P,F_k,[F_0,\ldots,F_{k - 1}])$}{
   \eIf{$F_k \wedge T \Rightarrow P'$}
@@ -1439,17 +1452,20 @@ from the model $M$}
 
 Because the implementation of the model checker is in Haskell, the overall
 structure of the algorithm has been modified to be recursive rather than iterative.
-The {\it prove} function makes an initiation query, and, if it succeeds, calls
-{\it prove'}, which corresponds to a recursive version of the main while loop
+The {\it prove} function (line \ref{recstr:prove}) makes an initiation query
+(line \ref{recstr:init}), and, if it succeeds, calls
+{\it prove'} (line \ref{recstr:prove'call}),
+which corresponds to a recursive version of the main while loop
 in line \ref{main} of Figure \ref{overview}. Here, {\it proveNegCTI}
-does not correspond just to the {\it proveNegCTI} algorithm in \ref{overview} but rather
-to the while loop that contains that function.
+does not correspond just to the {\it proveNegCTI} algorithm in Figure \ref{overview} but
+rather to the while loop that contains that function.
 
 Because functions in Haskell are pure, the assumption made in Figure \ref{overview}
 that function can could modify the set of (passed-by-reference) frames can no longer be made.
 Instead, the updated values of frames are returned explicitly from the function call in
 a tuple along with any other values needed from the function call. For example,
-{\it proveNegCTI} on line \ref{proveNegCTItuple} in \ref{recstr} returns not only the result
+{\it proveNegCTI} on line \ref{proveNegCTItuple} in Figure \ref{recstr} returns not only
+the result
 indicating whether or not the negated CTI was proven, but also returns the possibly updated
 values for the frontier frame $G_k$ and previous frames $G_0, \ldots, G_{k - 1}$.
 
@@ -1595,7 +1611,7 @@ and updates \verb,Frame, \verb,f',.
 \subsection{Inductive Generalization}
 Finding the minimal inductive subclause (MIC) for a clause is in practice inefficient,
 and all implemented versions of generalization
-\verb,inductiveGeneralization, approximate the MIC with a call to the function
+(i.e. all the \verb,inductiveGeneralization, function implementations) approximate the MIC with a call to the function
 \verb,generalize,.
 
 \subsubsection{Simple}
@@ -1804,15 +1820,18 @@ $(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
 \chapter{Evaluation}
 \label{eval}
 
-This chapter discusses the evaluation of the model checker implementations,
-including a description of how the project aim of implementing a model checker
-that can solve several small examples has been met.
+This chapter discusses the evaluation of the model checker implementations.
+I describe the solving capabilities of the \emph{MC} variants (Section \ref{eval:solving})
+and how the project aim of being able to solve several solve examples has been met,
+the output of the model checker (Section \ref{eval:output}), how benchmarks were
+taken (Section \ref{eval:benchmarking}. I then compare the variants' performance
+with each other (Section \ref{eval:variants}) and with the reference implementation
+\emph{IC3ref} (Section \ref{eval:ic3ref}).
 
-To evaluate the implementations, I ran the different variants
+To evaluate the implementations, I ran all variants
 on fourteen handwritten examples and over one hundred examples taken from
-across HWMCC'10 \cite{hwmcc10}, HWMCC'11 \cite{hwmcc11}, and HWMCC'13
-(several examples are common to the competitions from different years) \cite{hwmcc13}.
-Examples from HWMCC'10 were chosen based on relatively short (under 2 second)
+the Hardware Model Checking Competitions spanning four years \cite{hwmcc10, hwmcc11, hwmcc13}.
+I chose examples from HWMCC'10 that had relatively short (under 2 second)
 solving times for \verb,ic3,'s in the competition.
 Examples were also chosen from HWMCC'11 that did not overlap with HWMCC'10 examples.
 To avoid having as much overlap between examples as those from HWMCC'10 and HWMCC'11,
@@ -1822,43 +1841,70 @@ with relatively short solving times for some of the solvers from HWMCC'13
 
 If the elapsed time for attempting to solve an example took longer than ten minutes, that
 attempt was considered to have timed out. The parameterizable number of failed attempts
-at dropping literals in the \verb,inductiveGeneralization, functions was set to set to
+at dropping literals in the \verb,inductiveGeneralization, functions was set to
 three, and the parameterizable number of CTGs that each generalization attempt
-in the {\it CTG} implementation will handle was also set to three.
+in the {\it CTG} implementation will handle was also set to three, matching the
+values for these parameters used by \emph{IC3ref}.
+
+\section{Correctness}
+\label{eval:solving}
+
+The \emph{MC} implementations have passed the HUnit tests for parsing AIGER files,
+making MiniSat queries, and model checking. The parser tests involve comparing
+the output of the two parsers and checking that they match, the MiniSat tests
+involve checking that results from MiniSat queries (including model and conflict
+vectors), and the model-checking tests involve checking the results for specific
+functions in \verb,IC3.hs, such as \verb,consecution,.
+
+The variants could solve all the handwritten examples and fifty of the HWMCC examples within
+ten minutes correctly, and some
+variants were able to solve additional examples without timing out.
+For the fourteen handwritten examples and fifty HWMCC examples that all variants solved
+within the time limit, the
+implementations' solutions agree with those given by \emph{IC3ref}, providing evidence for the correctness of the solutions given by the model checker
+implementations. Furthermore, the variants that solved the additional examples also gave
+solutions that agreed with the reference implementation's solutions.
 
 The handwritten examples served as the ``small examples'' that the model checker
 was meant to correctly solve as part of the aims of the project, with the largest
 (in terms of number of variables) of the handwritten examples,
 \verb,simple_counters.aig,, having 82 variables, 77 of which are AND gates.
-To provide context for the
-typical number of variables in the small examples, the handwritten example involving a
-two-bit counter \verb,counters2.aig, has 14 variables, the three-bit counter example
-\verb,counters3.aig, has 45 variables, and the four-bit counter example
-\verb,counters4.aig, has 79 variables.
+To provide context for the typical number of variables in the small examples,
+the following table provies the number of variables in the handwritten examples involving
+a two-bit counter (\verb,counters2.aig,), a three-bit counter (\verb,counters3.aig,),
+and a four-bit counter (\verb,counters4.aig,):
+\begin{center}
+\begin{tabular}{|l | l|}
+\hline
+Example & Number of Variables \\
+\hline
+{\tt counters2.aig} & 14\\
+{\tt counters3.aig} & 45\\
+{\tt counters4.aig} & 79\\
+\hline
+\end{tabular}
+\end{center}
 
-The variants could not only solve all the handwritten examples correctly
-but also fifty of the HWMCC examples within ten minutes. Some
-variants were able to solve additional examples without timing out.
+For examples solved without timing out,
+the largest (in terms of number of variables) unsafe example for which the variants gave a
+solution was \verb,bj08goodbakerycyclef7.aig, with 19900 variables,
+and the largest safe example for which the variants gave a solution
+was \verb,pdtvsar8multip26.aig, with 7174 variables.
+%Note that the number of variables in an example is only weakly
+%correlated with the amount of time needed to solve the example.
+% (simple linear regression gives $r^2$ less than $0.3$).
+\section{Empirical Analysis}
 
-Following a description of the output of the model checker (Section \ref{eval:output}),
-I discuss the solving capabilities of the model-checker implementations (Section
-\ref{eval:solving}), provide further details on how benchmarks were taken
-(Section \ref{eval:benchmarking}) and compare
-their performance (Section \ref{eval:variants}).
-I also compare their performance with that of the reference implementation
-\emph{IC3ref} (Section \ref{eval:ic3ref}).
-
-\section{Output}
+\subsection{Output Format}
 \label{eval:output}
 
-The output of all model checker implementations gives the value \verb,True, if the safety
+All model checker implementations print the string \verb,True, if the safety
 property holds (i.e. if a bad state is not reachable from the initial state) and
-\verb,False, if it does not. The implementations also provide debug output that gives
+\verb,False, if it does not. The implementations also provide debug output that provides
 statistics on solving if a nonzero number of frames was required to solve the example.
 In particular, all variants' outputs give the number of frames, the average number of
-literals per clause, the number of CTIs found, and the number of queries made for solving
-that example. The {\it CTG} implementation also reports the number of CTGs found. Sample output
-for the {\it CTG} implementation run on example \verb,counters3.aig,
+literals per clause, the number of CTIs found, and the total number of queries made. The {\it CTG} implementation also reports the number of CTGs found. Sample output
+for the {\it CTG} implementation on example \verb,counters3.aig,
 is given in Figure \ref{sampleoutput}.
 
 \begin{figure}[t]
@@ -1875,24 +1921,7 @@ True
 \label{sampleoutput}
 \end{figure}
 
-\section{Solving}
-\label{eval:solving}
-
-For the fourteen handwritten examples and fifty HWMCC examples that all implementations solved
-within the time limit, the
-implementations' solutions agree with those given by \emph{IC3ref}, providing evidence for the correctness of the solutions given by the model checker
-implementations. Furthermore, the variants that solved the additional examples also gave
-solutions that agreed with the reference implementation's solutions.
-
-The largest (in terms of number of variables) unsafe example that the variants gave a solution
-for without timing out was \verb,bj08goodbakerycyclef7.aig, which has 19900 variables.
-The largest safe example that the variants gave a solution
-to without timing out was \verb,pdtvsar8multip26.aig, with 7174 variables.
-%Note that the number of variables in an example is only weakly
-%correlated with the amount of time needed to solve the example.
-% (simple linear regression gives $r^2$ less than $0.3$).
-
-\section{Benchmarking}
+\subsection{Benchmarking}
 \label{eval:benchmarking}
 I took benchmarks for the performance of the different variations of the model checker and for the
 performance of \emph{IC3ref} both with CTG-handling enabled and disabled. For each of the fourteen handwritten examples and the fifty examples from the HWMCC, forty benchmarking samples were taken.
@@ -1900,7 +1929,7 @@ performance of \emph{IC3ref} both with CTG-handling enabled and disabled. For ea
 In addition to timing data, I collected data about the number of frames needed to solve an example,
 the average number of literals per clause, the number of CTIs discovered, the number of SAT-solver queries,
 and, for the \emph{CTG} implementation, the number of CTGs discovered. These measurements can be found in
-appendix \ref{benchmarks}.
+Appendix \ref{benchmarks}.
 
 The majority of the fifty HWMCC examples did not require finding any
 CTIs; for these examples, the \emph{Basic}, \emph{BetterCTI}, \emph{BetterPropagation},
@@ -1948,7 +1977,7 @@ may encompass several CTI states), leading to fewer queries needing to be made. 
 agree with these expectations; for examples that require finding more than one CTI, \emph{BetterCTI}
 finds fewer CTIs and makes fewer queries. For example, the \emph{Basic} variant finds 59
 CTIs and makes 414 queries to solve \verb,shortp0.aig,, but the \emph{BetterCTI} variant only
-finds 3 CTIs and makes 49 queries.
+finds 3 CTIs and makes 49 queries, an order of magnitude difference.
 
 The improvement of finding more general CTIs enabled the \emph{BetterCTI} variant of the implementation
 (and all other implementations that include finding smaller CTIs) to
@@ -1957,7 +1986,7 @@ solve six more examples (\verb,counterp0.aig,, \verb,counterp0neg.aig,, \verb,pd
 timing out.}
 
 \paragraph{Propagation}{
-Removing subsumed clauses also in results in better performance for several examples.
+Removing subsumed clauses also results in better performance for several examples.
 While the performance impact that the improvement has is less drastic than the improvement of
 \emph{BetterCTI} over \emph{Basic} finding smaller CTIs, the \emph{BetterPropagation} version performs
 considerably better
@@ -2063,7 +2092,7 @@ Haskell data structures.
 The reference implementation also makes use of empirical results to improve the performance of MiniSat queries.
 For example, in the \verb,stateOf, function, which extracts a model from a failed consecution query
 (to e.g. find a CTI cube), the set of literals passed to the MiniSat \verb,Solver, are reordered according
-to an ordering of that was found to be the best choice empirically.
+to an ordering of that was found to be the best choice empirically \cite{minisat}.
 
 \subsubsection{Overall Structure}
 
@@ -2108,8 +2137,9 @@ necessary parser and SAT-solver interface, with the goal of having the model che
 be able to check small example hardware models. These goals have been achieved.
 
 I described the implementation of the different components required by
-the project in chapter \ref{impl}.
-In addition to the basic version of the IC3 algorithm, I implemented several variants of the model checker (also described in chapter \ref{impl}).
+the project in Chapter \ref{impl}.
+In addition to the basic version of the IC3 algorithm, I implemented several variants of
+\emph{MC} (also described in Chapter \ref{impl}).
 The implementations of the model checker can model check not only
 the fourteen handwritten examples but also models from the
 Hardware Model Checking Competitions with thousands of variables.
@@ -2117,8 +2147,8 @@ Hardware Model Checking Competitions with thousands of variables.
 In chapter \ref{eval}, I evaluated the different model checker variants by comparing their performance on examples from
 the Hardware Model Checking Competition.
 The \emph{Basic} implementation correctly
-solved fourteen small examples, with its solutions agreeing with the solutions given by
-the reference implementation of IC3, meeting the project goal of being able to check
+solved fourteen small handwritten examples, validated against the reference implementation
+of IC3, meeting the project goal of being able to check
 small examples.
 The benchmark results show that finding smaller CTI clauses
 results in a dramatic improvement in performance, with the best-performing implementation
@@ -2132,7 +2162,7 @@ Instead of the extensions mentioned in the initial project proposal,
 I elected to implement other variants of the model checker and examine their
 effects on the model checker's performance.
 As a result, interfacing with different SAT solvers and implementing lazy
-abstraction-refinement remain as further extensions.
+abstraction-refinement remain as future work.
 
 Implementing interfaces with different SAT solvers may allow more examples to be solved efficiently.
 Aaron Bradley notes that the performance of the IC3 algorithm is considerably affected
@@ -2182,7 +2212,7 @@ The binary format also assumes that AND gates occur in order of their
 variable indices and that inputs to an AND gate will
 have already been defined before that AND gate.
 These assumptions allow AND gates to be represented by two differences
-that tend to be small in practice:
+that tend to be small in practice.
 
 For an AND gate specified in the old format by \verb,lhs rhs0 rhs1,,
 where inputs \verb,rhs0, and \verb,rhs1, have been ordered such that
@@ -2193,8 +2223,7 @@ $$\delta_1 = \verb,lhs, - \verb,rhs1,$$
 
 The values $\delta_i$ are represented with the following binary
 encoding, giving a more compact representation for AND gates than
-the ASCII version of the format:
-
+the ASCII version of the format.
 For 7-bit words $w_0, \ldots w_n$ with
 $$\delta_i = w_0 + 2^7w_1 + \ldots + 2^{7n}w_n,$$
 $\delta_i$ is represented as the sequence of $n + 1$ bytes
