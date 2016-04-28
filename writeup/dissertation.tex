@@ -1156,28 +1156,52 @@ AND gates below.
 
 Literals are represented by \verb,Lit,s (defined in Section \ref{prep:haskell}),
 which store decoded versions of AIGER indices. The {\tt Lit} datatype
-in {\tt Parser.AigModel} has constructor
-{\tt Boolean} that takes a {\tt Bool} argument that represents the Boolean values
-corresponding with AIGER indices 0 and 1, constructor {\tt Var} that represents
-the positive literal of the variable whose name is given by the {\tt Word} it takes
-as an argument, and constructor {\tt Neg} that represents the negative literal
-of the variable whose name is given by the {\tt Word} it takes as an argument.
+in {\tt Parser.AigModel} has the following constructors:
+\begin{itemize}
+\item \verb,Boolean,, which takes a \verb,Bool, argument;
+\item \verb,Var,, which takes a \verb,Word, argument; and
+\item \verb,Neg,, which takes a \verb,Word, argument.
+\end{itemize}
+\verb,Boolean,s represent the Boolean values corresponding with AIGER indices 0 and 1,
+\verb,Var, represents the positive literal of the variable whose name is given by the
+\verb,Word, it takes as an argument, and \verb,Neg, represents the negative literal
+of the variable whose name is given by the \verb,Word, it takes as an argument.
 Variable names are adjusted (by subtracting 1) so that they start at 0.
-
 For example, the index 3 read from an AIGER file is parsed to \verb,Neg 0,;
 the odd index 3 indicates that it is a negative literal of the variable 1, and
 subtracting by 1 gives the new variable name 0.
 
-Latches and AND gates are represented using three-element \verb,[Lit],s.
-For latches, the first element gives the variable name of the latch (as a positive literal),
-the second gives the next-state literal, and the final element gives the initial state
-of the latch. For AND gates, the first element gives the variable name of the AND gate
-(as a positive literal), and the next two elements give the literals whose values are taken
+Latches and AND gates are represented using three-element \verb,[Lit],s. For latches,
+\begin{itemize}
+\item the first element gives the variable name of the latch (as a positive literal),
+\item the second gives the next-state literal, and
+\item the final element gives the initial state
+of the latch.
+\end{itemize}
+For example, the latch from Figure \ref{aagCircuit} represented by \verb,2 3, is parsed
+to \verb.[Var 0, Neg 0, Boolean False]..
+For AND gates,
+\begin{itemize}
+\item the first element gives the variable name of the AND gate
+(as a positive literal), and
+\item the next two elements give the literals whose values are taken
 as inputs to the AND gate.
+\end{itemize}
+For example, the AND gate from Figure \ref{aagCircuit} represented by \verb,6 2 4, is
+parsed to \verb.[Var 2, Var 0, Var 1]..
 
-For example, the AIGER representation for the circuit in Figure \ref{circuit} is
+The full AIGER representation for the circuit in Figure \ref{aagCircuit} is
 as follows:
-.
+\begin{verbatim}
+Model { numVars = 3
+      , numInputs = 0
+      , latches = [ [Var 0, Neg 0, Boolean False]
+                  , [Var 1, Var 0, Boolean False] ]
+      , outputs = [Var 2]
+      , ands = [ [Var 2,Var 0,Var 1] ]
+      , bad = []
+      , constraints = []}
+\end{verbatim}
 
 \section{MiniSat Interface}
 \label{impl:minisat}
@@ -1430,17 +1454,17 @@ and compare this structure with Figure \ref{overview} (see Section
 }
 \Fn{${\it prove'}(M,P,F_k,[F_0,\ldots,F_{k - 1}])$}{
   \eIf{$F_k \wedge T \Rightarrow P'$}
-  {\Return{{\it pushFrame}$(F_k, \emptyset,M,P,[F_0,\ldots,F_{k - 1}])$}}
+  {\Return{{\it pushFrame}$(F_k, \emptyset,M,P,[F_0,\ldots,F_{k - 1}])$} \label{recstr:pushFrameCall}}
   {\Let{{\it cti} = {\it nextCTI}$(F_k \wedge T \Rightarrow P')$, \;
-  $({\it result}, [G_0,\ldots,G_{k - 1}], G_k)$ = {\it proveNegCTI}$((i,x,I,T),{\rm cti},k - 1)$ \label{proveNegCTItuple}} 
+  $({\it result}, [G_0,\ldots,G_{k - 1}], G_k)$ = {\it proveNegCTI}$((i,x,I,T),{\rm cti},k - 1)$ \label{recstr:proveNegCTI}} 
   {
   \If{\it result} {
-    \Let{$({\it fixed}, [H_0,\ldots,H_{k - 1},H_k]) = {\it propagate}([G_0,\ldots,G_{k - 1},G_k])$}{
+    \Let{$({\it fixed}, [H_0,\ldots,H_{k - 1},H_k]) = {\it propagate}([G_0,\ldots,G_{k - 1},G_k])$}{ \label{recstr:propagate}
     \lIf{\it fixed}{\Return{True}}
     \lElse{\Return{${prove'}(M,P,H_k,[H_0,\ldots,H_{k - 1}])$}}}}
   \lElse{\Return{False}}}}
 }
-\Fn{pushFrame$(F_{k - 1}, F_k,M,[F_0,\ldots,F_{k - 2}])$}{
+\Fn{pushFrame$(F_{k - 1}, F_k,M,[F_0,\ldots,F_{k - 2}])$}{ \label{recstr:pushFrame}
   \Let{$({\it fixed}, G_k) = {\it push}(F_{k - 1}, F_k)$}{
   \lIf{\it fixed}{\Return{True}}
   \lElse{\Return{${\it prove'}(M, P, G_k, [F_0,\ldots,F_{k - 2},F_{k - 1}])$}}}
@@ -1457,6 +1481,7 @@ The {\it prove} function (line \ref{recstr:prove}) makes an initiation query
 {\it prove'} (line \ref{recstr:prove'call}),
 which corresponds to a recursive version of the main while loop
 in line \ref{main} of Figure \ref{overview}. Here, {\it proveNegCTI}
+(line \ref{recstr:proveNegCTI})
 does not correspond just to the {\it proveNegCTI} algorithm in Figure \ref{overview} but
 rather to the while loop that contains that function.
 
@@ -1464,23 +1489,18 @@ Because functions in Haskell are pure, the assumption made in Figure \ref{overvi
 that function can could modify the set of (passed-by-reference) frames can no longer be made.
 Instead, the updated values of frames are returned explicitly from the function call in
 a tuple along with any other values needed from the function call. For example,
-{\it proveNegCTI} on line \ref{proveNegCTItuple} in Figure \ref{recstr} returns not only
+{\it proveNegCTI} on line \ref{recstr:proveNegCTI} in Figure \ref{recstr} returns not only
 the result
 indicating whether or not the negated CTI was proven, but also returns the possibly updated
 values for the frontier frame $G_k$ and previous frames $G_0, \ldots, G_{k - 1}$.
 
 In addition to the necessary language-related modifications to the algorithm, I made a
 change to how often the full propagation phase is carried out, calling the {\it pushFrame}
-function instead where appropriate.
-
-The propagation phase of the algorithm is carried out by the {\it propagate} function.
-The actual implementation of the ${\it propagate}$ function returns type \verb,Maybe [Frame],,
-but for the sake of discussing the high level structure of the implementation,
-it is assumed here to return a pair of a Boolean value indicating whether a fixed point
-has been found while pushing clauses and a list of the updated frames.
+function (line \ref{recstr:pushFrame}) instead where appropriate.
 
 In Figure \ref{overview}, each iteration of the algorithm calls the propagation
-phase; however, if the consecution query succeeds and a new frontier frame $F_k$
+phase (line \ref{forprop} in Figure \ref{overview});
+however, if the consecution query succeeds and a new frontier frame $F_k$
 is added in that iteration, then none of the frames have had any new clauses
 added to them. As a result, the only frame that modified during the propagation phase
 is the frame $F_k$ because all the frames before $F_{k - 1}$ have already had all
@@ -1491,10 +1511,18 @@ equality.
 
 In the case that the consecution query succeeds, considering pairs of frames other
 than $(F_{k - 1}, F_k)$ is unnecessary work. The modified algorithm is such that
-that when the consecution query succeeds, it calls the ${\it pushFrame}$ function that
+that when the consecution query succeeds, it calls the ${\it pushFrame}$ function
+(line \ref{recstr:pushFrameCall}) that
 checks only a single pair of frames (which also makes the recursive call to ${\it prove}$).
 When the consecution query fails, the adjusted algorithm, like the original in Figure \ref{overview},
-calls the ${\it propagate}$ function to handle the updates to the frames made by ${\it proveNegCTI}$.
+calls the ${\it propagate}$ function (line \ref{recstr:propagate})
+to handle the updates to the frames made by ${\it proveNegCTI}$.
+
+The {\it propagate} function carries out the propagation phase of the algorithm.
+The actual implementation of the ${\it propagate}$ function returns type \verb,Maybe [Frame],,
+but for the sake of discussing the high level structure of the implementation,
+it is assumed here to return a pair of a Boolean value indicating whether a fixed point
+has been found while pushing clauses and a list of the updated frames.
 
 \subsection{Frames}
 The \verb,Frame, data structure represents frames in all implementations of the model checker.
@@ -1508,13 +1536,9 @@ a \verb,Solver,, which contains at least all the clauses in the frame's set of c
 The initiation query $I \Rightarrow P$ is an implication, but a MiniSat \verb,Solver, can only
 solve queries given in CNF (with an optional assumption cube).
 As a result, the implementation of the query $I \Rightarrow P$ for a frame $I$ and a
-clause $P$ makes use of the logical equivalence between
-$I \Rightarrow P$ and $\neg (\neg P \wedge I)$. The implementation
-also makes use of the fact that the formula $\neg (\neg P \wedge I)$ is true
-iff $\neg P \wedge I$ is unsatisfiable, and it uses de Morgan's laws (as described in
-Section \ref{prep:logic}) to acquire the assumption cube by negating all the literals in
-the \verb,prop, clause. The resulting implementation in \verb,IC3.hs, is the
-following:
+clause $P$ makes use of the fact that
+$I \Rightarrow P$ is holds iff $\neg P \wedge I$ is unsatisfiable.
+The resulting implementation in \verb,IC3.hs, is the following:
 
 \begin{lstlisting}
 initiation :: Frame -> Clause -> Bool
@@ -1525,10 +1549,10 @@ initiation f prop =
 \subsection{Consecution}
 %Describe how the step involving the consecution query is implemented.
 
-Similarly to how the implication in the initiation query is converted to an equivalent CNF
-formula, all implementation variants use the logical equivalence of
-$F_k \wedge T \Rightarrow P'$ and $\neg (\neg P' \wedge F_k \wedge T)$ along with de Morgan's
-laws to yield the following implementation:
+Similarly to the initiation query, the consecution query must be expressed in CNF.
+All variants make use of the fact that
+$F_k \wedge T \Rightarrow P'$ holds iff $\neg P' \wedge F_k \wedge T$ is unsatisfiable
+to yield the following implementation:
 \begin{lstlisting}
 consecution :: Frame -> Clause -> Bool
 consecution f prop =
@@ -1541,7 +1565,7 @@ consecution f prop =
 
 CTIs are found by the \verb,nextCTI, function, which
 uses results from SAT queries to find a full or partial assignment to
-the variables in the \verb,Model, from which the CTI can be extracted.
+the variables in the \verb,Model,.
 
 \subsubsection{Basic}
 In the \emph{Basic} implementation, \verb,nextCTI, asks for a model
@@ -1559,7 +1583,7 @@ for the satisfiable query $\neg P' \wedge F_k \wedge T$. The only literals in $m
 must be included in the CTI are those current-state literals that result in
 the unsatisfiability of $m \wedge P' \wedge T$. That is, the current-state literals of any
 subcube $q$ of $m$ for which $q \wedge P' \wedge T$ holds is also a valid CTI, with
-the state $m$ being one of the states in the set represented by $q$.
+the state $m$ being in the set represented by $q$.
 
 The conflict vector resulting from querying the SAT solver with $P' \wedge T$ and assumption
 cube $m$ contains such a $q$ that has only literals relevant to the conflict. This $q$ is
@@ -1570,8 +1594,9 @@ the current-state literals from $q$ to obtain the CTI.
 \subsection{Propagation}
 
 Both the implementation of the {\it pushFrame} function and the implementation of the
-{\it propagate} function in Figure \ref{recstr} and Figure \ref{pqueuestr} (which
-describes the structure of the \emph{PriorityQueue} implementation)
+{\it propagate} function in Figure \ref{recstr} (lines \ref{recstr:pushFrame},
+\ref{recstr:propagate}) and
+Figure \ref{pqueuestr} (lines \ref{pqueuestr:pushFrame}, \ref{pqueuestr:propagate})
 rely on the implementation of the
 {\it push} function, which has two variants described below.
 
@@ -1609,16 +1634,17 @@ returning a triple containing the updated \verb,f, along with the fixed-point \v
 and updates \verb,Frame, \verb,f',.
 
 \subsection{Inductive Generalization}
-Finding the minimal inductive subclause (MIC) for a clause is in practice inefficient,
+Finding the minimal inductive subclause (MIC) for a clause is in practice inefficient
+\cite{griggio14},
 and all implemented versions of generalization
 (i.e. all the \verb,inductiveGeneralization, function implementations) approximate the MIC with a call to the function
 \verb,generalize,.
 
 \subsubsection{Simple}
 The simplest approximation for a MIC attempts to drop each literal in turn and checks
-that the resulting clause $c$ results in the truth of formulas $I \Rightarrow c$ and
+that the resulting clause $c$ satisfies formulas $I \Rightarrow c$ and
 $F_k \wedge c \wedge T \Rightarrow c'$ as the original clause did. If the resulting clause
-results in the truth of both queries, then the literal can be successfully dropped,
+satisfies both queries, then the literal can be successfully dropped,
 but if not, the literal is added to a list \verb,needed, of necessary literals.
 After a parameterizable number of failed attempts at dropping a literal from the clause or after
 having attempted dropping all the literals, the
@@ -1627,7 +1653,7 @@ returns the clause resulting from appending the remaining
 literals in the clause (i.e. the literals that the \verb,generalize, has not tried to drop)
 with the literals in \verb,needed,.
 
-\begin{figure}[!Ht]
+\begin{figure}[t]
 \centering
 \begin{lstlisting}
 inductiveGeneralization :: Clause -> Frame -> Frame -> Model -> Word
@@ -1651,11 +1677,11 @@ This corresponds to the algorithm described in Figure \ref{mic}, but where {\it 
 checks for the relative inductiveness of the subclause and does not attempt to expand it.
 
 \subsubsection{Minimal Inductive Subclauses and Counterexamples to Generalization}
-The more elaborate implementation of generalization implements the full
+The more elaborate version of generalization implements the full
 (but limited in number of attempts) {\it mic} algorithm with {\it down} modified
 to handle CTGs.
 
-\begin{algorithm}[!Ht]
+\begin{algorithm}[t]
 \DontPrintSemicolon
 \Fn{down$(cls, i)$}{
   \lIf{$\neg (I \Rightarrow {\it cls})$}{\Return{False}}
@@ -1689,16 +1715,17 @@ and attempts to generalize $\neg {\it ctg}$ relative to that frame with a recurs
 {\it mic} algorithm. The generalization of $\neg {\it ctg}$ can then be added to frame $F_j$,
 and {\it down} is called recursively using the updated set of frames.
 
-The implementation of {\it down} is approximate; the Haskell function \verb,down, that implements
+The implementation of {\it down} is approximate for the aforementioned efficiency
+reasons; the Haskell function \verb,down, that implements
 the algorithm takes a parameter \verb,r, that limits the number of CTGs that it will handle for
 each non-recursive call to the implementation of the approximation of the {\it mic} algorithm.
 
 \subsection{Priority Queue Variant}
 \label{pqueue}
-
-The \emph{PriorityQueue} implementation keeps track of what to prove next with a priority
-queue of proof obligations instead of through recursive calls that explicitly specify which
-property to prove at which depth. This variant of the algorithm makes
+Unlike other variants, which use recursive calls that explicitly specify which property
+to prove at which depth, the \emph{PriorityQueue} implementation keeps track of what
+to prove next with a priority queue of proof obligations.
+This variant of the algorithm makes
 use of some of the same functions (e.g. \verb,negCTI, and \verb,push,) as the other variants but
 differs in its overall structure.
 I provide a definition of proof obligations, an
@@ -1724,11 +1751,11 @@ $(s, i)$.
 }
 \Fn{fulfillObligations$(M,[F_0,\ldots,F_k],{\it queue}])$}{
   \Let{$((s,i), {\it q}) = {\it dequeue(queue)}$ \label{dequeue}}{
-  \lIf{$F_{i - 1} \wedge T \Rightarrow \neg s'$}{\Return{${\it pushFrame(M, [F_0, \dots, F_k], q, (s,i))}$}}
+  \lIf{$F_{i - 1} \wedge T \Rightarrow \neg s'$}{\Return{${\it pushFrame(M, [F_0, \dots, F_k], q, (s,i))}$} \label{pqueuestr:pushFrame}}
   }
   \lElse{\Let{${\it cti = nextCTI(F_{i - 1} \wedge T \Rightarrow \neg s')}$}{
       \If{$I \Rightarrow \neg {\it cti}$}{
-        \Let{${\it (fixed, [G_0, \ldots, G_k], d) = propagate([F_0 \cup \{\neg cti\}, F_1, \ldots, F_k], {\it \neg cti})}$}{
+        \Let{${\it (fixed, [G_0, \ldots, G_k], d) = propagate([F_0 \cup \{\neg cti\}, F_1, \ldots, F_k], {\it \neg cti})}$ \label{pqueuestr:propagate}}{
           \lIf{\it fixed}{\Return{True}}
           \Return{${\it fulfillObligation(M, [G_0 , \ldots, G_k], (generalize(\neg cti, d),d))}$}
         }
@@ -1752,15 +1779,13 @@ it is assigned a priority higher than any proof obligation in the queue $(t,j)$ 
 and lower than any proof obligation in the queue $(u,k)$ with $k \leq i$. I discuss the
 way that the implementation achieves this priority ordering later.
 
-Unlike in the other variants, in the {\it PriorityQueue} implementation, there is
+Unlike the other variants, in the {\it PriorityQueue} implementation, there is
 no distinction between the negation of the safety property $P$ and any other property that needs
 to be proved. The priority queue maintains all the information about which properties need to be proven,
-and the main recursive {\it fulfillObligations} function attempts to prove whichever property has the highest
-priority in the queue. In other words, the {\it fulfillObligations} function always 
-attempts to fulfill the proof obligation with the highest priority in the queue (this proof obligation
+and the main recursive {\it fulfillObligations} function attempts to prove whichever property has the highest priority in the queue, i.e. fulfill the proof obligation with the highest priority (this proof obligation
 is the one returned by ${\it dequeue(queue)}$ in line \ref{dequeue} of \ref{pqueuestr}).
 
-Whenever a proof obligation $(s,i)$ is fulfilled at a certain depth $i$, the proof obligation
+Whenever a proof obligation $(s,i)$ is fulfilled (at a certain depth $i$) the proof obligation
 $(s, i + 1)$ is added to the queue. Enqueueing the new proof obligation is valid
 because $s$ states can reach $\neg P$ states in some
 number of steps of the transition relation and should therefore
@@ -1772,7 +1797,7 @@ then {\it pushFrame} is called, and if not, a CTI is discovered with the intent 
 prove its negation is inductive relative to frame $F_{i - 1}$.
 
 The structure of the {\it pushFrame} function is modified to accomodate priority queues
-and the fact that the pair of frames may not be the pair the greatest possible depth.
+and the fact that the pair of frames may not be the pair with the greatest possible depth.
 The {\it pushFrame} function pushes clauses from frame $F_{i - 1}$ to frame $F_i$ (where
 $F_i$ is not necessarily the frontier frame) and checks
 for the equality of $F_{i - 1}$ and $F_i$.
@@ -1781,10 +1806,11 @@ $${\it fulfillObligations}(M,[F_0,\ldots,F_{i - 1},G_i,F_{i + 1}, \ldots, F_k], 
 where $q = {\it enqueue((s, i+1), queue)}$, the result of enqueueing the proof obligation
 for property $s$ at the next depth $i + 1$ in the priority queue {\it queue}.
 
-When a CTI $c$ for proof obligation $(s,i)$ is discovered the proof obligation $(c,i - 1)$
+When a CTI $c$ for proof obligation $(s,i)$ is discovered, the proof obligation $(c,i - 1)$
 for proving the negation of the CTI could enqueued before calling
 calling {\it fulfillObligations} recursively again,
-but the implementation employs a different approach that keeps the number of
+but the implementation employs a different approach.
+This approach keeps the number of
 generalization attempts low by generalizing once when the proof obligation
 for the CTI is enqueued rather than generalizing each time a proof obligation
 is fulfilled.
@@ -1794,7 +1820,7 @@ that $I \Rightarrow \neg c$, adds $\neg c$ to $F_0$, and then uses a modified
 version of {\it propagate} to push clauses and check for fixed points up to
 depth $j \leq i$, where $j$ is the greatest value that is less than $i$
 such that $\neg c$ is inductive relative to $F_{j - 1}$. If a fixed point is
-found, then the algorithm can terminate. Otherwise, the clause
+found, then the algorithm can terminate with success. Otherwise, the clause
 $\neg c$ is generalized relative to frame $F_{j - 1}$
 using the simpler approximation for finding MICs, giving clause
 $\neg d \subseteq c$. The proof obligation $(d,j)$ is then enqueued, and
@@ -1803,12 +1829,14 @@ $\neg d \subseteq c$. The proof obligation $(d,j)$ is then enqueued, and
 \subsubsection{Proof Obligations and Priority Queues}
 
 The {\it PriorityQueue} implementation represents proof obligations $(s,i)$ using the
-\verb,Obligation, type, which is a triple \verb.(Int, Int, Clause). of the depth $i$, a
-rank for deciding the ordering of proof obligations at the same depth within the priority
-queue, and the clause $\neg s$. Because of this representation of obligations, the
+\verb,Obligation, type, which is triple type \verb.(Int, Int, Clause)..
+The \verb,Obligation, triple
+\verb.(i,r,c). consists of the the depth \verb,i,, a
+rank \verb,r, for deciding the ordering of proof obligations at the same depth within the priority
+queue, and the clause \verb,c, representing $\neg s$. The
 function implementing {\it fulfillObligations} is named \verb,proveObligations,.
 
-In the \emph{PriorityQueue} implementation, the priority queue is represented by
+The priority queue is represented by
 a \verb,MinQueue, (the minimal element has the highest
 priority) of \verb,Obligation,s.
 
