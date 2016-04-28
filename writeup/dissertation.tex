@@ -1859,11 +1859,9 @@ functions in \verb,IC3.hs, such as \verb,consecution,.
 The variants could solve all the handwritten examples and fifty of the HWMCC examples within
 ten minutes correctly, and some
 variants were able to solve additional examples without timing out.
-For the fourteen handwritten examples and fifty HWMCC examples that all variants solved
-within the time limit, the
-implementations' solutions agree with those given by \emph{IC3ref}, providing evidence for the correctness of the solutions given by the model checker
-implementations. Furthermore, the variants that solved the additional examples also gave
-solutions that agreed with the reference implementation's solutions.
+All solutions reported solutions within the time limit agree with those
+given by \emph{IC3ref}, providing evidence for the correctness of the solutions given
+by \emph{MC}.
 
 The handwritten examples served as the ``small examples'' that the model checker
 was meant to correctly solve as part of the aims of the project, with the largest
@@ -1923,15 +1921,18 @@ True
 
 \subsection{Benchmarking}
 \label{eval:benchmarking}
-I took benchmarks for the performance of the different variations of the model checker and for the
-performance of \emph{IC3ref} both with CTG-handling enabled and disabled. For each of the fourteen handwritten examples and the fifty examples from the HWMCC, forty benchmarking samples were taken.
+I took performance benchmarks both for the \emph{MC} variants and for two configurations
+of \emph{IC3ref}, where the configurations differ in whether CTG-handling is enabled
+or not. For each variant, forty benchmarking samples were taken for each example that
+the variant could solve within the time limit.
 
-In addition to timing data, I collected data about the number of frames needed to solve an example,
+The collected data consists of execution time,
+the number of frames needed to solve an example,
 the average number of literals per clause, the number of CTIs discovered, the number of SAT-solver queries,
 and, for the \emph{CTG} implementation, the number of CTGs discovered. These measurements can be found in
 Appendix \ref{benchmarks}.
 
-The majority of the fifty HWMCC examples did not require finding any
+Out of the 50 HWMCC examples, 47 did not require finding any
 CTIs; for these examples, the \emph{Basic}, \emph{BetterCTI}, \emph{BetterPropagation},
 and \emph{CTG} implementations give similar results. 
 
@@ -1940,25 +1941,29 @@ and \emph{CTG} implementations give similar results.
 %Discuss performance comparison of the naive implementation of the
 %model checker and the final implementation of the model checker.
 
-Profiling consistently revealed that functions in the \verb,MiniSat.Minisat, module consume the most time
+Profiling revealed that functions in the \verb,MiniSat.Minisat, module consume the most time
 when solving examples, suggesting that the overall performance of the model checker is heavily dependent on
-the size and number of SAT-solver queries. In this section, I will discuss the impact that different
+the size and number of SAT-solver queries.
+In this section, I will discuss the impact that different
 variants of the model checker have on the size and number of SAT-solver queries and performance.
 
 \begin{figure}[t]
 \includegraphics[width=16cm]{litspercls.pdf}
 \caption{Average literals per clause averaged over the fourteen handwritten examples and fifty Hardware
 Model Checking Competition examples.}
+\label{eval:lits}
 \end{figure}
 
 \begin{figure}[t]
 \includegraphics[width=16cm]{handwritten.pdf}
 \caption{Benchmark results for the fourteen handwritten examples on a log scale.}
+\label{eval:time}
 \end{figure}
 
 \begin{figure}[!ht]
 \includegraphics[width=16cm]{numqueries.pdf}
 \caption{Number of queries for each variant run on the fourteen handwritten examples on a log scale.}
+\label{eval:queries}
 \end{figure}
 
 \paragraph{Smaller Counterexamples to Induction}{
@@ -1966,14 +1971,14 @@ The \emph{BetterCTI} implementation exhibits consistently
 better performance than the \emph{Basic} implementation for examples
 that require finding at least one CTI. In such cases,
 discovering CTI clauses with fewer literals leads, as expected, to a smaller average number of
-literals per clause, which suggests smaller SAT queries.
+literals per clause (as seen in Figure \ref{eval:lits}), which suggests smaller SAT queries.
 
 As mentioned previously, because the \emph{BetterCTI} implementation uses
 CTIs that encompass sets of states rather than single states, when a negated CTI is proven at a depth
 $k$, several states have been shown to be unreachable within $k$ steps of the transition relation
 from the initial state. Dealing with sets of states rather than single CTI states should allow
 the \emph{BetterCTI} implementation to deal with fewer CTIs in some cases (because the CTI sets of states
-may encompass several CTI states), leading to fewer queries needing to be made. Benchmark results
+may encompass several CTI states), leading to fewer queries. Benchmark results
 agree with these expectations; for examples that require finding more than one CTI, \emph{BetterCTI}
 finds fewer CTIs and makes fewer queries. For example, the \emph{Basic} variant finds 59
 CTIs and makes 414 queries to solve \verb,shortp0.aig,, but the \emph{BetterCTI} variant only
@@ -1988,11 +1993,11 @@ timing out.}
 \paragraph{Propagation}{
 Removing subsumed clauses also results in better performance for several examples.
 While the performance impact that the improvement has is less drastic than the improvement of
-\emph{BetterCTI} over \emph{Basic} finding smaller CTIs, the \emph{BetterPropagation} version performs
+\emph{BetterCTI} over \emph{Basic}, the \emph{BetterPropagation} version performs
 considerably better
 than the \emph{BetterCTI} version on the \verb,counters3.aig, and \verb,counters4.aig, examples in
-particular, where the adjustments allow the algorithm to prove the safety properties using fewer
-queries. Even for examples such as \verb,pdtvismiim3.aig,, where \emph{BetterPropagation} makes more
+particular (as seen in Figure \ref{eval:time}), where the adjustments allow the algorithm to prove the safety properties using fewer
+queries (as seen in Figure \ref{eval:queries}). Even for examples such as \verb,pdtvismiim3.aig,, where \emph{BetterPropagation} makes more
 queries than \emph{BetterCTI}, \emph{BetterPropagation} manages to perform better than \emph{BetterCTI}
 because it makes smaller queries.}
 
