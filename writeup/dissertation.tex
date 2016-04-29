@@ -484,7 +484,7 @@ GitHub \cite{github}, a widely-used hosting service for Git repositories, was us
 keep backups of the code.
 The previous versions maintained by the system proved useful in
 the development of the code, and branching and merging capabilities were
-useful for organizing different variations of the model checker.
+useful for organizing variations of the model checker.
 I used Git submodules, which allow the inclusion of other Git projects within another
 project, to include MiniSat within the project, enabling easier
 acquisition of project dependencies (i.e., MiniSat can be obtained by running
@@ -515,7 +515,7 @@ TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
 The \verb,Test, datatype in HUnit allows \verb,Test,s to be grouped
 and built up hierarchically. Tests that have been assembled into a
 single tree can then be treated as a test suite, and the whole tree
-of unit tests can be run.}
+of unit tests can be run. See Section \ref{eval:solving} for more on testing.}
 
 \paragraph{Criterion}{
 Criterion \cite{criterion} is a library for performing benchmarking in Haskell.
@@ -590,10 +590,9 @@ posed in conjunctive normal form. Further details are given in Section \ref{prep
 \section{Symbolic Representation}
 \label{prep:logic}
 
-Symbolic model checkers rely on the representation of the underlying system as a
-transition system, which describes the behavior of the system as one-step transitions
-between states. Transition systems and states are themselves defined using
-propositional logic formulas.
+Symbolic model checkers rely on the representation of the underlying system as
+logical formulas that describe the behavior of the system as one-step transitions
+between states. %Propositional logic formulas define transition systems and states.
 
 I give a brief review of concepts in logic before formally defining transition systems
 and explaining how propositional logic formulas represent states. I assume basic
@@ -614,15 +613,9 @@ Similarly, given a clause $c$, a clause $d$ is a \emph{subclause} of $c$ (also
 denoted $d \subset c$) iff the set of literals in $d$ are a subset of
 the literals in $c$.
 
-Through the application of de Morgan's laws, the negation of a cube is a clause and
-vice-versa. In particular, a cube $C = l_0 \wedge \ldots \wedge l_n$ has negation
-$\neg C = \neg (l_0 \wedge \ldots \wedge l_n)$, which is logically equivalent,
-by de Morgan's laws, to the formula $\neg l_0 \vee \ldots \vee \neg l_n$.
-Similarly, a clause $D = l_0 \vee \ldots \vee l_n$ has a negation that is
-logically equivalent to $\neg l_0 \wedge \ldots \wedge \neg l_n$. It follows
-that the clause obtained by negating a cube is specified by the set obtained
-by negating each literal in the cube set and that the cube obtained by negating
-a clause is specified by the set obtained by negating each literal in the clause.
+From de Morgan's laws, cubes and clauses are duals; the negation of a cube is the
+clause specified by the set resulting from negating each literal in the cube
+and vice-versa.
 
 A propositional formula is in \emph{conjunctive normal form} (CNF) iff it is a conjunction 
 $\bigwedge_i D_i$ of disjunctions $D_i$ of literals (i.e. clauses). A set of clauses
@@ -645,15 +638,15 @@ In a similar fashion, for a formula $X$ involving only current-state variables,
 the formula $X'$ is the formula $X$ where each current-state variable $v$ has
 been replaced by the corresponding next-state variable $v'$.
 
-Given transition relation $(i,x,I,T)$, a logical formula $C$ is, by definition,
-\emph{inductive relative} to another logical formula $F$ if both
+Given transition system $(i,x,I,T)$, a logical formula $C$ is, by definition,
+\emph{inductive relative} to logical formula $F$ if both
 $I \Rightarrow C$ and $F \wedge C \wedge T \Rightarrow C'$ hold.
 Relative inductiveness plays a key role in the IC3 algorithm.
 }
 
 \paragraph{States}{
 A single state of the transition system (or a singleton set containing that state)
-is specified through the assignment of all variables in the transition system
+is specified through the assignment of all state variables in the transition system
 to Boolean values, where a \emph{complete} assignment is represented as a cube such
 that every variable appears in the formula exactly once.
 An incomplete assignment of variables in the transition system is a cube such that
@@ -668,8 +661,9 @@ $\{a \in {\it Full~Assignment} | a \wedge b~{\rm is~satisfiable}\}$.
 For a logical formula $B$, a \emph{$B$ state} is a state that is in the set of states
 represented
 by $B$. A set of states $s$ is said to be \emph{reachable}
-in $k$ steps of the transition relation iff there exist states $s_0, \ldots, s_k$ such that
-$s_0$ is an $I$ state and $s_i \wedge T \Rightarrow s_{i + 1}$ for $1 \leq i < k$,
+in $k$ steps of the transition relation iff there exist input variables and
+states $s_0, \ldots, s_k$ such that
+$s_0$ is an $I$ state and $s_j \wedge T \Rightarrow s_{j + 1}$ for $1 \leq j < k$,
 where $T$ represents the transition relation of the transition system.
 
 }
@@ -692,7 +686,8 @@ using the Aiger Utilities' \verb,bliftoaig, tool. Given that one of
 the project's components is an AIGER parser, I describe the AIGER format
 in more depth.
 
-The AIGER format provides a method of specifying hardware modeled as
+The AIGER format has several versions, with each providing
+a method of specifying hardware as
 And-Inverter Graphs with latch elements providing single clock-tick
 delays: all circuits are modeled as a graph of nodes consisting only of
 AND gates, inverters, and latches, where the latches behave like D
@@ -703,16 +698,17 @@ The AIGER format has both an ASCII and a binary version, either of which
 can be used as inputs to this project's model checker. The ASCII
 format is more flexible and human readable, imposing fewer constraints
 on the ordering of components within the input file. For example, an
-AND gate with variable name 20 may be specified before an AND gate with
-variable name 11 in the ASCII format, but AND gates must be specified in
-ascending order of their variable names in the binary format. Another
-example is that AND gates' inputs can occur in any order in the ASCII
-format, but the binary format encodes AND gates under the assumption
-that inputs' indices are in ascending order.
+AND gate with variable name {\tt 20} may be specified before an AND gate with
+variable name {\tt 11} in the ASCII format, but AND gates must be specified in
+ascending order of their variable names in the binary format.
+%Another
+%example is that AND gates' inputs can occur in any order in the ASCII
+%format, but the binary format encodes AND gates under the assumption
+%that inputs' indices are in ascending order.
 The binary version's assumptions on component ordering allow the format
 to be more compact. The HWMCC examples use the binary format.
 
-A new version of the AIGER format is currently under development, with
+A new version of the AIGER format is currently under development \cite{aiger}, with
 examples from HWMCC'14 onward using the new version. The AIGER parser component
 of this project handles both the old and new versions of the format.
 
@@ -740,9 +736,9 @@ $${\it index}(x, b) =
 The indices 0 and 1 are used to represent the constant Boolean values {\it False}
 and {\it True}, respectively.
 
-Any index above 1 represents a literal. For all such
-indices, even indices represent positive literals, and odd indices
-represent negative literals. The representation thus allows
+Any index above 1 represents a literal. 
+Given that even indices represent positive literals, and odd indices
+represent negative literals, the representation allows
 the least significant bit of an index to give the sign of a literal
 and a single bitwise right shift to find the variable name for the literal.
 
@@ -753,12 +749,11 @@ V M I L O A
 \end{verbatim}
 where
 \begin{itemize}
-\item \verb,V, can take on values \verb,aag,, specifying that the file is in the ASCII format or \verb,aig,,
-specifying that the file is in the binary format.
-\item \verb,M, gives the maximum index of a variable.
-\item \verb,L, gives the number of latches.
-\item \verb,O, gives the number of outputs.
-\item \verb,A, gives the number of two-input AND gates.
+\item \verb,V, specifies the format type, with \verb,aag,, specifying that the file is in the ASCII format and \verb,aig,, specifying that the file is in the binary format.
+\item \verb,M, specifies the maximum index of a variable.
+\item \verb,L, specifies the number of latches.
+\item \verb,O, specifies the number of outputs.
+\item \verb,A, specifies the number of two-input AND gates.
 \end{itemize}
 
 The different components are specified after the header
