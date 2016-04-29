@@ -719,10 +719,10 @@ in AIGER format. Descriptions of the other formats can be found in Appendix
 \ref{aiger}.
 
 \paragraph{AIGER Variables}{
-A variable's name in AIGER format is a positive integer. Variables themselves
-are not represented directly in AIGER format; instead, nonnegative numbers
-are used to represent literals.
-I will refer to these nonnegative numbers as indices.
+AIGER identifies each Boolean variable with a positive integer.
+Variables themselves are not represented directly in AIGER format; instead, literals,
+which identify wires and their values in a circuit,
+occur in the format. Nonnegative numbers called indices are used to represent literals.
 
 For any variable named $x$, the index for positive literal $x$ is given by
 $2 \times x$, and the index for negative literal $\neg x$ is given by
@@ -767,7 +767,8 @@ literals of any sign).
 Latches have initial value 0 (i.e., {\it False}) and are specified by giving the
 index representing the positive literals for their corresponding variable name
 followed by the index for their next-state value.
-AND gates are specified by giving the indices that represent the positive literal
+AND gates, which are always binary,
+are specified by giving the indices that represent the positive literal
 for their variable name and the two indices that specify their input values.
 
 \begin{figure}[t]
@@ -778,13 +779,13 @@ for their variable name and the two indices that specify their input values.
 \end{figure}
 
 For example, the circuit in Figure \ref{aagCircuit} is represented
-as follows:
+as follows (the comments to the right are not part of the specification):
 \begin{verbatim}
 aag 3 0 2 1 1
-2 3
-4 2
-6
-6 2 4
+2 3           D-latch (output wire has index 2)
+4 2           D-latch (output wire has index 4)
+6             Output
+6 2 4         AND gate
 \end{verbatim}
 The circuit has no inputs, two latches with indices $2$ and $4$ and one AND gate
 with index $6$ that takes the outputs of the two latches as inputs.
@@ -807,20 +808,14 @@ gives further information about the last SAT query made.
 
 In addition to a \verb,Var, type for representing variables, MiniSat has a \verb,Lit, type for
 representing literals, and MiniSat represents sets of clauses as \verb,vec<Lit>,s,
-vectors of literals. The set of clauses in a \verb,Solver, together represent a CNF query,
-so that if the \verb,Solver,'s \verb,solve(), function is called,
+vectors of literals. The set of clauses in a \verb,Solver, together represent a CNF query.
+If the \verb,Solver,'s \verb,solve(), function is called,
 the resulting \verb,bool, indicates whether the query is satisfiable or not. The
 \verb,solve(), function is overloaded so that it may also take an assumption \verb,vec<Lit>*, as
 an argument. The literals in the assumption vector must hold in addition to the CNF query formed
 by the \verb,Solver,'s clauses: if the \verb,Solver,'s clauses form some CNF query $C$ and
-\verb,solve(assumps), is called, where \verb,assumps, points to the the assumption vector
-containing all the literals in some set $A$, then the SAT query is $C \wedge \bigwedge_{l \in A} l$.
-
-If at least one query to a \verb,Solver, has been made, then if the last query to the
-\verb,Solver, was satisfiable, the \verb, Solver, provides a \verb,model, pointer
-to a set of satisfying variable assignments for that query, or, if the last query to the solver
-was not satisfiable, the \verb,conflict, pointer to a set of literals from the assumption
-vector provided in the query that contributed to the query being unsatisfiable.
+\verb,solve(assumps), is called, where \verb,assumps, represents some set $A$ of literals,
+then the SAT query is $C \wedge \bigwedge_{l \in A} l$.
 
 If there has been at least one query made of the \verb,Solver, object, and the query was
 satisfiable, the \verb,Solver,'s \verb,model, variable points to a set of variable assignments
@@ -843,10 +838,9 @@ Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
 safety property $P$, IC3 aims either to prove inductively that $P$ holds
 at all reachable states from the initial state or
 to find a reachable $\neg P$ state.
-The pseudocode in Figure \ref{overview} gives an overview of the basic IC3 algorithm,
-which I refer to in the following explanation of the algorithm.
+The pseudocode in Figure \ref{overview} gives an overview of the basic IC3 algorithm.	
 
-\begin{algorithm}[!Ht]
+\begin{algorithm}[t]
 \DontPrintSemicolon
 \Fn{prove$((i,x,I,T),P)$}{
   \lIf{$\neg (I \Rightarrow P)$ \label{initiation}}{
@@ -856,7 +850,7 @@ which I refer to in the following explanation of the algorithm.
   $k := 0$ \;
   \While{True \label{main}}{
     \eIf{$F_k \wedge T \Rightarrow P'$ \label{consecution}}
-    {create frame $F_{k + 1}$ initialized to $\emptyset$\;
+    {create frame $F_{k + 1}$ initialized to $\emptyset$ \label{create} \;
      $k$ := $k + 1$ \;}
     {\While {$\neg (F_k \wedge T \Rightarrow P')$ \label{reconsec}}{
         ${\it cti} := {\it nextCTI}(F_k \wedge T \Rightarrow P')$ \label{CTI} \;
@@ -881,10 +875,10 @@ in the pseudocode).
 The deepest frame $F_k$ in the set of frames is the \emph{frontier}.
 
 %Initiation query
-The \emph{initiation query} $I \Rightarrow P$ on line \ref{initiation} checks that
+The \emph{initiation query} $I \Rightarrow P$ (line \ref{initiation}) checks that
 the property holds in the initial state $I$.
-This query is run once at the start of
-the algorithm for the desired property.
+%This query is run once at the start of
+%the algorithm for the desired property.
 If it fails (i.e. if it is {\it False}), then the algorithm terminates,
 as a state in which $\neg P$ holds is reachable in 0 steps.
 If it succeeds, then the algorithm proceeds to its main loop.
@@ -894,28 +888,29 @@ The algorithm only exits the loop when it has determined whether or not the
 safety property holds at all reachable states in the model.
 
 %Consecution query
-The \emph{consecution query} $F_k \wedge T \Rightarrow P'$ on line \ref{consecution} is
+The \emph{consecution query} $F_k \wedge T \Rightarrow P'$ (line \ref{consecution}) is
 is used to check whether the property $P$ necessarily holds in the next
-frame. If it succeeds (i.e., if it is {\it True}), then IC3 creates a new
-frontier frame $F_{k + 1}$.
+frame. If it does, then IC3 creates a new
+frontier frame $F_{k + 1}$ (line \ref{create}).
 %Describe what happens when a consecution query fails
 
-If a consecution query $F_k \wedge T \Rightarrow P'$ fails, then that means that
-there is an $F_k$ state that is a predecessor of the $\neg P'$ state,
-i.e. there is an $F_k$ state $s$ and a $\neg P'$ state $v$ with $T(i,s,v')$.
-The state $s$ is called a \emph{counterexample to induction} (CTI) state.
+If a consecution query $F_k \wedge T \Rightarrow P'$ fails, then
+there is an $F_k$ state $s_k$ and a $\neg P'$ state $s_{k + 1}$ with $T(i,s,s_{k + 1})$.
+The state $s_k$ is called a \emph{counterexample to induction} (CTI) state.
 The algorithm then aims to refine the approximation $F_k$ of the set of states
 reachable in at most $k$ steps by showing that all states that are
-reachable in at most $k$ steps are $\neg s$ states.
+reachable in at most $k$ steps are $\neg s_k$ states.
 
 The call to {\it nextCTI} in line \ref{CTI} finds the counterexample to
-induction state $s$. The call to {\it proveNegCTI} on line \ref{negCTI}
+induction state $s_k$ when passed parameters $s = s_k$ and $j = k$.
+The call to {\it proveNegCTI} on line \ref{negCTI}
 attempts to prove that $\neg s$ is inductive relative to $F_{k - 1}$,
-so that all $F_k$ states are necessarily $\neg s$ states, so $\neg s$ can
+in which case all $F_k$ states are necessarily $\neg s$ states, so $\neg s$ can
 be added to the set of $F_k$ clauses.
 
-The {\it proveNegCTI} algorithm works similarly to the
-while loop on line \ref{reconsec}. For as long as the query
+%The {\it proveNegCTI} algorithm works similarly to the
+%while loop on line \ref{reconsec}.
+For as long as the query
 $F_k \wedge \neg s \wedge T \Rightarrow s'$ is unsuccessful,
 the algorithm extracts a counterexample to induction cube and
 calls {\it proveNegCTI} to show that the counterexample is
@@ -945,7 +940,7 @@ $\neg s$ is relatively inductive to $F_j$ fails.
 \label{proveNegCTI}
 \end{algorithm}
 
-If $\neg c$ cannot be proven to hold at $k$ steps of
+If $\neg s_k$ cannot be proven to hold at each of $k$ steps of
 the transition relation from the initial state, i.e. the state $s$ is in the actual
 set of states reachable in $k$ steps from the initial state, then a $\neg P$ state
 is reachable in $k + 1$ steps from the initial state; the safety property does not
@@ -958,7 +953,7 @@ prove that $\neg d$ holds at depth $k$ repeats. Upon the success of the consecut
 query, the algorithm moves to the propagation phase.
 
 \emph{Pushing} a clause $c$ from a frame $F_i$ to frame $F_{i + 1}$ refers to the act
-of setting $F_{i + 1} := F_{i + 1} \cup \{ c \}$.
+of setting $F_{i + 1} := F_{i + 1} \cup \{ c \}$ with $c \in F_i$.
 A clause $c$ can be pushed from a frame $F_i$ to the next frame $F_{i + 1}$
 if the consecution query $F_i \wedge T \Rightarrow c'$ holds.
 The propagation phase of the algorithm goes through the set of frames
