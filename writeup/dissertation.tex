@@ -912,7 +912,7 @@ be added to the set of $F_k$ clauses.
 %while loop on line \ref{reconsec}.
 For as long as the query
 $F_k \wedge \neg s \wedge T \Rightarrow s'$ is unsuccessful,
-the algorithm extracts a counterexample to induction cube and
+the algorithm extracts a CTI cube and
 calls {\it proveNegCTI} to show that the counterexample is
 inductive relative to frame $F_{j - 1}$ so that the negated
 counterexample can be added to frame $F_j$.
@@ -1139,9 +1139,9 @@ assumes that the new format is used (because the new format is backward compatib
 . Justice properties and fairness constraints are not handled by \emph{MC}, so
 the parser ignores them.
 
-Both the \verb,Parser.AigerParser, module, which implements the parser in Haskell, and
+The \verb,Parser.AigerParser, module, which implements the parser in Haskell, and
 the \verb,Parser.AigerTools, module, which calls the Aiger Utilities' parser's functions,
-convert the AIGER file into the \verb,Model, data structure in \verb,Parser.AigModel,,
+each convert the AIGER file into the \verb,Model, data structure in \verb,Parser.AigModel,,
 which stores the components specified in the AIGER file.
 
 \subsection{Model}
@@ -1328,10 +1328,10 @@ clauses whose conjunction describes the latches' initial values,
 and the second contains a clauses whose conjunction describes the
 latches' next-state values.
 
-Consider a given \verb,Parser.AigModel.Latch, \verb.[l, n, init]. representing the latch with
-output variable $l$ (represented by \verb,l,), next-state $n$ (represented
-by \verb,n,) taken from the set of Booleans and literals, and initial value (represented by \verb,init,)
-also taken from the set of Booleans and literals. The \verb,makeLatches, function uses the
+Consider a given \verb,Parser.AigModel.Latch, $[l, n, i]$. representing the latch with
+output variable $l$, next-state $n$ taken from the set of literals,
+and initial value $i$
+also taken from the set literals. The \verb,makeLatches, function uses the
 values of $l$, $n$, and $i$ to generate \verb,Clause,s that describe the latches' initial values and
 next-state values.
 
@@ -1359,16 +1359,16 @@ n \Rightarrow l' &\simeq l' \vee \neg n.
 \end{align*}
 It follows that the original double implication is equivalent to the 
 the CNF formula that corresponds to the generated clauses:
-$$l' \Leftrightarrow n \simeq (\neg l' \vee n) \wedge (l' \vee \neg n.$$
+$$l' \Leftrightarrow n \simeq (\neg l' \vee n) \wedge (l' \vee \neg n).$$
 
 \subsubsection{AND gates}
 The \verb,makeAnds, function generates a single \verb,Clause, list for a list of \verb,Parser.AigModel.And,s,
 where the conjunction of the clauses in the list describes the relationship between the AND-gate output
 and the AND-gate inputs.
 
-Consider a \verb,Parser.AigModel.And,, of the form \verb.[out, in1, in2]., representing the AND gate
-with output variable $a$ (represented by \verb,out,), and inputs $i_1$ and $i_2$ (represented by \verb,in1,
-and \verb,in2,). The \verb,makeAnds, function uses the values of $a$, $i_1$, and $i_2$ to generate the appropriate
+Consider a \verb,Parser.AigModel.And,, of the form $[a, i_1, i_2]$, representing the AND gate
+with output variable $a$, and inputs $i_1$ and $i_2$.
+The \verb,makeAnds, function uses the values of $a$, $i_1$, and $i_2$ to generate the appropriate
 \verb,Clause,s that describe the AND gates' values.
 By the semantics of AND gates, the current-state clauses generated should have a conjunction
 logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$ and the next-state
@@ -1441,6 +1441,42 @@ implementations of the model checker except {\it PriorityQueue}
 and compare this structure with Figure \ref{overview} (see Section
 \ref{pqueue} for \emph{PriorityQueue}).
 
+The main components of the algorithm here are as follows:
+\begin{itemize}
+\item The {\it prove} component (line \ref{recstr:prove})
+takes a model $M$ and a property $P$ as input
+ and provides the same output as the \emph{prove} component in Figure \ref{overview}
+\item The ${\it prove'}$ component (line \ref{recstr:prove'})
+takes a model $M$, a property $P$,
+the frontier frame $F_k$, and the rest of the frames $[F_0,\ldots,F_k]$ as input. It
+implements the main loop in Figure \ref{overview}, achieving the looping behavior with
+recursive calls (lines \ref{recstr:recursion}, \ref{recstr:mutrecursion}).
+\item The {\it pushFrame} component (line \ref{recstr:pushFrame}) takes the old frontier frame
+$F_{k - 1}$ to push clauses from, the new frontier frame $F_k$ to push clauses to,
+the model $M$, and the rest of the frames $[F_0, \ldots, F_k]$ as input.
+It implements a specialized part of the propagation phase.
+\item The {\it nextCTI} component (line \ref{recstr:nextCTI})
+takes a failing consecution query as input and returns
+a CTI, just as in Figure \ref{overview}
+\item The {\it proveNegCTI} component (line \ref{recstr:proveNegCTI})
+takes a model $M$, a CTI, and a depth $k - 1$ as input and
+returns a triple $({\it result}, [G_0, \ldots, G_{k - 1}], G_k)$, where {\it result}
+gives the same Boolean result as {\it proveNegCTI} in Figure \ref{overview}.
+Each $G_i$ gives the value that frame $F_i$ would have after a call to {\it proveNegCTI}
+in Figure \ref{overview}.
+\item The {\it propagate} component (line \ref{recstr:propagate})
+takes the current frames $[G_0, \ldots, G_k]$ as input and
+returns a pair $({\it fixed}, [H_0, \ldots, H_{k-1}, H_k])$, where {\it fixed} is {\it True}
+iff the propagation phase loop in Figure \ref{overview} would have returned {\it True}.
+Each $H_i$ gives the value that the frame $F_i$ would have after the propagation
+phase updated it in Figure \ref{overview}.
+\item The {\it push} component (line \ref{recstr:push})
+takes two frames $F$ and $F'$ as input and returns a
+pair $({\it fixed}, G')$, where {\it fixed} is {\it True} iff all clauses in $F$ can
+be pushed to $F'$ and $G'$ is the updated value of $F'$ after having pushed all possible
+clauses from $F$ to $F'$.
+\end{itemize}
+
 \SetKwProg{Let}{let }{ in}{end}
 \begin{algorithm}[t]
 \DontPrintSemicolon
@@ -1450,25 +1486,25 @@ and compare this structure with Figure \ref{overview} (see Section
   }
   \Return ${\it prove'}(M,P,I,{\rm nil})$ \label{recstr:prove'call}
 }
-\Fn{${\it prove'}(M,P,F_k,[F_0,\ldots,F_{k - 1}])$}{
+\Fn{${\it prove'}(M,P,F_k,[F_0,\ldots,F_{k - 1}])$ \label{recstr:prove'}}{
   \eIf{$F_k \wedge T \Rightarrow P'$}
   {\Return{{\it pushFrame}$(F_k, \emptyset,M,P,[F_0,\ldots,F_{k - 1}])$} \label{recstr:pushFrameCall}}
-  {\Let{{\it cti} = {\it nextCTI}$(F_k \wedge T \Rightarrow P')$, \;
-  $({\it result}, [G_0,\ldots,G_{k - 1}], G_k)$ = {\it proveNegCTI}$((i,x,I,T),{\rm cti},k - 1)$ \label{recstr:proveNegCTI}} 
+  {\Let{{\it cti} = {\it nextCTI}$(F_k \wedge T \Rightarrow P')$ \label{recstr:nextCTI}, \;
+  $({\it result}, [G_0,\ldots,G_{k - 1}], G_k)$ = {\it proveNegCTI}$(M,{\rm cti},k - 1)$ \label{recstr:proveNegCTI}} 
   {
   \If{\it result} {
     \Let{$({\it fixed}, [H_0,\ldots,H_{k - 1},H_k]) = {\it propagate}([G_0,\ldots,G_{k - 1},G_k])$}{ \label{recstr:propagate}
     \lIf{\it fixed}{\Return{True}}
-    \lElse{\Return{${prove'}(M,P,H_k,[H_0,\ldots,H_{k - 1}])$}}}}
+    \lElse{\Return{${prove'}(M,P,H_k,[H_0,\ldots,H_{k - 1}])$} \label{recstr:recursion}}}}
   \lElse{\Return{False}}}}
 }
 \Fn{pushFrame$(F_{k - 1}, F_k,M,[F_0,\ldots,F_{k - 2}])$}{ \label{recstr:pushFrame}
-  \Let{$({\it fixed}, G_k) = {\it push}(F_{k - 1}, F_k)$}{
+  \Let{$({\it fixed}, G_k) = {\it push}(F_{k - 1}, F_k)$ \label{recstr:push}}{
   \lIf{\it fixed}{\Return{True}}
-  \lElse{\Return{${\it prove'}(M, P, G_k, [F_0,\ldots,F_{k - 2},F_{k - 1}])$}}}
+  \lElse{\Return{${\it prove'}(M, P, G_k, [F_0,\ldots,F_{k - 2},F_{k - 1}])$} \label{recstr:mutrecursion}}}
 }
 \caption{General structure of the algorithm implementation in Haskell. The transition relation $T$ is acquired
-from the model $M$}
+from the model $M$.}
 \label{recstr}
 \end{algorithm}
 
