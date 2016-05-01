@@ -883,7 +883,7 @@ If it fails (i.e. if it is {\it False}), then the algorithm terminates,
 as a state in which $\neg P$ holds is reachable in 0 steps.
 If it succeeds, then the algorithm proceeds to its main loop.
 
-The main loop of the algorithm is the while-loop beginning on line \ref{main}.
+The main loop of the algorithm is the while loop beginning on line \ref{main}.
 The algorithm only exits the loop when it has determined whether or not the
 safety property holds at all reachable states in the model.
 
@@ -1092,7 +1092,7 @@ extensions, I have implemented additional variants of the IC3 algorithm.
 The variants of the model checker component differ
 in overall structure, the finding of CTIs, the way that propagation is performed, and
 the way that CTIs are inductively generalized. The variants and the
-differences among them are given in the following table:
+differences among them are given in the following table:\\
 
 \begin{tabular}{| l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em} |}
 \hline
@@ -1104,12 +1104,12 @@ differences among them are given in the following table:
 \emph{PriorityQueue} & \checkmark & \checkmark & \checkmark & \checkmark & \\
 \emph{CTG} & & \checkmark & \checkmark & & \checkmark \\
 \hline
-\end{tabular}
+\end{tabular}\\
 
 
 
-I now briefly explain the motivations for the deviations from the \emph{Basic}
-implementation. The details of these deviations are given in Section \ref{impl:modelchecker}.
+%I now briefly explain the motivations for the deviations from the \emph{Basic}
+%implementation. The details of these deviations are given in Section \ref{impl:modelchecker}.
 The ``Priority Queue'' alteration was based on observations that using priority
 queues to keep track of proof obligations is more efficient than the simple
 recursive implementation of the IC3 algorithm \cite{een11,griggio14}.
@@ -1121,10 +1121,6 @@ down the SAT-solver and should be eliminated to achieve better performance
 \cite{een11}.
 The ``Generalization with CTGs'' alteration was based on the description of an algorithm
 that improves upon the basic inductive generalization algorithm \cite{hassan13}.
-
-
-In this chapter, I provide an explanation of the implementation of each of the
-four main components in turn. 
 
 \section{Parser}
 \label{impl:aiger}
@@ -1353,14 +1349,14 @@ Otherwise, if $n$ is not a Boolean value,
 the next-value clauses generated for $l$, are $\{l', \neg n\}$
 and $\{\neg l, n\}$. The conjunction of these clauses are, as needed, logically equivalent
 to $n \Leftrightarrow l'$, i.e., where $\simeq$ denotes logical equivalence,
-the following hold:
-\begin{align*}
-l' \Leftrightarrow n &\simeq (l' \Rightarrow n) \wedge (n \Rightarrow l')\\
-l' \Rightarrow n &\simeq \neg l' \vee n\\
-n \Rightarrow l' &\simeq l' \vee \neg n.
-\end{align*}
-It follows that the original double implication is equivalent to the 
-the CNF formula that corresponds to the generated clauses:
+%the following hold:
+%\begin{align*}
+%l' \Leftrightarrow n &\simeq (l' \Rightarrow n) \wedge (n \Rightarrow l')\\
+%l' \Rightarrow n &\simeq \neg l' \vee n\\
+%n \Rightarrow l' &\simeq l' \vee \neg n.
+%\end{align*}
+%It follows that the original double implication is equivalent to the 
+%the CNF formula that corresponds to the generated clauses:
 $$l' \Leftrightarrow n \simeq (\neg l' \vee n) \wedge (l' \vee \neg n).$$
 
 \subsubsection{AND gates}
@@ -1391,11 +1387,11 @@ If neither of $i_1$ or $i_2$ are Booleans, then the clauses generated are
 $\{\neg a, i_1\}$, $\{\neg a, i_1\}$, and
 $\{\neg i_1,\neg i_2, a\}$. The conjunction of these clauses are, as needed,
 logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$:
-\begin{align*}
-a \Leftrightarrow (i_1 \wedge i_2) &\simeq (a \Rightarrow i_1 \wedge i_2) \wedge (i_1 \wedge i_2 \Rightarrow a)\\
-a \Rightarrow (i_1 \wedge i_2) &\simeq \neg a \vee (i_1 \wedge i_2)\\
-(i_1 \wedge i_2) \Rightarrow a &\simeq \neg (i_1 \wedge i_2) \vee a
-\end{align*}
+%\begin{align*}
+%a \Leftrightarrow (i_1 \wedge i_2) &\simeq (a \Rightarrow i_1 \wedge i_2) \wedge (i_1 \wedge i_2 \Rightarrow a)\\
+%a \Rightarrow (i_1 \wedge i_2) &\simeq \neg a \vee (i_1 \wedge i_2)\\
+%(i_1 \wedge i_2) \Rightarrow a &\simeq \neg (i_1 \wedge i_2) \vee a
+%\end{align*}
 %Distributing $\vee$ over $\wedge$ gives further equivalence
 %$$\neg a \vee (i_1 \wedge i_2) \simeq
 %(\neg a \vee i_1) \wedge (\neg a \vee i_2),$$
@@ -1403,9 +1399,9 @@ a \Rightarrow (i_1 \wedge i_2) &\simeq \neg a \vee (i_1 \wedge i_2)\\
 %$$\neg (i_1 \wedge i_2) \vee a \simeq
 %\neg i_1 \vee \neg i_2 \vee a.$$
 
-It follows from distribution and application of de Morgan's laws
-that the original double implication is equivalent to the CNF
-formula corresponding to the generated clauses:
+%It follows from distribution and application of de Morgan's laws
+%that the original double implication is equivalent to the CNF
+%formula corresponding to the generated clauses:
 $$a \Leftrightarrow i_1 \wedge i_2 \simeq
 (\neg a \vee i_1) \wedge (\neg a \vee i_2) \wedge (\neg i_1 \vee \neg i_2 \vee a).$$
 
@@ -1471,9 +1467,10 @@ a CTI, just as in Figure \ref{overview}
 \item The {\it proveNegCTI} component (line \ref{recstr:proveNegCTI})
 takes a model $M$, a CTI, and a depth $k - 1$ as input and
 returns a triple $({\it result}, [G_0, \ldots, G_{k - 1}], G_k)$, where {\it result}
-gives the same Boolean result as {\it proveNegCTI} in Figure \ref{overview}.
-Each $G_i$ gives the value that frame $F_i$ would have after a call to {\it proveNegCTI}
-in Figure \ref{overview}.
+is {\it False} iff the while loop containing {\it proveNegCTI} in Figure \ref{overview}
+would return {\it False}.
+Each $G_i$ gives the value that frame $F_i$ would have after the termination of
+that while loop in Figure \ref{overview}.
 \item The {\it propagate} component (line \ref{recstr:propagate})
 takes the current frames $[G_0, \ldots, G_k]$ as input and
 returns a pair $({\it fixed}, [H_0, \ldots, H_{k-1}, H_k])$, where {\it fixed} is {\it True}
@@ -1524,20 +1521,17 @@ The {\it prove} function (line \ref{recstr:prove}) makes an initiation query
 (line \ref{recstr:init}), and, if it succeeds, calls
 {\it prove'} (line \ref{recstr:prove'call}),
 which corresponds to a recursive version of the main while loop
-in line \ref{main} of Figure \ref{overview}. Here, {\it proveNegCTI}
-(line \ref{recstr:proveNegCTI})
-does not correspond just to the {\it proveNegCTI} algorithm in Figure \ref{overview} but
-rather to the while loop that contains that function.
+in line \ref{main} of Figure \ref{overview}.
 
 Because functions in Haskell are pure, the assumption made in Figure \ref{overview}
 that function can could modify the set of (passed-by-reference) frames can no longer be made.
 Instead, the updated values of frames are returned explicitly from the function call in
 a tuple along with any other values needed from the function call, as seen in
 {\it proveNegCTI}, {\it propagate}, and {\it push}.
-For example, {\it proveNegCTI} (line \ref{recstr:proveNegCTI})
-returns not only the result
-indicating whether or not the negated CTI was proven, but also returns the possibly updated
-values for the frontier frame $G_k$ and previous frames $G_0, \ldots, G_{k - 1}$.
+%For example, {\it proveNegCTI} (line \ref{recstr:proveNegCTI})
+%returns not only the result
+%indicating whether or not the negated CTI was proven, but also returns the possibly updated
+%values for the frontier frame $G_k$ and previous frames $G_0, \ldots, G_{k - 1}$.
 
 In addition to the necessary language-related modifications to the algorithm, I made a
 change to how often the full propagation phase is carried out, calling the {\it pushFrame}
