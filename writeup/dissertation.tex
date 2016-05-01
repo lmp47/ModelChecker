@@ -1250,6 +1250,38 @@ extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
 }
 \end{lstlisting}
 
+The Haskell FFI is then used to provide a wrapper function that calls
+the C function:
+\begin{lstlisting}
+foreign import ccall safe "addMinisatClause"
+  addMinisatClause :: Ptr MinisatSolver -> Ptr MinisatVecLit -> IO CInt
+\end{lstlisting}
+
+Using just the Haskell FFI for calling the C functions does not provide a
+sufficient abstraction for use by the rest of the model checker. All
+calls to C functions must occur inside of \verb,IO, monads, but having
+the interface functions return \verb,IO, monads means that any functions
+that use the interface functions to get values from MiniSat would need to
+perform all their computations inside monads as well, requiring them to
+be written imperatively.
+I wrote further functions to allow for a more natural interface to MiniSat,
+making use of \verb,unsafePerformIO, to have the functions return
+values outside the \verb,IO, monad.
+
+To use MiniSat to solve a query, the \verb,solveWithAssumps, function
+is usually called, taking a solver \verb,s, and a list of literals \verb,assumps,
+that make up the assumption vector. The \verb,solveWithAssumps, function
+visible to other modules then uses Haskell wrapper functions to create
+a MiniSat \verb,vec<Lit>, to represent the assumption vector and call
+the C wrapper function \verb,solveMiniSatWithAssumps,.
+
+The function \verb,solveMinisatWithAssumps,, a wrapper for the version of \verb,solve(),
+that takes an assumption vector as an argument, returns a pointer to a
+\verb,result, struct rather than just whether or not the query was satisfiable
+as the MiniSat \verb,solve(), function does.
+The Haskell interface uses the Haskell FFI and the \verb,hsc2hs, preprocessor
+for handling the \verb,result, struct.
+
 The \verb,result, struct to \verb,Minisat/CSolver.h,
 allows a single function call to return
 all the results of a SAT query. The struct contains an indication of query satisfiability
@@ -1264,30 +1296,14 @@ struct result {
 } res = {0, 0, 0, 0, 0};
 \end{lstlisting}
 
-The function \verb,solveMinisatWithAssumps,, a wrapper for the version of \verb,solve(),
-that takes an assumption vector as an argument, returns a pointer to a
-\verb,result, struct rather than just whether or not the query was satisfiable.
-The Haskell interface uses the Haskell FFI and the \verb,hsc2hs, preprocessor
-for handling the \verb,result, struct.
-
-Using just the Haskell FFI for calling the C functions does not provide a
-sufficient abstraction for use by the rest of the model checker. All
-calls to C functions must occur inside of \verb,IO, monads, but having
-the interface functions return \verb,IO, monads means that any functions
-that use the interface functions to get values from MiniSat would need to
-perform all their computations inside monads as well, requiring them to
-be written imperatively.
-I wrote further functions to allow for a more natural interface to MiniSat,
-making use of \verb,unsafePerformIO, to have the functions return
-values outside the \verb,IO, monad.
-
-Many of the functions and datatypes in the interface are analogous to functions and structs in
-the C wrapper and C++ implementation of MiniSat. For example, the \verb,Solver, datatype is an
-analogue to the MiniSat \verb,Solver, object, and itself contains a pointer to an instance of
-a MiniSat \verb,Solver, object. Similarly, functions such as \verb,solveWithAssumps, work
-analogously to the C wrapper's \verb,solveMinisatWithAssumps,,
-returning a \verb,Result, that contains
-whether or not the query was satisfiable and the model or conflict vector (if any).
+%Many of the functions and datatypes in the interface are analogous to functions and structs in
+%the C wrapper and C++ implementation of MiniSat. For example, the \verb,Solver, Haskell
+%datatype is an
+%analogue to the MiniSat \verb,Solver, object, and itself contains a pointer to an instance of
+%a MiniSat \verb,Solver, object. Similarly, functions such as \verb,solveWithAssumps, work
+%analogously to the C wrapper's \verb,solveMinisatWithAssumps,,
+%returning a \verb,Result, that contains
+%whether or not the query was satisfiable and the model or conflict vector (if any).
 
 \begin{figure}[t]
 \tikzstyle{function}=[rectangle,draw,minimum width=4em,fill=white,font=\small\tt,scale=0.8]
@@ -1318,9 +1334,11 @@ whether or not the query was satisfiable and the model or conflict vector (if an
 \label{solveWithAssumps}
 \end{figure}
 
-The information kept in a \verb,Result, is taken directly from the \verb,result, returned by
-the C Wrapper functions. I used the \verb,hsc2hs, preprocessor to help handle pointer offsets
-when unmarshalling from the C struct. Beyond straightforward unmarshalling, some additional work
+The information kept in a \verb,Result, Haskell datatype is taken directly from the
+\verb,result, returned by the C Wrapper functions.
+I used the \verb,hsc2hs, preprocessor to help handle pointer offsets
+when unmarshalling from the C struct.
+Beyond straightforward unmarshalling, some additional work
 to convert from the MiniSat representation of literals to the \emph{MC} representation of
 literals was necessary.
 
