@@ -13,6 +13,8 @@
 \usepackage{float}
 \usepackage{color}
 \usepackage[linesnumbered,figure,vlined]{algorithm2e}
+\usepackage{tikz}
+\usetikzlibrary{arrows,shapes.geometric,backgrounds,positioning}
 \floatstyle{boxed} 
 \restylefloat{figure}
 
@@ -1079,8 +1081,36 @@ frame $F_k$ allows $s$ to be generalized to $c$.
 \chapter{Implementation}
 \label{impl}
 
+\begin{figure}[t]
+\tikzstyle{io}=[fill=white,scale=0.8]
+\tikzstyle{component}=[rectangle,draw,fill=white,scale=0.9]
+\tikzstyle{label}=[font=\footnotesize]
+\begin{tikzpicture}[auto, scale = 0.6]
+  \node (input) [io] {AIGER Input};
+  \node (parser) [component, below of=input] {Parser}
+    edge [<-] (input);
+  \node (representation) [component, right=1em of parser]
+    {Conversion to Appropriate Representation}
+    edge [<-] (parser);
+  \node (mc) [component, right=1em of representation]
+    {Model Checker}
+    edge [<-] (representation);
+  \node (iminisat) [component, right=1em of mc]
+    {MiniSat Interface}
+    edge [<->] (mc);
+  \node (minisat) [io, above of=iminisat]
+    {MiniSat}
+    edge [<->] (iminisat);
+  \node (output) [io, above of=mc] {Output}
+    edge [<-] (mc);
+\end{tikzpicture}
+\caption{Interaction among main components.}
+\label{components}
+\end{figure}
+
 This chapter describes my implementation of the \emph{MC} model checkers.
-The implementation can be broken up into four main components: the AIGER parser
+The implementation can be broken up into four main components
+(see Figure \ref{components}): the AIGER parser
 (Section \ref{impl:aiger}), the
 MiniSat interface (Section \ref{impl:minisat}), the hardware model representation
 (Section \ref{impl:representation}), and the model checker
@@ -1234,7 +1264,7 @@ struct result {
 } res = {0, 0, 0, 0, 0};
 \end{lstlisting}
 
-The function \verb,solveWithAssumps,, a wrapper for the version of \verb,solve(),
+The function \verb,solveMinisatWithAssumps,, a wrapper for the version of \verb,solve(),
 that takes an assumption vector as an argument, returns a pointer to a
 \verb,result, struct rather than just whether or not the query was satisfiable.
 The Haskell interface uses the Haskell FFI and the \verb,hsc2hs, preprocessor
@@ -1255,8 +1285,38 @@ Many of the functions and datatypes in the interface are analogous to functions 
 the C wrapper and C++ implementation of MiniSat. For example, the \verb,Solver, datatype is an
 analogue to the MiniSat \verb,Solver, object, and itself contains a pointer to an instance of
 a MiniSat \verb,Solver, object. Similarly, functions such as \verb,solveWithAssumps, work
-analogously to the C wrapper's \verb,solveWithAssumps,, returning a \verb,Result, that contains
+analogously to the C wrapper's \verb,solveMinisatWithAssumps,,
+returning a \verb,Result, that contains
 whether or not the query was satisfiable and the model or conflict vector (if any).
+
+\begin{figure}[t]
+\tikzstyle{function}=[rectangle,draw,minimum width=4em,fill=white,font=\small\tt,scale=0.8]
+\tikzstyle{label}=[font=\footnotesize,scale=0.8]
+\begin{tikzpicture}[auto, scale = 0.6]
+  \node (haskell) [function] {solveWithAssumps s assumps {\it (Haskell MiniSat Interface)}};
+  \node (haskellffi) [function, below of = haskell]
+    {solveMinisatWithAssumps sol veclit {\it (Haskell FFI)}}
+    edge [<-] (haskell);
+  \node (wrapper) [function, below of=haskellffi]
+    {solveMinisatWithAssumps (solver, assumps)
+      {\it (C wrapper)}}
+    edge [<-] (haskellffi);
+  \node (minisat) [function, below of=wrapper]
+    {solver -> solve(*assumps) {\it (MiniSat)}}
+    edge [<-] (wrapper);
+  \node (wrapper') [function, right = 4em of wrapper]
+    {return \&res {\it (C wrapper)}}
+    edge [<-] (minisat);
+  \node (haskellffi') [function, above of = wrapper']
+    {peek {\it (Haskell FFI)}}
+    edge [<-] (wrapper');
+  \node (haskell') [function, above of = haskellffi']
+    {unsafePerformIO res {\it (Haskell MiniSat Interface)}}
+    edge [<-] (haskellffi');
+\end{tikzpicture}
+\caption{Function calls for {\tt solveWithAssumps}.}
+\label{solveWithAssumps}
+\end{figure}
 
 The information kept in a \verb,Result, is taken directly from the \verb,result, returned by
 the C Wrapper functions. I used the \verb,hsc2hs, preprocessor to help handle pointer offsets
