@@ -1277,9 +1277,11 @@ To extract models, the array values are accessed, and for each \emph{True} or \e
 value the corresponding positive or negative literal for that index is added to the
 \verb,Lit, list representing the model.
 
-\section{Hardware Models}
+\section{Hardware Representation}
 \label{impl:representation}
-\subsection{Representation}
+This section describes the representation and construction of hardware models (i.e.
+transition systems) and frames in \emph{MC}.
+\subsection{Harware Model Representation}
 \subsubsection{Literals and Clauses}
 The \verb,Lit, data structure in \verb,Model.Model, represents literals in
 the model checker.
@@ -1308,7 +1310,7 @@ The \verb,transition, list of clauses that specify latches and clauses that spec
 gates capture the transition relation $T$.
 The literal that gives the safety property is given by \verb,safe,.
 
-\subsection{Construction}
+\subsection{Hardware Model Construction}
 % Describe how transition systems are constructed given AIG models.
 
 The \verb,Model.Model, module contains functions to convert the \verb,Model, data
@@ -1407,6 +1409,14 @@ formula corresponding to the generated clauses:
 $$a \Leftrightarrow i_1 \wedge i_2 \simeq
 (\neg a \vee i_1) \wedge (\neg a \vee i_2) \wedge (\neg i_1 \vee \neg i_2 \vee a).$$
 
+\subsection{Frames}
+In addition to a representation of transition systems, \emph{MC} needs a representation
+of the frames used by the IC3 algorithm.
+The \verb,Frame, data structure represents frames in all implementations of \emph{MC}.
+Along with the set of clauses (represented by a list of literals), a \verb,Frame, also
+includes a \verb,Solver,, which contains at least all the clauses in the frame's set
+of clauses.
+The \verb,Solver, may also contain the \verb,transition, clauses for the hardware model.
 
 \section{Model Checking}
 \label{impl:modelchecker}
@@ -1441,7 +1451,7 @@ implementations of the model checker except {\it PriorityQueue}
 and compare this structure with Figure \ref{overview} (see Section
 \ref{pqueue} for \emph{PriorityQueue}).
 
-The main components of the algorithm here are as follows:
+The main components of the algorithm in Figure \ref{recstr} are as follows:
 \begin{itemize}
 \item The {\it prove} component (line \ref{recstr:prove})
 takes a model $M$ and a property $P$ as input
@@ -1522,9 +1532,10 @@ rather to the while loop that contains that function.
 Because functions in Haskell are pure, the assumption made in Figure \ref{overview}
 that function can could modify the set of (passed-by-reference) frames can no longer be made.
 Instead, the updated values of frames are returned explicitly from the function call in
-a tuple along with any other values needed from the function call. For example,
-{\it proveNegCTI} on line \ref{recstr:proveNegCTI} in Figure \ref{recstr} returns not only
-the result
+a tuple along with any other values needed from the function call, as seen in
+{\it proveNegCTI}, {\it propagate}, and {\it push}.
+For example, {\it proveNegCTI} (line \ref{recstr:proveNegCTI})
+returns not only the result
 indicating whether or not the negated CTI was proven, but also returns the possibly updated
 values for the frontier frame $G_k$ and previous frames $G_0, \ldots, G_{k - 1}$.
 
@@ -1557,12 +1568,6 @@ The actual implementation of the ${\it propagate}$ function returns type \verb,M
 but for the sake of discussing the high level structure of the implementation,
 it is assumed here to return a pair of a Boolean value indicating whether a fixed point
 has been found while pushing clauses and a list of the updated frames.
-
-\subsection{Frames}
-The \verb,Frame, data structure represents frames in all implementations of the model checker.
-Along with the set of clauses (represented by a list of literals), a \verb,Frame, also includes
-a \verb,Solver,, which contains at least all the clauses in the frame's set of clauses. The
-\verb,Solver, may also contain the \verb,transition, clauses for the hardware model.
 
 \subsection{Initiation}
 %Describe how the step involving the initiation query is implemented.
@@ -1809,8 +1814,10 @@ $(s, i)$.
 The variant of the algorithm used in the {\it PriorityQueue} implementation
 relies on a priority queue of proof obligations.
 When a proof obligation $(s,i)$ is added to the priority queue,
-it is assigned a priority higher than any proof obligation in the queue $(t,j)$ with $j > i$
-and lower than any proof obligation in the queue $(u,k)$ with $k \leq i$. I discuss the
+it is assigned a priority higher than any proof obligation in the queue $(t,j)$ with $j > i$,
+lower than any proof obligation in the queue $(u,k)$ with $k < i$, and lower
+than any proof obligation already in the queue with the same depth (i.e. any
+proof obligation in the queue $(v, i)$). I discuss the
 way that the implementation achieves this priority ordering later.
 
 Unlike the other variants, in the {\it PriorityQueue} implementation, there is
