@@ -759,17 +759,17 @@ where
 The different components are specified after the header
 in the order that their counts are given in the header.
 
-In the ASCII version of the format, inputs are specified by giving the
-index that represents the positive literal for its corresponding variable name,
-and outputs are specified similarly as single indices (that may represent
-literals of any sign).
+In the ASCII version of the format, an input is specified by the
+index giving the positive literal for its corresponding variable name,
+and an output are specified similarly by a single index (that may represent
+a literal of any sign).
 
-Latches have initial value 0 (i.e., {\it False}) and are specified by giving the
-index representing the positive literals for their corresponding variable name
-followed by the index for their next-state value.
-AND gates, which are always binary,
-are specified by giving the indices that represent the positive literal
-for their variable name and the two indices that specify their input values.
+A latch has initial value 0 (i.e., {\it False}) and is specified by the
+index representing the positive literals for its corresponding variable name
+followed by the index for its next-state value.
+An AND gate, which is always binary,
+is specified by the index representing the positive literal
+for its variable name and the two indices that specify its input values.
 
 \begin{figure}[t]
 \centering
@@ -779,13 +779,13 @@ for their variable name and the two indices that specify their input values.
 \end{figure}
 
 For example, the circuit in Figure \ref{aagCircuit} is represented
-as follows (the comments to the right are not part of the specification):
+as follows (comments to the right are not part of the specification):
 \begin{verbatim}
 aag 3 0 2 1 1
-2 3           D-latch (output wire has index 2)
-4 2           D-latch (output wire has index 4)
-6             Output
-6 2 4         AND gate
+2 3              D-latch (output wire has index 2)
+4 2              D-latch (output wire has index 4)
+6                Output
+6 2 4            AND gate
 \end{verbatim}
 The circuit has no inputs, two latches with indices $2$ and $4$ and one AND gate
 with index $6$ that takes the outputs of the two latches as inputs.
@@ -1110,11 +1110,11 @@ differences among them are given in the following table:\\
 
 %I now briefly explain the motivations for the deviations from the \emph{Basic}
 %implementation. The details of these deviations are given in Section \ref{impl:modelchecker}.
-The ``Priority Queue'' alteration was based on observations that using priority
-queues to keep track of proof obligations is more efficient than the simple
+The ``Priority Queue'' alteration was based on observations that keeping
+track of proof obligations with priority queues is more efficient than the simple
 recursive implementation of the IC3 algorithm \cite{een11,griggio14}.
-The ``Smaller CTIs'' alteration was based on observations that it is better to
-find predecessors to counterexamples that describe sets of several states rather
+The ``Smaller CTIs'' alteration was based on the improvement of finding
+predecessors to counterexamples that describe sets of several states rather
 than singleton states \cite{griggio14}.
 The ``Subsumed Clauses'' alteration was based on the observation that subsumed clauses slow
 down the SAT-solver and should be eliminated to achieve better performance
@@ -1146,7 +1146,7 @@ The \verb,Model, data structure stores the number of variables and
 number of inputs. It also stores lists of literals that represent the outputs, bad states,
 and invariant constraints. The data structure also stores latches and AND gates as
 lists of literal lists. I discuss the representation of literals, latches, and
-AND gates below.
+AND gates.
 
 Literals are represented by \verb,Lit,s (defined in Section \ref{prep:haskell}),
 which store decoded versions of AIGER indices. The {\tt Lit} datatype
@@ -1371,8 +1371,9 @@ The \verb,makeAnds, function uses the values of $a$, $i_1$, and $i_2$ to generat
 By the semantics of AND gates, the current-state clauses generated should have a conjunction
 logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$ and the next-state
 clauses generated should have a conjunction logically equivalent to
-$a' \Leftrightarrow i_1' \wedge i_2'$. To achieve the necessary logical equivalence
-for the next-state clauses, the generated current-state clauses are primed.
+$a' \Leftrightarrow i_1' \wedge i_2'$. The next-state clauses are generated
+by priming the generated current-state clauses, so they satisfy
+$a' \Leftrightarrow i_1' \wedge i_2'$.
 
 If both $i_1$ and $i_2$ are Booleans (corresponding to both \verb,in1, and \verb,in2, using the \verb,Boolean,
 constructor for \verb,Parser.AigModel.Lit,s), then a singleton clause suffices to describe the AND gate.
@@ -1476,7 +1477,9 @@ takes the current frames $[G_0, \ldots, G_k]$ as input and
 returns a pair $({\it fixed}, [H_0, \ldots, H_{k-1}, H_k])$, where {\it fixed} is {\it True}
 iff the propagation phase loop in Figure \ref{overview} would have returned {\it True}.
 Each $H_i$ gives the value that the frame $F_i$ would have after the propagation
-phase updated it in Figure \ref{overview}.
+phase updated it in Figure \ref{overview}. The Haskell implementation of this component
+returns a \verb,Maybe [Frame],, where the function returns \verb,Nothing,
+when {\it fixed} is {\it True}.
 \item The {\it push} component (line \ref{recstr:push})
 takes two frames $F$ and $F'$ as input and returns a
 pair $({\it fixed}, G')$, where {\it fixed} is {\it True} iff all clauses in $F$ can
@@ -1494,7 +1497,7 @@ clauses from $F$ to $F'$.
   \Return ${\it prove'}(M,P,I,{\rm nil})$ \label{recstr:prove'call}
 }
 \Fn{${\it prove'}(M,P,F_k,[F_0,\ldots,F_{k - 1}])$ \label{recstr:prove'}}{
-  \eIf{$F_k \wedge T \Rightarrow P'$}
+  \eIf{$F_k \wedge T \Rightarrow P'$ \label{recstr:consecution}}
   {\Return{{\it pushFrame}$(F_k, \emptyset,M,P,[F_0,\ldots,F_{k - 1}])$} \label{recstr:pushFrameCall}}
   {\Let{{\it cti} = {\it nextCTI}$(F_k \wedge T \Rightarrow P')$ \label{recstr:nextCTI}, \;
   $({\it result}, [G_0,\ldots,G_{k - 1}], G_k)$ = {\it proveNegCTI}$(M,{\rm cti},k - 1)$ \label{recstr:proveNegCTI}} 
@@ -1537,19 +1540,24 @@ In addition to the necessary language-related modifications to the algorithm, I 
 change to how often the full propagation phase is carried out, calling the {\it pushFrame}
 function (line \ref{recstr:pushFrame}) instead where appropriate.
 
-In Figure \ref{overview}, each iteration of the algorithm calls the propagation
-phase (line \ref{forprop} in Figure \ref{overview});
-however, if the consecution query succeeds and a new frontier frame $F_k$
-is added in that iteration, then none of the frames have had any new clauses
-added to them. As a result, the only frame that modified during the propagation phase
-is the frame $F_k$ because all the frames before $F_{k - 1}$ have already had all
-possible clauses pushed forward in previous iterations.
-Similarly, the only way a fixed point would be detected is if $F_{k - 1} = F_k$,
-since all pairs of consecutive frames except $(F_{k - 1}, F_k)$ have been checked for
-equality.
+%In Figure \ref{overview}, each iteration of the algorithm calls the propagation
+%phase (line \ref{forprop} in Figure \ref{overview});
+%however, if the consecution query succeeds and a new frontier frame $F_k$
+%is added in that iteration, then none of the frames have had any new clauses
+%added to them. As a result, the only frame that modified during the propagation phase
+%is the frame $F_k$ because all the frames before $F_{k - 1}$ have already had all
+%possible clauses pushed forward in previous iterations.
+%Similarly, the only way a fixed point would be detected is if $F_{k - 1} = F_k$,
+%since all pairs of consecutive frames except $(F_{k - 1}, F_k)$ have been checked for
+%equality.
 
-In the case that the consecution query succeeds, considering pairs of frames other
-than $(F_{k - 1}, F_k)$ is unnecessary work. The modified algorithm is such that
+In the case that the consecution query (line \ref{recstr:consec}) succeeds,
+considering pairs of frames other
+than $(F_{k - 1}, F_k)$, where $F_{k - 1}$ is the old frontier frame and $F_k$ is
+the newly-created frontier frame, is unnecessary work.
+Since no frames have been updated, there is nothing to push to frames $F_i$ with
+$0 \leq i < k$.
+The modified algorithm is such that
 that when the consecution query succeeds, it calls the ${\it pushFrame}$ function
 (line \ref{recstr:pushFrameCall}) that
 checks only a single pair of frames (which also makes the recursive call to ${\it prove}$).
@@ -1557,20 +1565,20 @@ When the consecution query fails, the adjusted algorithm, like the original in F
 calls the ${\it propagate}$ function (line \ref{recstr:propagate})
 to handle the updates to the frames made by ${\it proveNegCTI}$.
 
-The {\it propagate} function carries out the propagation phase of the algorithm.
-The actual implementation of the ${\it propagate}$ function returns type \verb,Maybe [Frame],,
-but for the sake of discussing the high level structure of the implementation,
-it is assumed here to return a pair of a Boolean value indicating whether a fixed point
-has been found while pushing clauses and a list of the updated frames.
+%The {\it propagate} function carries out the propagation phase of the algorithm.
+%The actual implementation of the ${\it propagate}$ function returns type \verb,Maybe [Frame],,
+%but for the sake of discussing the high level structure of the implementation,
+%it is assumed here to return a pair of a Boolean value indicating whether a fixed point
+%has been found while pushing clauses and a list of the updated frames.
 
 \subsection{Initiation}
 %Describe how the step involving the initiation query is implemented.
 
 The initiation query $I \Rightarrow P$ is an implication, but a MiniSat \verb,Solver, can only
 solve queries given in CNF (with an optional assumption cube).
-As a result, the implementation of the query $I \Rightarrow P$ for a frame $I$ and a
+As a result, the implementation of query $I \Rightarrow P$ for frame $I$ and
 clause $P$ makes use of the fact that
-$I \Rightarrow P$ is holds iff $\neg P \wedge I$ is unsatisfiable.
+$I \Rightarrow P$ holds iff $\neg P \wedge I$ is unsatisfiable.
 The resulting implementation in \verb,IC3.hs, is the following:
 
 \begin{lstlisting}
