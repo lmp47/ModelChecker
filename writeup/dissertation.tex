@@ -1458,7 +1458,9 @@ constructor for \verb,Parser.AigModel.Lit,s), then a singleton clause suffices t
 If $i_1 \wedge i_2$ holds, then the singleton clause $\{a\}$ describes the constantly {\it True} AND gate,
 and if not, then the singleton clause $\{\neg a\}$ describes the constantly {\it False} AND gate.
 
-If only one of the inputs ($i_1$ and $i_2$) is a Boolean, then the clauses equivalent to $a \Leftrightarrow i$
+If only one of the inputs ($i_1$ and $i_2$) is a Boolean, then if it is {\it False},
+the singleton clause $\{\neg a\}$ is generated. Otherwise,
+the clauses equivalent to $a \Leftrightarrow i$
 are generated, where $i$ is the input that is not a Boolean value and the clauses to generate for $a \Leftrightarrow i$ 
 are described in the explanation for generating clauses for latches.
 
@@ -1973,18 +1975,18 @@ This chapter discusses the evaluation of the model checker implementations.
 I describe the solving capabilities of the \emph{MC} variants (Section \ref{eval:solving})
 and how the project aim of being able to solve several solve examples has been met,
 the output of the model checker (Section \ref{eval:output}), how benchmarks were
-taken (Section \ref{eval:benchmarking}. I then compare the variants' performance
+taken (Section \ref{eval:benchmarking}). I then compare the variants' performance
 with each other (Section \ref{eval:variants}) and with the reference implementation
 \emph{IC3ref} (Section \ref{eval:ic3ref}).
 
 To evaluate the implementations, I ran all variants
-on fourteen handwritten examples and over one hundred examples taken from
+on fourteen handwritten examples and 150 examples taken from
 the Hardware Model Checking Competitions spanning four years \cite{hwmcc10, hwmcc11, hwmcc13}.
 I chose examples from HWMCC'10 that had relatively short (under 2 second)
 solving times for \verb,ic3,'s in the competition.
 Examples were also chosen from HWMCC'11 that did not overlap with HWMCC'10 examples.
 To avoid having as much overlap between examples as those from HWMCC'10 and HWMCC'11,
-I skipped HWMCC'12 and took examples
+I did not take examples from HWMCC'12 and instead took examples
 with relatively short solving times for some of the solvers from HWMCC'13
 \cite{hwmcc13}.
 
@@ -2005,7 +2007,7 @@ involve checking that results from MiniSat queries (including model and conflict
 vectors), and the model-checking tests involve checking the results for specific
 functions in \verb,IC3.hs, such as \verb,consecution,.
 
-The variants could solve all the handwritten examples and fifty of the HWMCC examples within
+The variants could solve all the handwritten examples and fifty HWMCC examples within
 ten minutes correctly, and some
 variants were able to solve additional examples without timing out.
 All solutions reported solutions within the time limit agree with those
@@ -2017,7 +2019,7 @@ was meant to correctly solve as part of the aims of the project, with the larges
 (in terms of number of variables) of the handwritten examples,
 \verb,simple_counters.aig,, having 82 variables, 77 of which are AND gates.
 To provide context for the typical number of variables in the small examples,
-the following table provies the number of variables in the handwritten examples involving
+the following table provides the number of variables in the handwritten examples involving
 a two-bit counter (\verb,counters2.aig,), a three-bit counter (\verb,counters3.aig,),
 and a four-bit counter (\verb,counters4.aig,):
 \begin{center}
@@ -2037,9 +2039,21 @@ the largest (in terms of number of variables) unsafe example for which the varia
 solution was \verb,bj08goodbakerycyclef7.aig, with 19900 variables,
 and the largest safe example for which the variants gave a solution
 was \verb,pdtvsar8multip26.aig, with 7174 variables.
-%Note that the number of variables in an example is only weakly
-%correlated with the amount of time needed to solve the example.
-% (simple linear regression gives $r^2$ less than $0.3$).
+The following table provides context for the typical number of variables in HWMCC
+examples:
+\begin{center}
+\begin{tabular}{|l | p{15em} | p{15em}|}
+\hline
+Year & Smallest Number of Variables in an Example & Largest Number of Variables in an
+Example \\
+\hline
+HWMCC'10 & 19 & 98090\\
+HWMCC'11 & 172 & 138502\\
+HWMCC'13 & 548 & 5623524\\
+\hline
+\end{tabular}
+\end{center}
+
 \section{Empirical Analysis}
 
 \subsection{Output Format}
@@ -2098,20 +2112,20 @@ variants of the model checker have on the size and number of SAT-solver queries 
 
 \begin{figure}[t]
 \includegraphics[width=16cm]{litspercls.pdf}
-\caption{Average literals per clause averaged over the fourteen handwritten examples and fifty Hardware
+\caption{Average literals per clause averaged over the 14 handwritten examples and fifty Hardware
 Model Checking Competition examples.}
 \label{eval:lits}
 \end{figure}
 
 \begin{figure}[t]
 \includegraphics[width=16cm]{handwritten.pdf}
-\caption{Benchmark results for the fourteen handwritten examples on a log scale.}
+\caption{Benchmark results for the 14 handwritten examples on a log scale.}
 \label{eval:time}
 \end{figure}
 
 \begin{figure}[!ht]
 \includegraphics[width=16cm]{numqueries.pdf}
-\caption{Number of queries for each variant run on the fourteen handwritten examples on a log scale.}
+\caption{Number of queries for each variant run on the 14 handwritten examples on a log scale.}
 \label{eval:queries}
 \end{figure}
 
@@ -2125,13 +2139,14 @@ literals per clause (as seen in Figure \ref{eval:lits}), which suggests smaller 
 As mentioned previously, because the \emph{BetterCTI} implementation uses
 CTIs that encompass sets of states rather than single states, when a negated CTI is proven at a depth
 $k$, several states have been shown to be unreachable within $k$ steps of the transition relation
-from the initial state. Dealing with sets of states rather than single CTI states should allow
+from the initial state. Dealing with a set of states rather than a single CTI state
+at a time should allow
 the \emph{BetterCTI} implementation to deal with fewer CTIs in some cases (because the CTI sets of states
 may encompass several CTI states), leading to fewer queries. Benchmark results
 agree with these expectations; for examples that require finding more than one CTI, \emph{BetterCTI}
-finds fewer CTIs and makes fewer queries. For example, the \emph{Basic} variant finds 59
-CTIs and makes 414 queries to solve \verb,shortp0.aig,, but the \emph{BetterCTI} variant only
-finds 3 CTIs and makes 49 queries, an order of magnitude difference.
+finds fewer CTIs and makes fewer queries.
+For example, the \emph{Basic} variant finds 59 CTIs and makes 414 queries to solve
+\verb,shortp0.aig,, but the \emph{BetterCTI} variant only finds 3 CTIs and makes 49 queries, an order of magnitude improvement (see Appendix \ref{benchmarks}). 
 
 The improvement of finding more general CTIs enabled the \emph{BetterCTI} variant of the implementation
 (and all other implementations that include finding smaller CTIs) to
@@ -2152,9 +2167,9 @@ because it makes smaller queries.}
 
 \paragraph{Counterexamples to Generalization}{
 The \emph{CTG} variation that deals with CTGs performs worse than the \emph{BetterPropagation} version
-on examples, even in cases where \emph{CTG} reduces the average number of frames per clause,
+on examples, even in cases where \emph{CTG} reduces the average number of frames per clause (see Figures \ref{eval:time}, \ref{eval:litspercls}),
 most likely because the examples used are too small for the performance benefits of using CTGs to
-eliminate more states to overcome the overheads of finding and proving negated CTGs, which require
+eliminate more states to overcome the overhead of finding and proving negated CTGs, which require
 making additional queries on each call to the \verb,inductiveGeneralization, function.
 
 Similar results can be found
@@ -2164,10 +2179,11 @@ the reference implementation performs better overall with CTG-handling disabled.
 
 \paragraph{Priority Queues}{
 The \emph{PriorityQueue} implementation generally does not perform as well as the
-implementations that do not use priority queues (with the exception of \emph{CTG}).
+other variants, with the exception of \emph{CTG} (as seen in Figure \ref{eval:time}).
 This result disagrees with findings that implementations of the IC3 algorithm that
 use priority queues are more efficient than simple recursive implementations
 \cite{een11,griggio14}.
+
 There are
 two features of the variant in particular that may account for its worse performance: accumulating
 CTIs and early generalization.
@@ -2175,23 +2191,29 @@ CTIs and early generalization.
 One of the performance advantages of the \emph{PriorityQueue} implementation is that CTIs do not need
 to be rediscovered \cite{een11}: after a proof obligation $(s,i)$ is enqueued, until the algorithm fails or finds a fixed point,
 the queue will always contain a proof obligation $(s,j)$ for $j \geq i$. When the proof obligation $(s,i)$
-fulfilled at a certain depth $i$, $(s,i + 1)$ is then enqueued, If $s$ is a CTI for proving a property
-$p$ at depth $i + 2$ (i.e. proof obligation $(\neg p, i + 2)$), by the time \verb,proveObligations, removes
-proof obligation $(\neg p, i + 2)$ from the priority queue, $(s, i+1)$ has already been fulfilled, so the
-CTI $s$ would not, after its initial discovery, need to be discovered again.
+fulfilled at a certain depth $i$, $(s,i + 1)$ is then enqueued.
 
-%As with the handling of CTGs, avoiding the rediscovery of CTIs may result in worse performance for smaller
-%examples. Proof obligations that do not need to be fulfilled in order to find the fixed point may
-%have to be proven in the \emph{PriorityQueue} implementation: even if $s$ is not a CTI for proving $p$
-%at depth $i + 2$, the proof obligation $(s, i+1)$ would still need to be fulfilled before the
-%\verb,proveObligations, attempts to fulfill $(\neg p, i + 2)$.
+Considering an example can help understand how re-enqueuing fulfilled obligations at
+greater depths prevents the need to rediscover CTIs.
+If $s$ is a CTI for proving a property
+$p$ at depth $i + 2$, then the proof obligation $(s, i+1)$ must be fulfilled
+in order to fulfill proof obligation $(\neg p, i+2)$. If $(s,i)$ is already
+in the priority queue, then \verb,proveObligations, must fulfill and
+remove $(s,i)$ from the
+priority queue and enqueue $(s, i + 1)$ before reaching proof obligation
+$(\neg p, i + 2)$. It must also then fulfill and remove $(s, i + 1)$ before
+reaching proof obligation $(\neg p, i + 2)$. By the time \verb,proveObligations,
+attempts to fulfill $(\neg p, i + 2)$, the CTI $s$ has already been proven
+unreachable in $i + 1$ steps; if there is a CTI preventing a proof obligation
+from being fulfilled ater $(s,i)$ has been fulfilled, then the CTI must be different
+from $s$.
 
 The \emph{PriorityQueue} implementation performs inductive generalization for each CTI only once, though,
 when that CTI's first proof obligation is first enqueued. Rediscovering CTIs would allow the CTIs to
 be generalized relative to later frames as well, rather than only to the first frame relative to which
-the negated CTI is inductive. Not generalizing CTIs relative to later frames may lead to
-\emph{PriorityQueue} making larger queries and explain the variant's higher average number of
-literals per clause.
+the negated CTI is inductive. Not generalizing CTIs relative to later frames may
+explain \emph{PriorityQueue}'s higher average number of
+literals per clause (which suggests larger queries).
 }
 
 \section{Reference Implementation}
@@ -2211,30 +2233,27 @@ a garbage-collected language. I mention other differences between the implementa
 some of the performance differences below.
 
 \subsubsection{Model Representation}
-The reference implementation differs from this project's implementations in representing the hardware model,
-which may account for some of the performance differences.
-
+\label{eval:ic3ref:model}
+The reference implementation has a different hardware model representation than
+\emph{MC}, which may account for some of the performance differences.
 The reference implementation keeps track of which variables are inputs, latches, and AND gates.
 Each \verb,Model, maintains both the the primed and current values for inputs and latches and keeps a
 table to memoize the values of AND gates.
 
-%The next-state value for an unprimed variable is provided by a call to the \verb,primeVar, function in the
-%\verb,Model, class, which returns the stored value for the corresponding primed variable
-%if the variable is an input or latch. If the variable is the output of an AND gate, the \verb,Model,
-%either returns a precomputed, stored value for that primed variable or calculates the value of the output
-%of the AND gate, inserts the value into the AND table, and returns that value.
-
 As mentioned earlier, when the consecution query $F_k \wedge T \Rightarrow P'$ fails, this corresponds
-to the CNF query $F_k \wedge T \wedge \neg P'$ being satisfiable, and while a full satisfying assignment
+to the CNF query $F_k \wedge T \wedge \neg P'$ being satisfiable.
+While a full satisfying assignment
 $s$ gives a CTI state, it is better to use a set of states $c \subset s$ as a CTI cube, so that several
 CTI states can be eliminated at once.
 The \verb,stateOf, function uses the information kept in \verb,Model,s to extract the smaller
 cube from the model $s$ giving the satisfying assignment for a failed consecution query directly,
 without further SAT-solver queries.
-The Haskell implementations instead use several SAT-solver queries to extract the necessary literals
+The \emph{MC} implementations do not store as much information in their hardware
+models and instead use several SAT-solver queries to extract the necessary literals
 from $s$.
 
 \subsubsection{MiniSat}
+\label{eval:ic3ref:minisat}
 The reference implementation is more closely coupled to MiniSat's implementation. Because both the reference
 implementation and MiniSat are in C++, the reference implementation can and does call MiniSat functions
 and instantiate MiniSat objects, such as \verb,SimpSolver,s directly.
@@ -2246,27 +2265,34 @@ Haskell data structures.
 The reference implementation also makes use of empirical results to improve the performance of MiniSat queries.
 For example, in the \verb,stateOf, function, which extracts a model from a failed consecution query
 (to e.g. find a CTI cube), the set of literals passed to the MiniSat \verb,Solver, are reordered according
-to an ordering of that was found to be the best choice empirically \cite{minisat}.
+to an ordering that was found to be the best choice empirically \cite{minisat}.
 
 \subsubsection{Overall Structure}
 
-The reference implementation uses a priority queue, but handles proof obligations
-differently than the {\it PriorityQueue} implementation does because \emph{IC3ref}
-does not attempt to reduce the number of generalization attmpts or prevent
-the rediscovery of CTIs.
+The reference implementation is implemented in an imperative language and
+uses a priority queue, resulting in a different structure from the
+\emph{MC} implementations. It also handles proof obligations
+differently than the \emph{PriorityQueue} implementation does.
+The \emph{PriorityQueue} implementation tries to improve performance by
+preventing the rediscovery of
+CTIs and reducing the number of generalization attempts,
+but \emph{IC3ref} does not.
 
 For a CTI $s$ that prevents the fulfillment
 of a proof obligation at depth $i$, the reference implementation enqueues proof
 obligation $(s,i - 1)$
 and performs generalization relative to the frame $F_{i - 1}$ each time $\neg s$ has been shown
 to be inductive relative to frame $F_{i - 1}$. Generalization does not seem
-to be as expensive for \emph{IC3ref} as the Haskell implementations, probably as a
-result of aforementioned differences.
-The reference implementation also does not
+to be as expensive for \emph{IC3ref} as \emph{MC}, probably as a
+result of the model representation (Section \ref{eval:ic3ref:model}) and
+MiniSat interface (Section \ref{eval:ic3ref:minisat}) differences.
+
+Because the reference implementation does not prevent CTIs from being rediscovered,
+it does not
 enqueue a new proof obligation $(s, i+1)$ each time a proof obligation $(s, i)$ has been
-fulfilled as the \emph{PriorityQueue} implementation does,
-so CTIs need to be rediscovered. The efficiency of \emph{IC3ref} otherwise compensates
-for the performance disadvantage of rediscovering CTIs.
+fulfilled as the \emph{PriorityQueue} implementation does.
+The efficiency of \emph{IC3ref}'s other components compensates
+for the performance disadvantage of needing to rediscover CTIs.
 The safety property is maintained and
 handled separately from CTIs; its negation is not included as part of a proof obligation
 placed in the priority queue.
