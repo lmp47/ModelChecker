@@ -155,11 +155,12 @@ hardware design throughout the semi-conductor industry.
 
 Formal methods is an umbrella term that refers to any application of mathematics or logic
 in the improvement of the design or implementation of hardware or software systems.
-One such technique falling under the ``formal methods'' banner is formal verification,
-which focuses on proving properties of
+For example, type checking is a widely-used form of formal methods that
+proves that programs are well-typed.
+Formal verification is a form of formal methods that
+that focuses on proving properties of
 systems.
-For example, type checking provides a widely-used form of software verification,
-proving that programs are well-typed. The formal verification technique of model
+The formal verification technique of model
 checking has been used to verify that circuits correctly implement the SRT
 algorithm that the Pentium processors with the FDIV bug did not \cite{clarke96}.
 
@@ -288,9 +289,9 @@ project proposal, I have met and exceeded all aims.
 
 This chapter describes the knowledge gained and plans made while preparing
 to begin writing code for the project.
-The preparation for the project involved learning purely functional
-programming language Haskell (Section \ref{prep:haskell}),
-an analysis that distinguishes the main components of the project
+The preparation for the project involved learning
+Haskell (Section \ref{prep:haskell}),
+distinguishing the main components of the project
 (Section \ref{prep:requirements}), choosing and learning how to use
 the necessary tools for implementing the components of the project
 (Sections \ref{prep:tools}, \ref{prep:aiger}, \ref{prep:minisat}),
@@ -298,7 +299,7 @@ and gaining the necessary knowledge about the symbolic representation
 of hardware models
 (Section \ref{prep:logic}) and the IC3 algorithm (Section \ref{prep:ic3}) to
 adequately complete my project.
-Throughout this chapter and subsequent ones, I collective refer to the model checker
+Throughout this chapter and subsequent ones, I collectively refer to the model checker
 variants implemented as part of this project as \emph{MC}.
 
 \section{Haskell}
@@ -316,9 +317,8 @@ I assume a working knowledge of Standard ML.
 Unlike in Standard ML, there is no keyword in Haskell for defining functions. Instead,
 Haskell functions are defined as a series of equations. Otherwise,
 Haskell function definitions are similar to Standard ML function definitions with the
-\verb,fun, keyword omitted, though curried functions are more common in Haskell than
-Standard ML. Anonymous functions in Haskell are also defined similarly
-as they are in Standard ML, using \verb,\, to bind variables analagously to Standard
+\verb,fun, keyword omitted. Anonymous functions in Haskell are also defined similarly
+as in Standard ML, using \verb,\, to bind variables analagously to Standard
 ML's \verb,fn, keyword. Similarly to Standard ML, Haskell performs pattern matching
 for function definitions and \verb,case, expressions. The pattern languages Standard
 ML and Haskell are identical.
@@ -327,7 +327,7 @@ ML and Haskell are identical.
 \paragraph{Types}{
 Haskell is a strongly- and statically-typed language.
 %Type constructors
-Haskell type constructors and datatype declarations are largely similar to those in
+Haskell type constructors and datatype declarations are similar to those in
 Standard ML. A new Haskell datatype is declared using the \verb,data, keyword, an analogue
 of Standard ML's \verb,datatype, keyword.
 Haskell also provides record syntax for creating new record types, allowing components
@@ -376,7 +376,7 @@ value of some type \verb,a, and returns an instance \verb,m, of the
 The \verb,>>=, infix operator (`bind') allows computations to be composed.
 As expected given its type signature
 \verb,(>>=) :: Monad m => m a -> (a -> m b) -> m b,, the function
-takes a Monadic value containing a computation that produces a value of type
+takes a monadic value containing a computation that produces a value of type
 \verb,a, and a function that takes values of type \verb,a, and returns
 monadic values, and returns the result of applying the function to the value.
 The \verb,>>, infix operator, which has type signature
@@ -434,7 +434,7 @@ as its analogue.
 \paragraph{Modules}{
 A Haskell program consists of modules, which organize code.
 Modules (or just selected functions from modules) can be imported into other
-modules, which is how library functions can be used. Modules can be referred
+modules, which allows library functions to be used. Modules can be referred
 to (e.g. in import statements) by names that incorporate where they are
 stored in the directory structure. For example, the \verb,Model, module in file
 \verb,Model/Model.hs, can be referred to as \verb,Model.Model,.
@@ -454,8 +454,8 @@ I chose the AIGER format for representing the hardware models and the
 MiniSat SAT solver for answering SAT queries, resulting in a need for an
 AIGER parser and a Haskell interface to MiniSat. The choice of
 the AIGER format allows \emph{MC} to be run on examples from
-the Hardware Model Checking Competition (HWMCC), since this is the format used
-to specify examples in the competitions. I chose the MiniSat SAT
+the Hardware Model Checking Competition (HWMCC), since the competitions
+use this format to specify examples. I chose the MiniSat SAT
 solver to allow for better comparison of \emph{MC}
 with Aaron Bradley's reference implementation of IC3 (\emph{IC3ref})\cite{refic3}.
 Because MiniSat is the solver used by \emph{IC3ref}, using it as the solver
@@ -481,15 +481,15 @@ the project's code.
 
 \paragraph{Git}{
 The Git version control system \cite{git}
-was used for managing the project's code, and
-GitHub \cite{github}, a widely-used hosting service for Git repositories, was used to
-keep backups of the code.
+was used for managing the project's code, and the Git repository
+hosting service GitHub \cite{github} was used to
+keep backups.
 The previous versions maintained by the system proved useful in
 the development of the code, and branching and merging capabilities were
 useful for organizing variations of the model checker.
 I used Git submodules, which allow the inclusion of other Git projects within another
 project, to include MiniSat within the project, enabling easier
-acquisition of project dependencies (i.e., MiniSat can be obtained by running
+acquisition of project dependencies (e.g., MiniSat can be obtained by running
 \verb,git submodule init, after running \verb,git clone, to clone the repository).}
 
 \paragraph{Haddock}{
@@ -657,7 +657,7 @@ that every variable appears in the formula exactly once.
 An incomplete assignment of variables in the transition system is a cube such that
 at least one variable in the transition system does not appear in the cube. Such an
 assignment $c$ specifies the set of cubes $\{a \in{\it Full~Assignment}|c \subset a\}$,
-where ${\it Full Assignment}$ is the set of complete assignments to the variables in the
+where {\it Full Assignment} is the set of complete assignments to the variables in the
 transition system.
 More generally, any logical formula $b$ involving the variables in the transition
 system gives the set of states
