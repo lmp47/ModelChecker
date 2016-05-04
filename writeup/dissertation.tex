@@ -281,14 +281,15 @@ and attempt to draw some conclusions from my empirical data
 \end{itemize}
 
 I provide a summary of the completed work and ideas for
-future work in Chapter \ref{conc}. With reference to the project aims submitted in my
-project proposal, I have met and exceeded all aims.
+future work in Chapter \ref{conc}. %With reference to the project aims submitted in my
+%project proposal, I have met and exceeded all aims.
+I have met and exceeded all aims submitted in the project proposal.
 
 \chapter{Preparation}
 \label{prep}
 
 This chapter describes the knowledge gained and plans made while preparing
-to begin writing code for the project.
+to write code for the project.
 The preparation for the project involved learning
 Haskell (Section \ref{prep:haskell}),
 distinguishing the main components of the project
@@ -795,7 +796,7 @@ The output of the whole circuit is the output of the AND gate.
 \section{MiniSat}
 \label{prep:minisat}
 
-MiniSat is the SAT solver used by the \emph{MC} implementations. The creation of a
+The creation of a
 working interface to MiniSat required some background knowledge of how MiniSat
 works. The MiniSat code explained in this section is in C++.
 
@@ -947,7 +948,7 @@ hold, and the algorithm terminates (line \ref{Unsafe}).
 
 Because there may be several CTIs, it is necessary to
 perform the consecution query again (line \ref{reconsec}). If it fails again,
-the process of finding the new counterexample to induction state(s) $d$ and trying to
+the process of finding the new CTI state(s) $d$ and trying to
 prove that $\neg d$ holds at depth $k$ repeats. Upon the success of the consecution
 query, the algorithm moves to the propagation phase.
 
