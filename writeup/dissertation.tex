@@ -1174,8 +1174,8 @@ which stores the components specified in the AIGER file.
 \subsection{Model}
 
 The \verb,Model, data structure stores the number of variables and
-number of inputs. It also stores lists of literals that represent the outputs, bad states,
-and invariant constraints. The data structure also stores latches and AND gates as
+number of inputs as well as lists of literals that represent outputs, bad states,
+and invariant constraints. It also stores latches and AND gates as
 lists of literal lists. Below, I discuss the representation of literals, latches, and
 AND gates.
 
@@ -1490,7 +1490,7 @@ $$a \Leftrightarrow i_1 \wedge i_2 \simeq
 \subsection{Frames}
 In addition to a representation of transition systems, \emph{MC} needs a representation
 of the frames used by the IC3 algorithm.
-The \verb,Frame, data structure represents frames in all implementations of \emph{MC}.
+The \verb,Frame, data structure represents frames in all backends.
 Along with the set of clauses (represented by a list of literals), a \verb,Frame, also
 includes a \verb,Solver,, which contains at least all the clauses in the frame's set
 of clauses.
@@ -1499,13 +1499,13 @@ The \verb,Solver, may also contain the \verb,transition, clauses for the hardwar
 \section{Model Checking}
 \label{impl:modelchecker}
 
-I have implemented several variants of the IC3 algorithm:
+I implemented several variants of the IC3 algorithm:
 the most basic variant (\emph{Basic}), a variant that
 improves upon \emph{Basic} by discovering smaller CTIs (\emph{BetterCTI}),
 and a variant that improves upon \emph{BetterCTI} by considering subsumed clauses
 (\emph{BetterPropagation}).
 
-I have also implemented a variant of IC3 that uses priority queues (\emph{PriorityQueue})
+I also implemented a variant of IC3 that uses priority queues (\emph{PriorityQueue})
 and a variant that uses CTGs to improve generalization (\emph{CTG}).
 
 I describe the overall structure shared by all the variants except
@@ -1638,7 +1638,7 @@ than $(F_{k - 1}, F_k)$, where $F_{k - 1}$ is the old frontier frame and $F_k$ i
 the newly-created frontier frame, is unnecessary work.
 Since no frames have been updated, there is nothing to push to frames $F_i$ with
 $0 \leq i < k$.
-The modified algorithm is such that
+The modified algorithm is such
 that when the consecution query succeeds, it calls the ${\it pushFrame}$ function
 (line \ref{recstr:pushFrameCall}) that
 checks only a single pair of frames (which also makes the recursive call to ${\it prove}$).
