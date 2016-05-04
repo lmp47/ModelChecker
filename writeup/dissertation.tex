@@ -901,8 +901,8 @@ The algorithm then aims to refine the approximation $F_k$ of the set of states
 reachable in at most $k$ steps by showing that all states that are
 reachable in at most $k$ steps are $\neg s_k$ states.
 
-The call to {\it nextCTI} in line \ref{CTI} finds the counterexample to
-induction state $s_k$ when passed parameters $s = s_k$ and $j = k$.
+The call to {\it nextCTI} in line \ref{CTI} finds the CTI
+state $s_k$ when passed parameters $s = s_k$ and $j = k$.
 The call to {\it proveNegCTI} on line \ref{negCTI}
 attempts to prove that $\neg s$ is inductive relative to $F_{k - 1}$,
 in which case all $F_k$ states are necessarily $\neg s$ states, so $\neg s$ can
@@ -1749,9 +1749,10 @@ checker can avoid making the consecution queries that arise from attempts to pus
 The versions of \verb,push, that consider subsumed clauses include a call to the function
 \verb,removeSubsumed, when acquiring the list of clauses to attempt to push.
 The \verb,removeSubsumed, function takes a list of clauses and removes all clauses in the list
-that are subsumed by other clauses in the list. The \verb,push, function replaces the frame
-\verb,f, with a version of \verb,f, with all the subsumed clauses in the frame removed for
-the rest of the function and proceeds as the basic implementation's \verb,push, function does,
+that are subsumed by other clauses in the list.
+The \verb,push, function replaces the frame
+\verb,f, with a version of \verb,f, without subsumed clauses
+for the rest of the function and proceeds as the basic implementation's \verb,push, function does,
 returning a triple containing the updated \verb,f, along with the fixed-point \verb,Bool,
 and updates \verb,Frame, \verb,f',.
 
@@ -1903,10 +1904,13 @@ than any proof obligation already in the queue with the same depth (i.e. any
 proof obligation in the queue $(v, i)$). I discuss the
 way that the implementation achieves this priority ordering later.
 
-Unlike the other variants, in the {\it PriorityQueue} implementation, there is
-no distinction between the negation of the safety property $P$ and any other property that needs
-to be proved. The priority queue maintains all the information about which properties need to be proven,
-and the main recursive {\it fulfillObligations} function attempts to prove whichever property has the highest priority in the queue, i.e. fulfill the proof obligation with the highest priority (this proof obligation
+Unlike in other variants, in the {\it PriorityQueue} implementation, there is
+no distinction between the negation of the safety property $P$ and any other property
+needing
+to be proved.
+The priority queue maintains all the information about which properties need to be
+proven, and the main recursive {\it fulfillObligations} function attempts to prove
+whichever property has the highest priority in the queue, i.e. fulfill the proof obligation with the highest priority (this proof obligation
 is the one returned by ${\it dequeue(queue)}$ in line \ref{dequeue} of \ref{pqueuestr}).
 
 Whenever a proof obligation $(s,i)$ is fulfilled (at a certain depth $i$) the proof obligation
