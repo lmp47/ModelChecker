@@ -1113,15 +1113,17 @@ The implementation can be broken up into four main components
 (see Figure \ref{components}): the AIGER parser
 (Section \ref{impl:aiger}), the
 MiniSat interface (Section \ref{impl:minisat}), the hardware model representation
-(Section \ref{impl:representation}), and the model checker
+(Section \ref{impl:representation}), and the backend
 (Section \ref{impl:modelchecker}).
 The implementation of the AIGER parser, MiniSat interface, and \emph{Basic} version
 of the IC3 algorithm satisfy the project aims to implement these components. As
-extensions, I have implemented additional variants of the IC3 algorithm.
+extensions, I have implemented additional variants of the IC3 algorithm in different
+versions of the backend.
 
-The variants of the model checker component differ
-in overall structure, the finding of CTIs, the way that propagation is performed, and
-the way that CTIs are inductively generalized. The variants and the
+The variants of the backend component differ
+in their overall structure,
+their finding of CTIs, their implementation of propagation, and
+their inductive generalization of CTIs. The variants and the
 differences among them are given in the following table:\\
 
 \begin{tabular}{| l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em} |}
@@ -1140,7 +1142,7 @@ differences among them are given in the following table:\\
 
 %I now briefly explain the motivations for the deviations from the \emph{Basic}
 %implementation. The details of these deviations are given in Section \ref{impl:modelchecker}.
-The ``Priority Queue'' alteration was based on observations that keeping
+The ``Priority Queue'' alteration was based on the observation that keeping
 track of proof obligations with priority queues is more efficient than the simple
 recursive implementation of the IC3 algorithm \cite{een11,griggio14}.
 The ``Smaller CTIs'' alteration was based on the improvement of finding
@@ -1161,8 +1163,9 @@ that improves upon the basic inductive generalization algorithm \cite{hassan13}.
 
 The relevant files for this section can be found in the \verb,Parser, directory.
 The parser component parses ASCII or binary-formatted AIGER files and
-assumes that the new format is used (because the new format is backward compatible)
-. Justice properties and fairness constraints are not handled by \emph{MC}, so
+assumes that the new format is used
+(note that the new format is backward compatible).
+Justice properties and fairness constraints are not handled by \emph{MC}, so
 the parser ignores them.
 
 The \verb,Parser.AigerParser, module, which implements the parser in Haskell, and
@@ -1175,7 +1178,7 @@ which stores the components specified in the AIGER file.
 The \verb,Model, data structure stores the number of variables and
 number of inputs. It also stores lists of literals that represent the outputs, bad states,
 and invariant constraints. The data structure also stores latches and AND gates as
-lists of literal lists. I discuss the representation of literals, latches, and
+lists of literal lists. Below, I discuss the representation of literals, latches, and
 AND gates.
 
 Literals are represented by \verb,Lit,s (defined in Section \ref{prep:haskell}),
@@ -1197,16 +1200,18 @@ subtracting by 1 gives the new variable name 0.
 
 Latches and AND gates are represented using three-element \verb,[Lit],s. For latches,
 \begin{itemize}
-\item the first element gives the variable name of the latch (as a positive literal),
-\item the second gives the next-state literal, and
+\item the first element gives the output (i.e. variable name)
+of the latch as a positive literal,
+\item the second gives the input to the latch (i.e. the next-state literal), and
 \item the final element gives the initial state
 of the latch.
 \end{itemize}
 For example, the latch from Figure \ref{aagCircuit} represented by \verb,2 3, is parsed
 to \verb.[Var 0, Neg 0, Boolean False]..
+
 For AND gates,
 \begin{itemize}
-\item the first element gives the variable name of the AND gate
+\item the first element gives the output (i.e. variable name) of the AND gate
 (as a positive literal), and
 \item the next two elements give the literals whose values are taken
 as inputs to the AND gate.
@@ -1240,7 +1245,7 @@ MiniSat functions and classes and a Haskell interface to the C wrapper.
 In the C wrapper,
 every MiniSat class is replaced with a C
 type, and every MiniSat function is replaced with a function with an \verb,extern C, function that
-calls the MiniSat C++ function. For instance, the following function is
+calls the MiniSat C++ function. For instance, the following function
 in \verb,Minisat/CSolver.cpp, is a wrapper for the \verb,addClause, in the \verb,Solver,
 class:
 \begin{lstlisting}[language = C++]
@@ -1280,9 +1285,14 @@ that takes an assumption vector as an argument, returns a pointer to a
 \verb,result, struct rather than just whether or not the query was satisfiable
 as the MiniSat \verb,solve(), function does.
 The Haskell interface uses the Haskell FFI and the \verb,hsc2hs, preprocessor
-for handling the \verb,result, struct.
+for handling the \verb,result, struct. For example, \verb,solveWithAssumps,
+uses the Haskell FFI's \verb,peek, function,
+which provides a value read from a memory location inside
+an \verb,IO, monad, to read in the \verb,result, struct. After unmarshalling
+the \verb,result, struct into a Haskell \verb,Result, datatype, \verb,solveWithAssumps,
+uses \verb,unsafePerformIO, to extract the \verb,Result, from the \verb,IO, monad.
 
-The \verb,result, struct to \verb,Minisat/CSolver.h,
+The \verb,result, struct in \verb,Minisat/CSolver.h,
 allows a single function call to return
 all the results of a SAT query. The struct contains an indication of query satisfiability
 and pointers to the model and conflict vector (if any) of the \verb,Solver,:
@@ -1295,15 +1305,6 @@ struct result {
   litptr* conflict;
 } res = {0, 0, 0, 0, 0};
 \end{lstlisting}
-
-%Many of the functions and datatypes in the interface are analogous to functions and structs in
-%the C wrapper and C++ implementation of MiniSat. For example, the \verb,Solver, Haskell
-%datatype is an
-%analogue to the MiniSat \verb,Solver, object, and itself contains a pointer to an instance of
-%a MiniSat \verb,Solver, object. Similarly, functions such as \verb,solveWithAssumps, work
-%analogously to the C wrapper's \verb,solveMinisatWithAssumps,,
-%returning a \verb,Result, that contains
-%whether or not the query was satisfiable and the model or conflict vector (if any).
 
 \begin{figure}[t]
 \centering
@@ -1325,15 +1326,6 @@ struct result {
     {solver -> solve(*assumps) {\it (MiniSat)}}
     edge [<-, bend left] (wrapper);
   \node (ret) [io, right = 7em of haskell] {};
-  %\node (wrapper') [function, right = 4em of wrapper]
-  %  {return \&res {\it (C wrapper)}}
-  %  edge [<-] (minisat);
-  %\node (haskellffi') [function, above of = wrapper']
-  %  {peek {\it (Haskell FFI)}}
-  %  edge [<-] (wrapper');
-  %\node (haskell') [function, above of = haskellffi']
-  %  {unsafePerformIO res {\it (Haskell MiniSat Interface)}}
-  %  edge [<-] (haskellffi');
   \draw [->, bend right] (minisat) to node [swap,io] {solved} (wrapper);
   \draw [->, bend right] (wrapper) to node [swap,io] {\&res} (haskellffi);
   \draw [->, bend right] (haskellffi) to node [swap,io] {peek} (haskell);
@@ -1376,9 +1368,9 @@ list of the \verb,Lit,s in the clause.
 
 \subsubsection{Transition Systems and Safety Properties}
 % Describe how transition systems and safety properties are represented.
-The representation of transition systems and the safety property for the model checker to check
-are both encompassed in the \verb,Model, data structure in \verb,Model.Model,, which serves
-as the representation of the hardware in the model checker:
+The representation of transition systems and the safety property for the backend to check
+are both encompassed in the \verb,Model, data structure in \verb,Model.Model,,
+which serves as the representation of the hardware in the backend:
 \begin{lstlisting}
 data Model = Model { vars :: Word
                    , initial :: [Clause]
@@ -1397,8 +1389,8 @@ The literal that gives the safety property is given by \verb,safe,.
 % Describe how transition systems are constructed given AIG models.
 
 The \verb,Model.Model, module contains functions to convert the \verb,Model, data
-structure from the \verb,Parser.AigModel, module into the hardware model representation used by
-the model checker. In particular, the \verb,toModel, function takes a \verb,Parser.AigModel.Model,
+structure from the \verb,Parser.AigModel, module into the hardware model representation
+used by the backend. In particular, the \verb,toModel, function takes a \verb,Parser.AigModel.Model,
 and outputs a \verb,Model.Model.Model,. As mentioned before, the \verb,Model.Model.Lit,
 data structure only has constructors for variables and their negations; \verb,Lit,s from
 the \verb,Parser.AigModel, module are either converted to \verb,Model.Model.Lit,s or, in the case
