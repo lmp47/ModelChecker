@@ -357,11 +357,6 @@ data Lit = Var Word | Neg Word | Boolean Bool deriving (Show, Eq, Ord)
 \end{lstlisting}
 The \verb,Lit, datatype is an instance of the \verb,Show,, \verb,Eq,, and
 \verb,Ord, type classes, with the instances being automatically derived.
-The \verb,Show, class contains the \verb,show, function (and related functions) that
-converts instances to \verb,String,, the \verb,Eq, class contains
-operators that allow equality testing of instances for
-equality, and \verb,Ord, class contains comparison operators
-that allow instances to be ordered.
 
 Haskell's \verb,Monad, class encompasses composable
 structures that describe computations. These computations
