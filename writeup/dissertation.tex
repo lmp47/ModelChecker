@@ -1274,7 +1274,8 @@ making use of \verb,unsafePerformIO, to have the functions return
 values outside the \verb,IO, monad.
 
 To use MiniSat to solve a query, the \verb,solveWithAssumps, function
-is usually called, taking a solver \verb,s, and a list of literals \verb,assumps,
+is usually called (see \ref{solveWithAssumps}),
+taking a solver \verb,s, and a list of literals \verb,assumps,
 that make up the assumption vector. The \verb,solveWithAssumps, function
 visible to other modules then uses Haskell wrapper functions to create
 a MiniSat \verb,vec<Lit>, to represent the assumption vector and call
@@ -1355,7 +1356,7 @@ value the corresponding positive or negative literal for that index is added to 
 \section{Hardware Representation}
 \label{impl:representation}
 This section describes the representation and construction of hardware models (i.e.
-transition systems) and frames in \emph{MC}.
+transition systems) and frames in the backend.
 \subsection{Harware Model Representation}
 \subsubsection{Literals and Clauses}
 The \verb,Lit, data structure in \verb,Model.Model, represents literals in
@@ -1379,7 +1380,8 @@ data Model = Model { vars :: Word
 \end{lstlisting}
 
 The inputs $i$ and state variables $x$ in the transition system $T(i,x,I,T)$
-are not distinguished, and the total count of variables is kept in \verb,vars,.
+are not distinguished; both are just treated as variables in the representation.
+The total count of variables is kept in \verb,vars,.
 Clauses that specify the initial state $I$ are kept in \verb,initial,.
 The \verb,transition, list of clauses that specify latches and clauses that specify AND
 gates capture the transition relation $T$.
@@ -1405,7 +1407,7 @@ clauses whose conjunction describes the latches' initial values,
 and the second contains a clauses whose conjunction describes the
 latches' next-state values.
 
-Consider a given \verb,Parser.AigModel.Latch, $[l, n, i]$. representing the latch with
+Consider a given \verb,Parser.AigModel.Latch, $[l, n, i]$, representing the latch with
 output variable $l$, next-state $n$ taken from the set of literals,
 and initial value $i$
 also taken from the set literals. The \verb,makeLatches, function uses the
@@ -1466,7 +1468,7 @@ are generated, where $i$ is the input that is not a Boolean value and the clause
 are described in the explanation for generating clauses for latches.
 
 If neither of $i_1$ or $i_2$ are Booleans, then the clauses generated are
-$\{\neg a, i_1\}$, $\{\neg a, i_1\}$, and
+$\{\neg a, i_1\}$, $\{\neg a, i_2\}$, and
 $\{\neg i_1,\neg i_2, a\}$. The conjunction of these clauses are, as needed,
 logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$:
 %\begin{align*}
@@ -1505,13 +1507,13 @@ improves upon \emph{Basic} by discovering smaller CTIs (\emph{BetterCTI}),
 and a variant that improves upon \emph{BetterCTI} by considering subsumed clauses
 (\emph{BetterPropagation}).
 
-I have also implemented a variation of IC3 that uses priority queues (\emph{PriorityQueue}) and a
-variation that uses CTGs to improve generalization (\emph{CTG}).
+I have also implemented a variant of IC3 that uses priority queues (\emph{PriorityQueue})
+and a variant that uses CTGs to improve generalization (\emph{CTG}).
 
-I describe the overall structure shared by all the variants except the
-\emph{PriorityQueue} implementation, and then describe the implementation
+I describe the overall structure shared by all the variants except
+\emph{PriorityQueue} and then describe the implementation
 details of smaller components of the algorithm and how they differ across
-variants. A separate description of the \emph{PriorityQueue} implementation
+variants. A separate description of \emph{PriorityQueue}
 follows.
 
 \subsection{Overall structure}
@@ -1552,7 +1554,7 @@ returns a triple $({\it result}, [G_0, \ldots, G_{k - 1}], G_k)$, where {\it res
 is {\it False} iff the while loop containing {\it proveNegCTI} in Figure \ref{overview}
 would return {\it False}.
 Each $G_i$ gives the value that frame $F_i$ would have after the termination of
-that while loop in Figure \ref{overview}.
+the while loop in Figure \ref{overview}.
 \item The {\it propagate} component (line \ref{recstr:propagate})
 takes the current frames $[G_0, \ldots, G_k]$ as input and
 returns a pair $({\it fixed}, [H_0, \ldots, H_{k-1}, H_k])$, where {\it fixed} is {\it True}
