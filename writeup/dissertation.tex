@@ -1981,22 +1981,21 @@ $(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
 \label{eval}
 
 This chapter discusses the evaluation of the model checker implementations.
-I describe the solving capabilities of the \emph{MC} variants (Section \ref{eval:solving})
-and how the project aim of being able to solve several solve examples has been met,
-the output of the model checker (Section \ref{eval:output}), how benchmarks were
-taken (Section \ref{eval:benchmarking}). I then compare the variants' performance
-with each other (Section \ref{eval:variants}) and with the reference implementation
-\emph{IC3ref} (Section \ref{eval:ic3ref}).
+I describe the solving capabilities of the \emph{MC} variants
+and how the project aim of being able to solve several examples has been met
+(Section \ref{eval:solving}). I then provide an empirical analysis of the
+model checker (Section \ref{eval:analysis}), which includes a description of
+the output of the model checker and a comparison of benchmarks.
 
-To evaluate the implementations, I ran all variants
-on fourteen handwritten examples and 150 examples taken from
+To evaluate the implementations, I ran them
+on 14 handwritten examples and 150 examples taken from
 the Hardware Model Checking Competitions spanning four years \cite{hwmcc10, hwmcc11, hwmcc13}.
-I chose examples from HWMCC'10 that had relatively short (under 2 second)
-solving times for \verb,ic3,'s in the competition.
-Examples were also chosen from HWMCC'11 that did not overlap with HWMCC'10 examples.
+I chose examples from HWMCC'10 that \verb,ic3, solved in relatively short
+(under 2 second) amounts of time. I chose examples from HWMCC'11 that were
+not included in HWMCC'10.
 To avoid having as much overlap between examples as those from HWMCC'10 and HWMCC'11,
 I did not take examples from HWMCC'12 and instead took examples
-with relatively short solving times for some of the solvers from HWMCC'13
+with relatively short solving times for some of the solvers in HWMCC'13
 \cite{hwmcc13}.
 
 If the elapsed time for attempting to solve an example took longer than ten minutes, that
@@ -2011,22 +2010,23 @@ values for these parameters used by \emph{IC3ref}.
 
 The \emph{MC} implementations have passed the HUnit tests for parsing AIGER files,
 making MiniSat queries, and model checking. The parser tests involve comparing
-the output of the two parsers and checking that they match, the MiniSat tests
-involve checking that results from MiniSat queries (including model and conflict
-vectors), and the model-checking tests involve checking the results for specific
+the outputs of the two parsers and checking that they match. The MiniSat tests
+involve checking that results from MiniSat queries are as expected and include checks
+for models and conflict
+vectors. The model-checking tests involve checking the results for specific
 functions in \verb,IC3.hs, such as \verb,consecution,.
 
-The variants could solve all the handwritten examples and 50 HWMCC examples within
-ten minutes correctly, and some
+The variants could correctly solve all the handwritten examples and 50 HWMCC examples
+within ten minutes, and some
 variants were able to solve additional examples without timing out.
-All solutions reported solutions within the time limit agree with those
+All solutions reported within the time limit agree with those
 given by \emph{IC3ref}, providing evidence for the correctness of the solutions given
 by \emph{MC}.
 
 The handwritten examples served as the ``small examples'' that the model checker
 was meant to correctly solve as part of the aims of the project, with the largest
 (in terms of number of variables) of the handwritten examples,
-\verb,simple_counters.aig,, having 82 variables, 77 of which are AND gates.
+\verb,simple_counters.aig,, having 82 variables. %, 77 of which are AND gates.
 To provide context for the typical number of variables in the small examples,
 the following table provides the number of variables in the handwritten examples involving
 a two-bit counter (\verb,counters2.aig,), a three-bit counter (\verb,counters3.aig,),
@@ -2046,7 +2046,7 @@ Example & Number of Variables \\
 For examples solved without timing out,
 the largest (in terms of number of variables) unsafe example for which the variants gave a
 solution was \verb,bj08goodbakerycyclef7.aig, with 19900 variables,
-and the largest safe example for which the variants gave a solution
+and the largest safe example %for which the variants gave a solution
 was \verb,pdtvsar8multip26.aig, with 7174 variables.
 The following table provides context for the typical number of variables in HWMCC
 examples:
@@ -2064,11 +2064,12 @@ HWMCC'13 & 548 & 5623524\\
 \end{center}
 
 \section{Empirical Analysis}
+\label{eval:analysis}
 
 \subsection{Output Format}
 \label{eval:output}
 
-All model checker implementations print the string \verb,True, if the safety
+All \emph{MC} implementations print the string \verb,True, if the safety
 property holds (i.e. if a bad state is not reachable from the initial state) and
 \verb,False, if it does not. The implementations also provide debug output that provides
 statistics on solving if a nonzero number of frames was required to solve the example.
@@ -2101,7 +2102,7 @@ the variant could solve within the time limit.
 The collected data consists of execution time,
 the number of frames needed to solve an example,
 the average number of literals per clause, the number of CTIs discovered, the number of SAT-solver queries,
-and, for the \emph{CTG} implementation, the number of CTGs discovered. These measurements can be found in
+and (for the \emph{CTG} implementation) the number of CTGs discovered. These measurements can be found in
 Appendix \ref{benchmarks}.
 
 Out of the 50 HWMCC examples, 47 did not require finding any
@@ -2114,7 +2115,7 @@ and \emph{CTG} implementations give similar results.
 %model checker and the final implementation of the model checker.
 
 Profiling revealed that functions in the \verb,MiniSat.Minisat, module consume the most time
-when solving examples, suggesting that the overall performance of the model checker is heavily dependent on
+when solving examples, suggesting that the overall performance of the variants is heavily dependent on
 the size and number of SAT-solver queries.
 In this section, I will discuss the impact that different
 variants of the model checker have on the size and number of SAT-solver queries and performance.
@@ -2149,10 +2150,13 @@ literals per clause (as seen in Figure \ref{eval:lits}), which suggests smaller 
 As mentioned previously, because the \emph{BetterCTI} implementation uses
 CTIs that encompass sets of states rather than single states, when a negated CTI is proven at a depth
 $k$, several states have been shown to be unreachable within $k$ steps of the transition relation
-from the initial state. Dealing with a set of states rather than a single CTI state
+from the initial state. Dealing with a set of CTI states rather than a single CTI state
 at a time should allow
-the \emph{BetterCTI} implementation to deal with fewer CTIs in some cases (because the CTI sets of states
-may encompass several CTI states), leading to fewer queries. Benchmark results
+the \emph{BetterCTI} implementation to deal with fewer CTIs in some cases,
+%(because the CTI sets of states
+%may encompass several CTI states)
+leading to fewer queries.
+Benchmark results
 agree with these expectations; for examples that require finding more than one CTI, \emph{BetterCTI}
 finds fewer CTIs and makes fewer queries.
 For example, the \emph{Basic} variant finds 59 CTIs and makes 414 queries to solve
@@ -2165,7 +2169,7 @@ solve six more examples (\verb,counterp0.aig,, \verb,counterp0neg.aig,, \verb,pd
 timing out.}
 
 \paragraph{Propagation}{
-Removing subsumed clauses also results in better performance for several examples.
+Removing subsumed clauses also results in better performance on several examples.
 While the performance impact that the improvement has is less drastic than the improvement of
 \emph{BetterCTI} over \emph{Basic}, the \emph{BetterPropagation} version performs
 considerably better
@@ -2177,9 +2181,10 @@ because it makes smaller queries.}
 
 \paragraph{Counterexamples to Generalization}{
 The \emph{CTG} variation that deals with CTGs performs worse than the \emph{BetterPropagation} version
-on examples, even in cases where \emph{CTG} reduces the average number of frames per clause (see Figures \ref{eval:time}, \ref{eval:litspercls}),
-most likely because the examples used are too small for the performance benefits of using CTGs to
-eliminate more states to overcome the overhead of finding and proving negated CTGs, which require
+on examples, even in cases where \emph{CTG} reduces the average number of frames per clause (see Figures \ref{eval:time}, \ref{eval:lits}),
+most likely because the examples used are too small for the performance benefit of
+using CTGs to eliminate more states
+to overcome the overheads of finding and proving negated CTGs, which require
 making additional queries on each call to the \verb,inductiveGeneralization, function.
 
 Similar results can be found
@@ -2194,9 +2199,9 @@ This result disagrees with findings that implementations of the IC3 algorithm th
 use priority queues are more efficient than simple recursive implementations
 \cite{een11,griggio14}.
 
-There are
-two features of the variant in particular that may account for its worse performance: accumulating
-CTIs and early generalization.
+The early, one-time generalization employed in the \emph{PriorityQueue} variant may
+account for its worse perofrmance in spite of the benefits gained from not needing
+to rediscover CTIs.
 
 One of the performance advantages of the \emph{PriorityQueue} implementation is that CTIs do not need
 to be rediscovered \cite{een11}: after a proof obligation $(s,i)$ is enqueued, until the algorithm fails or finds a fixed point,
@@ -2232,9 +2237,9 @@ literals per clause (which suggests larger queries).
 %IC3 reference implementation, taking into account differences between
 %the implementations.
 
-The performance of this project's model checker implementations is, for all except very small examples
+The performance of the \emph{MC} variants is, for all except very small examples
 (e.g. \verb,simple1.aag,),
-worse compared to the average performance of \emph{IC3ref}
+worse compared to the performance of \emph{IC3ref}
 (with or without generalization involving CTGs enabled).
 
 The choice of implementation language may account for much of the difference in performance, as the reference
@@ -2244,7 +2249,7 @@ some of the performance differences below.
 
 \subsubsection{Model Representation}
 \label{eval:ic3ref:model}
-The reference implementation has a different hardware model representation than
+The reference implementation represents hardware models differently from
 \emph{MC}, which may account for some of the performance differences.
 The reference implementation keeps track of which variables are inputs, latches, and AND gates.
 Each \verb,Model, maintains both the the primed and current values for inputs and latches and keeps a
@@ -2266,16 +2271,16 @@ from $s$.
 \label{eval:ic3ref:minisat}
 The reference implementation is more closely coupled to MiniSat's implementation. Because both the reference
 implementation and MiniSat are in C++, the reference implementation can and does call MiniSat functions
-and instantiate MiniSat objects, such as \verb,SimpSolver,s directly.
+and instantiate MiniSat objects (e.g. \verb,SimpSolver,s) directly.
 In contrast, the Haskell implementations
-must interact with MiniSat through an interface and suffers from associated overheads, such as those from
+must interact with MiniSat through an interface and suffer from associated overheads, such as those from
 marshalling data from the data structures returned from the C wrapper for MiniSat into the corresponding
 Haskell data structures.
 
 The reference implementation also makes use of empirical results to improve the performance of MiniSat queries.
 For example, in the \verb,stateOf, function, which extracts a model from a failed consecution query
 (to e.g. find a CTI cube), the set of literals passed to the MiniSat \verb,Solver, are reordered according
-to an ordering that was found to be the best choice empirically \cite{minisat}.
+found to be the best choice empirically \cite{minisat}.
 
 \subsubsection{Overall Structure}
 
