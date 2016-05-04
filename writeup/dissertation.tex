@@ -531,7 +531,7 @@ Criterion can, e.g., output benchmark sample results to a CSV file, as the
 Cabal \cite{cabal} is the standard package and dependency management system for Haskell,
 where a package may be a library or a complete piece of executable software.
 A \verb,.cabal, file in the root directory of a project specifies
-information about the Cabal package, such as its version and dependencies,
+information about the Cabal package, such as its version and dependencies.
 The \verb,.cabal, file may contain several sections, such as a
 \verb,library, section, describing the modules in the package that should be
 exposed in the library provided by the package or an \verb,executable, section,
@@ -615,14 +615,14 @@ Similarly, given a clause $c$, a clause $d$ is a \emph{subclause} of $c$ (also
 denoted $d \subset c$) iff the set of literals in $d$ are a subset of
 the literals in $c$.
 
-From de Morgan's laws, cubes and clauses are duals; the negation of a cube is the
+By de Morgan's laws, cubes and clauses are duals; the negation of a cube is the
 clause specified by the set resulting from negating each literal in the cube
 and vice-versa.
 
 A propositional formula is in \emph{conjunctive normal form} (CNF) iff it is a conjunction 
 $\bigwedge_i D_i$ of disjunctions $D_i$ of literals (i.e. clauses). A set of clauses
 can be interpreted as the CNF formula resulting from the conjunction
-of the clauses. Any propositional formula can be easily converted to an equivalent CNF
+of the clauses. Any propositional formula can be converted to an equivalent CNF
 form.}
 
 \paragraph{Transition Systems}{
@@ -639,6 +639,9 @@ $$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$
 In a similar fashion, for a formula $X$ involving only current-state variables,
 the formula $X'$ is the formula $X$ where each current-state variable $v$ has
 been replaced by the corresponding next-state variable $v'$.
+
+For a known set of inputs $i$ and variables $x$, $T(i,x,x')$ may be written
+as $T$.
 
 Given transition system $(i,x,I,T)$, a logical formula $C$ is, by definition,
 \emph{inductive relative} to logical formula $F$ if both
@@ -680,7 +683,7 @@ where $T$ represents the transition relation of the transition system.
 
 I used both the AIGER format and Berkeley Logic Interchange Format (BLIF)
 to specify fourteen example hardware models.
-The models that the model checker accepts as input
+The models that \emph{MC} accepts as input
 are specified using the AIGER format;
 however because using the AIGER format to specify larger models was cumbersome,
 I specified some models using BLIF and converted them to AIGER format
@@ -697,7 +700,7 @@ flip-flops, outputting the value of the current input at the next
 clock tick.
 
 The AIGER format has both an ASCII and a binary version, either of which
-can be used as inputs to this project's model checker. The ASCII
+can be used as inputs to \emph{MC}. The ASCII
 format is more flexible and human readable, imposing fewer constraints
 on the ordering of components within the input file. For example, an
 AND gate with variable name {\tt 20} may be specified before an AND gate with
@@ -763,12 +766,12 @@ in the order that their counts are given in the header.
 
 In the ASCII version of the format, an input is specified by the
 index giving the positive literal for its corresponding variable name,
-and an output are specified similarly by a single index (that may represent
+and an output is specified similarly by a single index (that may represent
 a literal of any sign).
 
-A latch has initial value 0 (i.e., {\it False}) and is specified by the
-index representing the positive literals for its corresponding variable name
-followed by the index for its next-state value.
+A latch has initial value 0 (i.e., {\it False}) and is specified by two indices.
+The first index represents the positive literal for its corresponding variable name,
+and the second represents the latch's next-state value.
 An AND gate, which is always binary,
 is specified by the index representing the positive literal
 for its variable name and the two indices that specify its input values.
@@ -782,13 +785,13 @@ for its variable name and the two indices that specify its input values.
 
 For example, the circuit in Figure \ref{aagCircuit} is represented
 as follows (comments to the right are not part of the specification):
-\begin{verbatim}
+\begin{lstlisting}[escapeinside = {*}{*}]
 aag 3 0 2 1 1
-2 3              D-latch (output wire has index 2)
-4 2              D-latch (output wire has index 4)
-6                Output
-6 2 4            AND gate
-\end{verbatim}
+2 3              *{\it D-latch (output wire has index 2)}*
+4 2              *{\it D-latch (output wire has index 4)}*
+6                *{\it Output}*
+6 2 4            *{\it AND gate}*
+\end{lstlisting}
 The circuit has no inputs, two latches with indices $2$ and $4$ and one AND gate
 with index $6$ that takes the outputs of the two latches as inputs.
 The output of the whole circuit is the output of the AND gate.
@@ -810,7 +813,7 @@ gives further information about the last SAT query made.
 
 In addition to a \verb,Var, type for representing variables, MiniSat has a \verb,Lit, type for
 representing literals, and MiniSat represents sets of clauses as \verb,vec<Lit>,s,
-vectors of literals. The set of clauses in a \verb,Solver, together represent a CNF query.
+vectors of literals. The set of clauses in a \verb,Solver, represents a CNF query.
 If the \verb,Solver,'s \verb,solve(), function is called,
 the resulting \verb,bool, indicates whether the query is satisfiable or not. The
 \verb,solve(), function is overloaded so that it may also take an assumption \verb,vec<Lit>*, as
@@ -890,8 +893,8 @@ The algorithm only exits the loop when it has determined whether or not the
 safety property holds at all reachable states in the model.
 
 %Consecution query
-The \emph{consecution query} $F_k \wedge T \Rightarrow P'$ (line \ref{consecution}) is
-is used to check whether the property $P$ necessarily holds in the next
+The \emph{consecution query} $F_k \wedge T \Rightarrow P'$ (line \ref{consecution})
+is used to check whether the property $P$ holds in the next
 frame. If it does, then IC3 creates a new
 frontier frame $F_{k + 1}$ (line \ref{create}).
 %Describe what happens when a consecution query fails
@@ -1004,7 +1007,7 @@ The checking phase (described by {\it down} in Figure \ref{mic},
 which takes a clause ${\it cls} = \neg s$ and a depth $i$ as arguments)
 performs the normal queries
 for determining whether the subclause is inductive relative to
-$F_i$: for a subclause $t = \neg s \ \{l\}$ found by dropping
+$F_i$: for a subclause $t = \neg s \setminus \{l\}$ obtained by dropping
 literal $l$ from $\neg s$, it checks that
 $I \Rightarrow t$ and $F_i \wedge t \wedge T \Rightarrow t$ both hold.
 
@@ -1016,10 +1019,10 @@ If $I \Rightarrow t$ fails to hold, then removing any literals in $t$ to
 obtain a subclause $u \subset t$ would still result in the query $I \Rightarrow u$
 failing, since it is the case that $u \Rightarrow t$.
 
-The formula $F_i \wedge t \wedge T \Rightarrow t$ not holding indicates
+The formula $F_i \wedge t \wedge T \Rightarrow t'$ not holding indicates
 that there is a predecessor to a $\neg t$ state that is a $F_i \wedge t$ state.
 This predecessor state $p$ can be extracted from the SAT query for
-$F_i \wedge t \wedge T \Rightarrow t$ in the same way that CTIs are found.
+$F_i \wedge t \wedge T \Rightarrow t'$ in the same way that CTIs are found.
 The clause $t$ can then be expanded to the clause $t \cap \neg p$
 formed by taking the common literals in $t$ and $\neg p$.
 The checking phase then repeats, checking the expanded clause $t \cap \neg p$.
@@ -1066,7 +1069,7 @@ proceeds without dropping $l$.
 
 The reason the query
 $F_k \wedge T \wedge c \Rightarrow c'$ is unsatisfiable might be that
-$F_k$ is too broad an approximation, similarly to why a consecution
+$F_k$ is too loose an approximation, similarly to why a consecution
 query at $F_k$ might fail. As with consecution queries, discovering a
 new clause that can be added to $F_k$ may allow the queries that
 check for relative induction to succeed, and the discovery of this
