@@ -1306,29 +1306,38 @@ struct result {
 %whether or not the query was satisfiable and the model or conflict vector (if any).
 
 \begin{figure}[t]
+\centering
+\tikzstyle{io}=[font=\small\tt, scale=0.7]
 \tikzstyle{function}=[rectangle,draw,minimum width=4em,fill=white,font=\small\tt,scale=0.8]
-\tikzstyle{label}=[font=\footnotesize,scale=0.8]
 \begin{tikzpicture}[auto, scale = 0.6]
-  \node (haskell) [function] {solveWithAssumps s assumps {\it (Haskell MiniSat Interface)}};
-  \node (haskellffi) [function, below of = haskell]
+  \node (call) [io] {};
+  \node (haskell) [function, right = 7em of call]
+    {solveWithAssumps s assumps {\it (Haskell MiniSat Interface)}}
+    edge [<-] (call);
+  \node (haskellffi) [function, below = 1.5em of haskell]
     {solveMinisatWithAssumps sol veclit {\it (Haskell FFI)}}
-    edge [<-] (haskell);
-  \node (wrapper) [function, below of=haskellffi]
+    edge [<-, bend left] (haskell);
+  \node (wrapper) [function, below = 1.5em of haskellffi]
     {solveMinisatWithAssumps (solver, assumps)
       {\it (C wrapper)}}
-    edge [<-] (haskellffi);
-  \node (minisat) [function, below of=wrapper]
+    edge [<-, bend left] (haskellffi);
+  \node (minisat) [function, below = 1.5em of wrapper]
     {solver -> solve(*assumps) {\it (MiniSat)}}
-    edge [<-] (wrapper);
-  \node (wrapper') [function, right = 4em of wrapper]
-    {return \&res {\it (C wrapper)}}
-    edge [<-] (minisat);
-  \node (haskellffi') [function, above of = wrapper']
-    {peek {\it (Haskell FFI)}}
-    edge [<-] (wrapper');
-  \node (haskell') [function, above of = haskellffi']
-    {unsafePerformIO res {\it (Haskell MiniSat Interface)}}
-    edge [<-] (haskellffi');
+    edge [<-, bend left] (wrapper);
+  \node (ret) [io, right = 7em of haskell] {};
+  %\node (wrapper') [function, right = 4em of wrapper]
+  %  {return \&res {\it (C wrapper)}}
+  %  edge [<-] (minisat);
+  %\node (haskellffi') [function, above of = wrapper']
+  %  {peek {\it (Haskell FFI)}}
+  %  edge [<-] (wrapper');
+  %\node (haskell') [function, above of = haskellffi']
+  %  {unsafePerformIO res {\it (Haskell MiniSat Interface)}}
+  %  edge [<-] (haskellffi');
+  \draw [->, bend right] (minisat) to node [swap,io] {solved} (wrapper);
+  \draw [->, bend right] (wrapper) to node [swap,io] {\&res} (haskellffi);
+  \draw [->, bend right] (haskellffi) to node [swap,io] {peek} (haskell);
+  \draw [->] (haskell) to node [io] {unsafePerformIO res} (ret);
 \end{tikzpicture}
 \caption{Function calls for {\tt solveWithAssumps}.}
 \label{solveWithAssumps}
@@ -2007,7 +2016,7 @@ involve checking that results from MiniSat queries (including model and conflict
 vectors), and the model-checking tests involve checking the results for specific
 functions in \verb,IC3.hs, such as \verb,consecution,.
 
-The variants could solve all the handwritten examples and fifty HWMCC examples within
+The variants could solve all the handwritten examples and 50 HWMCC examples within
 ten minutes correctly, and some
 variants were able to solve additional examples without timing out.
 All solutions reported solutions within the time limit agree with those
@@ -2064,7 +2073,7 @@ property holds (i.e. if a bad state is not reachable from the initial state) and
 \verb,False, if it does not. The implementations also provide debug output that provides
 statistics on solving if a nonzero number of frames was required to solve the example.
 In particular, all variants' outputs give the number of frames, the average number of
-literals per clause, the number of CTIs found, and the total number of queries made. The {\it CTG} implementation also reports the number of CTGs found. Sample output
+literals per clause, the number of CTIs found, and the total number of queries made. The {\it CTG} implementation also reports the number of CTGs found. A sample output
 for the {\it CTG} implementation on example \verb,counters3.aig,
 is given in Figure \ref{sampleoutput}.
 
@@ -2112,7 +2121,8 @@ variants of the model checker have on the size and number of SAT-solver queries 
 
 \begin{figure}[t]
 \includegraphics[width=16cm]{litspercls.pdf}
-\caption{Average literals per clause averaged over the 14 handwritten examples and fifty Hardware
+\caption{Average literals per clause averaged over the 14 handwritten examples and 50
+ Hardware
 Model Checking Competition examples.}
 \label{eval:lits}
 \end{figure}
