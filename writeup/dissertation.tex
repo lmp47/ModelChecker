@@ -489,31 +489,34 @@ acquisition of project dependencies (e.g., MiniSat can be obtained by running
 \verb,git submodule init, after running \verb,git clone, to clone the repository).}
 
 \paragraph{Haddock}{
-The Haddock \cite{haddock} documentation tool for Haskell was used to generate documentation
+The commonly-used Haddock \cite{haddock} documentation tool for Haskell was used to generate documentation
 for the code. Haddock automatically generates documentation in
-several formats (e.g. HTML) from annotated Haskell code. It is commonly
-used to document Haskell code, being used for most packages available
-on the Haskell package database Hackage.
+several formats (e.g. HTML) from annotated Haskell code.
+%It is commonly
+%used to document Haskell code, being used for most packages available
+%on the Haskell package database Hackage.
 }
 
 \paragraph{HUnit}{
 HUnit \cite{hunit} is a framework for writing unit tests in Haskell based on the
 JUnit framework \cite{junit} for unit testing in Java.
 HUnit tests can be specified by using functions
-that return the \verb,Assertion, type to write \verb,TestCase,s. For example, the
-\verb,assertBool :: String -> Bool -> Assertion, function takes a \verb,String,
-that gives an error message and a \verb,Bool, value, and raises an exception (with
-the error message) if the \verb,Bool, is not \verb,True,, so the
-following expression gives a \verb,TestCase, that tests that function
-\verb,isEven, returns \verb,True, when called with parameter 12:
-\begin{lstlisting}
-TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
-\end{lstlisting}
+that return the \verb,Assertion, type to write \verb,TestCase,s.
+%For example, the
+%\verb,assertBool :: String -> Bool -> Assertion, function takes a \verb,String,
+%that gives an error message and a \verb,Bool, value, and raises an exception (with
+%the error message) if the \verb,Bool, is not \verb,True,, so the
+%following expression gives a \verb,TestCase, that tests that function
+%\verb,isEven, returns \verb,True, when called with parameter 12:
+%\begin{lstlisting}
+%TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
+%\end{lstlisting}
 
 The \verb,Test, datatype in HUnit allows \verb,Test,s to be grouped
 and built up hierarchically. Tests that have been assembled into a
 single tree can then be treated as a test suite, and the whole tree
-of unit tests can be run. See Section \ref{eval:solving} for more on testing.}
+of unit tests can be run.}
+% See Section \ref{eval:solving} for more on testing.}
 
 \paragraph{Criterion}{
 Criterion \cite{criterion} is a library for performing benchmarking in Haskell.
@@ -694,10 +697,10 @@ AND gates, inverters, and latches, where the latches behave like D
 flip-flops, outputting the value of the current input at the next
 clock tick.
 
-The AIGER format has both an ASCII and a binary version, either of which
-can be used as inputs to \emph{MC}. The ASCII
+The AIGER format has both an ASCII and a binary version; either
+can be used for inputs to \emph{MC}. The ASCII
 format is more flexible and human readable, imposing fewer constraints
-on the ordering of components within the input file. For example, an
+on the ordering of components within the file. For example, an
 AND gate with variable name {\tt 20} may be specified before an AND gate with
 variable name {\tt 11} in the ASCII format, but AND gates must be specified in
 ascending order of their variable names in the binary format.
@@ -961,11 +964,11 @@ $F_0, \ldots, F_k$, and, for every $F_i$ with $0 \leq i < k$ (line \ref{forprop}
 pushes all the clauses that it can from $F_i$ to $F_{i + 1}$ (line \ref{push}).
 
 If $F_i = F_{i + 1}$ holds for any $i$ at any point, then a fixed point has
-been found: frames at any greater depth than $i$ will continue to be the
+been found; frames at any greater depth than $i$ will continue to be the
 same as $F_i$, since all the the clauses in $F_i$ and therefore $F_{i + 1}$
 can be pushed.
 Because $F_i$ contains the safety property $P$ as one of its clauses,
-this means that $P$ holds in all reachable states from the initial state,
+$P$ holds in all reachable states from the initial state,
 and the algorithm terminates (line \ref{fixed}). Because the number of
 clauses in each frame $F_i$ decreases monotonically as $i$ increases and the
 frame $F_0$ can only have finitely many states, the algorithm always
@@ -1007,7 +1010,7 @@ literal $l$ from $\neg s$, it checks that
 $I \Rightarrow t$ and $F_i \wedge t \wedge T \Rightarrow t$ both hold.
 
 If both formulas hold, then the literal $l$ can be dropped from $\neg s$.
-If only the formula $F_i \wedge t \wedge T \Rightarrow t$ fails to hold, then
+If only the formula $F_i \wedge t \wedge T \Rightarrow t'$ fails to hold, then
 it is possible that expanding the set of states in $t$ by removing some of the
 literals in $t$ would result in a clause that is inductive relative to $F_i$.
 If $I \Rightarrow t$ fails to hold, then removing any literals in $t$ to
@@ -1465,7 +1468,7 @@ the clauses equivalent to $a \Leftrightarrow i$
 are generated, where $i$ is the input that is not a Boolean value and the clauses to generate for $a \Leftrightarrow i$ 
 are described in the explanation for generating clauses for latches.
 
-If neither of $i_1$ or $i_2$ are Booleans, then the clauses generated are
+If neither $i_1$ nor $i_2$ are Booleans, then the clauses generated are
 $\{\neg a, i_1\}$, $\{\neg a, i_2\}$, and
 $\{\neg i_1,\neg i_2, a\}$. The conjunction of these clauses are, as needed,
 logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$:
@@ -1504,7 +1507,6 @@ the most basic variant (\emph{Basic}), a variant that
 improves upon \emph{Basic} by discovering smaller CTIs (\emph{BetterCTI}),
 and a variant that improves upon \emph{BetterCTI} by considering subsumed clauses
 (\emph{BetterPropagation}).
-
 I also implemented a variant of IC3 that uses priority queues (\emph{PriorityQueue})
 and a variant that uses CTGs to improve generalization (\emph{CTG}).
 
