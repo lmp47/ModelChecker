@@ -429,7 +429,7 @@ as its analogue.
 \paragraph{Modules}{
 A Haskell program consists of modules, which organize code.
 Modules (or just selected functions from modules) can be imported into other
-modules, which allows library functions to be used. Modules can be referred
+modules, allowing library functions to be used. Modules can be referred
 to (e.g. in import statements) by names that incorporate where they are
 stored in the directory structure. For example, the \verb,Model, module in file
 \verb,Model/Model.hs, can be referred to as \verb,Model.Model,.
@@ -513,7 +513,7 @@ that return the \verb,Assertion, type to write \verb,TestCase,s.
 
 The \verb,Test, datatype in HUnit allows \verb,Test,s to be grouped
 and built up hierarchically. Tests that have been assembled into a
-single tree can then be treated as a test suite, and the whole tree
+single tree can be treated as a test suite, and the whole tree
 of unit tests can be run.}
 % See Section \ref{eval:solving} for more on testing.}
 
@@ -534,11 +534,11 @@ The file may contain several sections, such as a
 exposed in the library provided by the package or an \verb,executable, section
 specifying the Haskell file containing the \verb,Main,
 module and other Haskell files used by the program.
-The \verb,.cabal, file for this project also uses the \verb,Test-Suite, section
-to allow the HUnit test for the project to be run in a standard way (by running
-\verb,cabal test, in the root directory of the package) and the \verb,Benchmark,
-section to allow the benchmarking program to be run in a standard way as well
-(by running \verb,cabal bench, in the root directory of the package).
+The \verb,.cabal, file for this project also uses the \verb,Test-Suite, and
+\verb,Benchmark, sections, which respectively allow the HUnit test for the
+project and the benchmarking program for the project to be run in a standard way
+by running \verb,cabal test, or \verb,cabal bench, respectively from the
+package's root directory.
 
 Cabal uses a Haskell file \verb,Setup.hs, to give further information
 about how to build the package. For example, the \verb,Setup.hs, file
@@ -555,7 +555,7 @@ The \verb,hsc2hs, preprocessor \cite{hsc2hs} eases the writing of Haskell bindin
 code by enabling the programmer to write a \verb,.hsc, file containing
 macros that the preprocessor can expand to, e.g., pointer offsets. The
 \verb,hsc2hs, expands the macros in a \verb,.hsc, file to produce a
-Haskell source (\verb,.hs,) file that can then be compiled with a Haskell compiler and run.
+Haskell source (\verb,.hs,) file that can then be compiled with a Haskell compiler.
 }
 
 \paragraph{HLint}{
@@ -588,13 +588,13 @@ posed in conjunctive normal form. Further details are given in Section \ref{prep
 \section{Symbolic Representation}
 \label{prep:logic}
 
-Symbolic model checkers rely on the representation of the underlying system as
+Symbolic model checkers rely on representing the underlying system as
 logical formulas that describe the behavior of the system as one-step transitions
 between states. %Propositional logic formulas define transition systems and states.
 
 I give a brief review of concepts in logic before formally defining transition systems
 and explaining how propositional logic formulas represent states. I assume basic
-knowledge of propositional logic throughout.
+knowledge of propositional logic.
 
 \paragraph{Logic}{
 A variable is a propositional symbol that can be assigned Boolean values {\it True}
@@ -681,7 +681,7 @@ I used both the AIGER format and Berkeley Logic Interchange Format (BLIF)
 to specify fourteen example hardware models.
 The models that \emph{MC} accepts as input
 are specified using the AIGER format;
-however because using the AIGER format to specify larger models was cumbersome,
+however, because using the AIGER format to specify larger models was cumbersome,
 I specified some models using BLIF and converted them to AIGER format
 using the Aiger Utilities' \verb,bliftoaig, tool. Given that one of
 the project's components is an AIGER parser, I describe the AIGER format
@@ -690,12 +690,12 @@ in more depth.
 The AIGER format has several versions, with each providing
 a method of specifying hardware as
 And-Inverter Graphs with latch elements providing single clock-tick
-delays: all circuits are modeled as a graph of nodes consisting only of
+delays. All circuits are modeled as a graph of nodes consisting only of
 AND gates, inverters, and latches, where the latches behave like D
-flip-flops, outputting the value of the current input at the next
+flip-flops and output the value of the current input at the next
 clock tick.
 
-The AIGER format has both an ASCII and a binary version; either
+The AIGER format has an ASCII and a binary version; either
 can be used for inputs to \emph{MC}. The ASCII
 format is more flexible and human readable, imposing fewer constraints
 on the ordering of components within the file. For example, an
@@ -713,8 +713,8 @@ A new version of the AIGER format is currently under development \cite{aiger}, w
 examples from HWMCC'14 onward using the new version. The AIGER parser component
 of this project handles both the old and new versions of the format.
 
-I provide a description of how variables are represented in all AIGER formats
-followed by a description of the old ASCII version of the AIGER format, which
+I describe how variables are represented in all AIGER formats
+and then describe the old ASCII version of the AIGER format, which
 is sufficient to understand the handwritten examples written directly
 in AIGER format. Descriptions of the other formats can be found in Appendix
 \ref{aiger}.
@@ -738,7 +738,7 @@ The indices 0 and 1 are used to represent the constant Boolean values {\it False
 and {\it True}, respectively.
 
 Any index above 1 represents a literal. 
-Given that even indices represent positive literals, and odd indices
+Because even indices represent positive literals and odd indices
 represent negative literals, the representation allows
 the least significant bit of an index to give the sign of a literal
 and a single bitwise right shift to find the variable name for the literal.
@@ -949,9 +949,9 @@ hold, and the algorithm terminates (line \ref{Unsafe}).
 
 Because there may be several CTIs, it is necessary to
 perform the consecution query again (line \ref{reconsec}). If it fails again,
-the process of finding the new CTI state(s) $d$ and trying to
-prove that $\neg d$ holds at depth $k$ repeats. Upon the success of the consecution
-query, the algorithm moves to the propagation phase.
+the process of finding the new CTI $d$ and trying to
+prove that $\neg d$ holds at depth $k$ repeats.
+When the consecution query succeeds, the algorithm moves to the propagation phase.
 
 \emph{Pushing} a clause $c$ from a frame $F_i$ to frame $F_{i + 1}$ refers to the act
 of setting $F_{i + 1} := F_{i + 1} \cup \{ c \}$ with $c \in F_i$.
@@ -1427,7 +1427,7 @@ $\{l'\}$ is generated because the next-state value for the variable is a constan
 and if $n = {\it False}$, then the singleton clause $\{\neg l'\}$ is generated.
 Otherwise, if $n$ is not a Boolean value,
 the next-value clauses generated for $l$, are $\{l', \neg n\}$
-and $\{\neg l, n\}$. The conjunction of these clauses are, as needed, logically equivalent
+and $\{\neg l', n\}$. The conjunction of these clauses are, as needed, logically equivalent
 to $n \Leftrightarrow l'$, i.e., where $\simeq$ denotes logical equivalence,
 %the following hold:
 %\begin{align*}
@@ -1460,11 +1460,11 @@ constructor for \verb,Parser.AigModel.Lit,s), then a singleton clause suffices t
 If $i_1 \wedge i_2$ holds, then the singleton clause $\{a\}$ describes the constantly {\it True} AND gate,
 and if not, then the singleton clause $\{\neg a\}$ describes the constantly {\it False} AND gate.
 
-If only one of the inputs ($i_1$ and $i_2$) is a Boolean, then if it is {\it False},
+If only one of the inputs is a Boolean, then if it is {\it False},
 the singleton clause $\{\neg a\}$ is generated. Otherwise,
-the clauses equivalent to $a \Leftrightarrow i$
-are generated, where $i$ is the input that is not a Boolean value and the clauses to generate for $a \Leftrightarrow i$ 
-are described in the explanation for generating clauses for latches.
+the clauses equivalent to $a \Leftrightarrow i$ (i.e. clauses
+$\{i, \neg a\}$ and $\{\neg i, a\}$)
+are generated, where $i$ is the input that is not a Boolean value.
 
 If neither $i_1$ nor $i_2$ are Booleans, then the clauses generated are
 $\{\neg a, i_1\}$, $\{\neg a, i_2\}$, and
@@ -1508,7 +1508,7 @@ and a variant that improves upon \emph{BetterCTI} by considering subsumed clause
 I also implemented a variant of IC3 that uses priority queues (\emph{PriorityQueue})
 and a variant that uses CTGs to improve generalization (\emph{CTG}).
 
-I describe the overall structure shared by all the variants except
+I describe the overall structure shared by all variants except
 \emph{PriorityQueue} and then describe the implementation
 details of smaller components of the algorithm and how they differ across
 variants. A separate description of \emph{PriorityQueue}
@@ -1524,7 +1524,7 @@ carried out.
 
 To explain the modifications to the structure of the algorithm,
 I give pseudocode in Figure \ref{recstr}
-that outlines the general structure shared by all the
+outlining the general structure shared by all the
 implementations of the model checker except {\it PriorityQueue}
 and compare this structure with Figure \ref{overview} (see Section
 \ref{pqueue} for \emph{PriorityQueue}).
@@ -1608,8 +1608,8 @@ which corresponds to a recursive version of the main while loop
 in line \ref{main} of Figure \ref{overview}.
 
 Because functions in Haskell are pure, the assumption made in Figure \ref{overview}
-that function can could modify the set of (passed-by-reference) frames can no longer be made.
-Instead, the updated values of frames are returned explicitly from the function call in
+that functions can modify the set of (passed-by-reference) frames can no longer be made.
+Instead, updated values of frames are returned explicitly from the function call in
 a tuple along with any other values needed from the function call, as seen in
 {\it proveNegCTI}, {\it propagate}, and {\it push}.
 %For example, {\it proveNegCTI} (line \ref{recstr:proveNegCTI})
@@ -1632,7 +1632,7 @@ function (line \ref{recstr:pushFrame}) instead where appropriate.
 %since all pairs of consecutive frames except $(F_{k - 1}, F_k)$ have been checked for
 %equality.
 
-In the case that the consecution query (line \ref{recstr:consecution}) succeeds,
+If the consecution query (line \ref{recstr:consecution}) succeeds, then
 considering pairs of frames other
 than $(F_{k - 1}, F_k)$, where $F_{k - 1}$ is the old frontier frame and $F_k$ is
 the newly-created frontier frame, is unnecessary work.
@@ -1671,7 +1671,7 @@ initiation f prop =
 \subsection{Consecution}
 %Describe how the step involving the consecution query is implemented.
 
-Similarly to the initiation query, the consecution query must be expressed in CNF.
+Like the initiation query, the consecution query must be expressed in CNF.
 All variants make use of the fact that
 $F_k \wedge T \Rightarrow P'$ holds iff $\neg P' \wedge F_k \wedge T$ is unsatisfiable
 to yield the following implementation:
@@ -1764,10 +1764,11 @@ and all implemented versions of generalization
 \verb,generalize,.
 
 \subsubsection{Simple}
-The simplest approximation for a MIC attempts to drop each literal in turn and checks
+The simplest method for approximating a MIC attempts to drop each literal in turn and checks
 that the resulting clause $c$ satisfies formulas $I \Rightarrow c$ and
-$F_k \wedge c \wedge T \Rightarrow c'$ as the original clause did. If the resulting clause
-satisfies both queries, then the literal can be successfully dropped,
+$F_k \wedge c \wedge T \Rightarrow c'$ as the original clause did.
+%If the resulting clause satisfies both queries
+If it does, then the literal can be successfully dropped,
 but if not, the literal is added to a list \verb,needed, of necessary literals.
 After a parameterizable number of failed attempts at dropping a literal from the clause or after
 having attempted dropping all the literals, the
@@ -1957,7 +1958,7 @@ $\neg d \subseteq c$. The proof obligation $(d,j)$ is then enqueued, and
 \subsubsection{Proof Obligations and Priority Queues}
 
 The {\it PriorityQueue} implementation represents proof obligations $(s,i)$ using the
-\verb,Obligation, type, which is triple type \verb.(Int, Int, Clause)..
+\verb,Obligation, type, which is defined as \verb.(Int, Int, Clause)..
 The \verb,Obligation, triple
 \verb.(i,r,c). consists of the the depth \verb,i,, a
 rank \verb,r, for deciding the ordering of proof obligations at the same depth within the priority
