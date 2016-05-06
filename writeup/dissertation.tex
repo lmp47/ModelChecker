@@ -221,7 +221,7 @@ and the IC3 algorithm that is the focus of this project.
 %with other SAT-based model checking algorithms such as BMC and $k$-induction.
 
 The IC3 (Incremental Construction of Inductive Clauses for Indubitable Correctness)
-algorithm (also called Property-Directed Reachability \cite{een11}) is a state-of-the-art,
+algorithm is a state-of-the-art,
 SAT-based model-checking
 algorithm for proving the safety properties (i.e. properties that must hold
 in all reachable states) of hardware \cite{bradley11}. In this section, I outline some of the
@@ -236,7 +236,7 @@ academia. Its performance at HWMCC'10 generated interest in the algorithm, and
 since then, several variants of the algorithm have been developed.
 %2015 paper
 
-The IC3 algorithm has advantages when compared to other model checking
+The IC3 algorithm has advantages when compared to other model-checking
 techniques such as $k$-induction and BMC that allow it to prove more
 properties more efficiently. Unlike $k$-induction, the IC3 algorithm
 discovers new invariants based on the safety property that it is trying to
@@ -306,9 +306,9 @@ variants implemented as part of this project as \emph{MC}.
 \section{Haskell}
 \label{prep:haskell}
 
-All of the code for the project, with the exception of the C wrapper for the
+All the code for the project, with the exception of the C wrapper for the
 MiniSat interface (described in Section \ref{impl:minisat})
-is implemented in the purely functional
+is written in the purely functional
 programming language Haskell \cite{haskell}.
 I briefly explain some features of the
 language that will make the rest of the report easier to follow.
@@ -351,13 +351,12 @@ Functions specified within the definition of a type class
 must be supported for any type that is an instance of that type class.
 Haskell compilers are able to automatically provide instances of standard
 type classes for some types.
-For example, a datatype that is an instance of a type class is the \verb,Lit, datatype
-in the \verb,AigModel, module in \verb,Parser/AigModel.hs,:
+For example, a the \verb,Lit, datatype (in \verb,Parser/AigModel.hs,) is an instance of
+the \verb,Show,, \verb,Eq,, and \verb,Ord, type classes, with the instances being
+automatically derived:
 \begin{lstlisting}
 data Lit = Var Word | Neg Word | Boolean Bool deriving (Show, Eq, Ord)
 \end{lstlisting}
-The \verb,Lit, datatype is an instance of the \verb,Show,, \verb,Eq,, and
-\verb,Ord, type classes, with the instances being automatically derived.
 
 Haskell's \verb,Monad, class encompasses composable
 structures that describe computations. These computations
@@ -530,11 +529,11 @@ Cabal \cite{cabal} is the standard package and dependency management system for 
 where a package may be a library or a complete piece of executable software.
 A \verb,.cabal, file in the root directory of a project specifies
 information about the Cabal package, such as its version and dependencies.
-The \verb,.cabal, file may contain several sections, such as a
-\verb,library, section, describing the modules in the package that should be
-exposed in the library provided by the package or an \verb,executable, section,
-which has fields for specifying the Haskell file containing the \verb,Main,
-module and for specifying other Haskell files used by the program.
+The file may contain several sections, such as a
+\verb,library, section describing the modules in the package that should be
+exposed in the library provided by the package or an \verb,executable, section
+specifying the Haskell file containing the \verb,Main,
+module and other Haskell files used by the program.
 The \verb,.cabal, file for this project also uses the \verb,Test-Suite, section
 to allow the HUnit test for the project to be run in a standard way (by running
 \verb,cabal test, in the root directory of the package) and the \verb,Benchmark,
@@ -562,8 +561,7 @@ Haskell source (\verb,.hs,) file that can then be compiled with a Haskell compil
 \paragraph{HLint}{
 The HLint tool \cite{hlint} is a linting tool that suggests style improvements for
 Haskell source code.
-The incorporation of HLint suggestions in
-this project resulted in simpler, more readable code.
+The incorporation of HLint suggestions resulted in simpler, more readable code.
 }
 
 \paragraph{AIGER Utilities}{
