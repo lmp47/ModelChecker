@@ -240,11 +240,11 @@ The IC3 algorithm has advantages when compared to other model-checking
 techniques such as $k$-induction and BMC that allow it to prove more
 properties more efficiently. Unlike $k$-induction, the IC3 algorithm
 discovers new invariants based on the safety property that it is trying to
-establish of the system. As a result, these
-invariants are more relevant to proving the property than those found
-by $k$-induction \cite{bradley12}.
+verify. As a result, these
+invariants are more relevant to proving the property than those that
+$k$-induction finds \cite{bradley12}.
 Furthermore, IC3 does not unroll the transition relation as $k$-induction
-or other BMC-based methods do, but instead considers at most one step
+or other BMC-based methods do. It instead considers at most one step
 of the transition relation at a time, leading to smaller,
 simpler SAT queries. As a result, IC3 requires less memory than BMC-based
 methods in practice \cite{bradley12}.
@@ -455,7 +455,7 @@ stored in the directory structure. For example, the \verb,Model, module in file
 The model checker \emph{MC} requires a way of taking input models and, since
 the IC3 algorithm uses a SAT solver as an internal subcomponent, also
 requires a way to solve SAT queries.
-I chose the AIGER format for representing the hardware models and the
+I chose the AIGER format for representing the hardware models and
 MiniSat SAT solver for answering SAT queries, resulting in a need for an
 AIGER parser and a Haskell interface to MiniSat. The choice of
 the AIGER format allows \emph{MC} to be run on examples from
@@ -463,7 +463,7 @@ the Hardware Model Checking Competition (HWMCC), since the competitions
 use this format to specify examples. I chose the MiniSat SAT
 solver to allow for better comparison of \emph{MC}
 with Aaron Bradley's reference implementation of IC3 (\emph{IC3ref})\cite{refic3}.
-Because MiniSat is the solver used by \emph{IC3ref}, using it as the solver
+Because \emph{IC3ref} uses MiniSat, using it as the solver
 for \emph{MC} removes the
 choice of SAT solver as a variable to consider when comparing performance,
 reducing confounding factors.
@@ -537,7 +537,7 @@ CSV file.}
 Cabal \cite{cabal} is the standard package and dependency management system for Haskell,
 where a package may be a library or a complete piece of executable software.
 A \verb,.cabal, file in the root directory of a project specifies
-information about the Cabal package, such as its version and dependencies.
+information (e.g. version and dependencies) about the Cabal package.
 The file may contain several sections, such as a
 \verb,library, section describing the modules in the package that should be
 exposed in the library provided by the package or an \verb,executable, section
@@ -555,7 +555,7 @@ for this project compiles the C and C++ code for MiniSat and the MiniSat
 wrapper before Cabal attempts to build the rest of the project, so the
 files necessary for linking are already present.
 
-The use of Cabal enables the project to be built easily on different platforms,
+Using Cabal enables the project to be built easily on different platforms,
 since Cabal provides a standard method for building the package that works
 across platforms.}
 
