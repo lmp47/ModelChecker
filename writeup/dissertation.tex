@@ -149,17 +149,18 @@ Software and hardware bugs can be costly. The Pentium FDIV hardware bug cost an
 estimated \$475 million \cite{pratt95}, and the Ariane 5 software bug cost
 approximately \$370 million \cite{dowson97}.
 The cost of such bugs catalyzed the adoption of new techniques for developing systems
-that would help reduce the number of or mitigate the effects of residual bugs.
+that would help reduce the number of (or mitigate the effects of) residual bugs.
 In particular, the Pentium FDIV bug encouraged the use of formal verification in
 hardware design throughout the semi-conductor industry.
 
 Formal methods is an umbrella term that refers to any application of mathematics or logic
-in the improvement of the design or implementation of hardware or software systems.
-For example, type checking is a widely-used form of formal methods that
-proves that programs are well-typed.
-Formal verification is a form of formal methods that
-that focuses on proving properties of
-systems.
+in the improvement of the design or implementation of hardware or software systems
+and formal verification is a form of formal methods that that focuses on proving
+properties of systems.
+Some formal methods, such as type checking and static analysis, are widely
+adopted. Forms of formal methods that are not as lightweight and easy-to-use
+may not be as widely applied but may still be commonly applied within certain
+domains, such as model checking in the semi-conductor industry.
 The formal verification technique of model
 checking has been used to verify that circuits correctly implement the SRT
 algorithm that the Pentium processors with the FDIV bug did not \cite{clarke96}.
@@ -223,7 +224,7 @@ and the IC3 algorithm that is the focus of this project.
 The IC3 (Incremental Construction of Inductive Clauses for Indubitable Correctness)
 algorithm is a state-of-the-art,
 SAT-based model-checking
-algorithm for proving the safety properties (i.e. properties that must hold
+algorithm for proving safety properties (i.e. properties that must hold
 in all reachable states) of hardware \cite{bradley11}. In this section, I outline some of the
 merits of the IC3 algorithm, with a description of IC3 following in Section
 \ref{prep:ic3}.
@@ -320,13 +321,15 @@ Haskell functions are defined as a series of equations. Otherwise,
 Haskell function definitions are similar to Standard ML function definitions with the
 \verb,fun, keyword omitted. Anonymous functions in Haskell are also defined similarly
 as in Standard ML, using \verb,\, to bind variables analagously to Standard
-ML's \verb,fn, keyword. Similarly to Standard ML, Haskell performs pattern matching
-for function definitions and \verb,case, expressions. The pattern languages Standard
+ML's \verb,fn, keyword. Function composition is achieved with infix operator
+\verb,.,.
+
+Similarly to Standard ML, Haskell allows pattern matching
+for function definitions and \verb,case, expressions. The pattern languages of Standard
 ML and Haskell are identical.
 }
 
 \paragraph{Types}{
-Haskell is a strongly- and statically-typed language.
 %Type constructors
 Haskell type constructors and datatype declarations are similar to those in
 Standard ML. A new Haskell datatype is declared using the \verb,data, keyword, an analogue
@@ -376,25 +379,33 @@ takes a monadic value containing a computation that produces a value of type
 monadic values, and returns the result of applying the function to the value.
 The \verb,>>, infix operator, which has type signature
 \verb,(>>) :: Monad m => m a -> m b -> m b,, also allows computations to be composed,
-but the output of the first action is ignored by the second.
+with the output of the first action ignored by the second.
 
 To avoid unwieldy code resulting from composing several
 computations with \verb,>>=,, Haskell provides syntactic sugar
 in the form of \verb,do,-notation, which allows monadic computations
-to be written in an imperative fashion.
+to be written in an imperative fashion. For example, the code in Figure
+\ref{monad} is equivalent to the more readable code in Figure \ref{do}.
 
 For example, the \verb,addClause', function in \verb,Minisat/Minisat.hs, could
 be written as follows:
+\begin{figure}[t]
+\centering
 \begin{lstlisting}
 addClause' solver clause =
   newMinisatVecLit >>=
   \veclit ->
     addToVecLit veclit clause >> 
     addMinisatClause solver veclit >>
-    deleteMinisatVecLit veclit >>
+    deleteMinisatVecLif veclit >>
     return solver
 \end{lstlisting}
-Using \verb,do,-notation results in more readable code:
+\caption{The {\tt addClause'} function in {\tt Minisat/Minisat.hs} without
+{\tt do}-notation.}
+\label{monad}
+\end{figure}
+\begin{figure}[t]
+\centering
 \begin{lstlisting}
 addClause' solver clause =
   do veclit <- newMinisatVecLit
@@ -403,6 +414,9 @@ addClause' solver clause =
      deleteMinisatVecLit veclit
      return solver
 \end{lstlisting}
+\caption{The {\tt addClause'} function in {\tt Minisat/Minisat.hs}.}
+\label{do}
+\end{figure}
 
 Values inside the \verb,IO, instances of the \verb,Monad, class can be extracted
 using \verb,unsafePerformIO, at the expense of guaranteed type safety; for pure
@@ -416,9 +430,6 @@ List types and values in Haskell are denoted using square brackets, e.g.,
 a list of \verb,Lit,s has type \verb,[Lit],.
 Lists can be appended using the \verb,++, infix operator, and elements
 can be prepended to lists using the \verb,:, infix operator.
-For example, \verb.1:[2,3,4] ++ [5,6]. gives the Haskell equivalent to
-\verb.1::[2,3,4] @ [5,6]. in Standard ML, both of which result in
-the value \verb.[1,2,3,4,5,6]..
 
 Tuples in Haskell are syntactically the same as in Standard ML, but the
 Standard ML product type \verb,a * b * c, has Haskell type \verb.(a, b, c).
@@ -470,7 +481,7 @@ transition system representation, and IC3 algorithm implementation.
 \section{Tools Used}
 \label{prep:tools}
 
-I used a variety of tools to employ software engineering practices, such
+I used a variety of tools to employ standard software engineering practices, such
 as version control and testing, and to otherwise ease the development of
 the project's code.
 
@@ -484,8 +495,7 @@ the development of the code, and branching and merging capabilities were
 useful for organizing variations of the model checker.
 I used Git submodules, which allow the inclusion of other Git projects within another
 project, to include MiniSat within the project, enabling easier
-acquisition of project dependencies (e.g., MiniSat can be obtained by running
-\verb,git submodule init, after running \verb,git clone, to clone the repository).}
+acquisition of project dependencies.
 
 \paragraph{Haddock}{
 The commonly-used Haddock \cite{haddock} documentation tool for Haskell was used to generate documentation
@@ -626,7 +636,9 @@ A \emph{transition system} is a tuple $(i,x,I,T)$ consisting of a set of input
 variables $i$, state variables $x$, an initial
 set of states represented by the logical formula $I(x)$ and
 a transition relation represented by the logical formula $T(i,x,x')$,
-where $x'$ is the set of next-state variables.
+where $x'$ is the set of next-state variables. 
+For a known set of inputs $i$ and variables $x$, $T(i,x,x')$ may be written
+as $T$.
 
 For each state variable $v$, $v'$ denotes the corresponding next-state variable.
 For example, a transition relation that states that all variables that are
@@ -635,9 +647,6 @@ $$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$
 In a similar fashion, for a formula $X$ involving only current-state variables,
 the formula $X'$ is the formula $X$ where each current-state variable $v$ has
 been replaced by the corresponding next-state variable $v'$.
-
-For a known set of inputs $i$ and variables $x$, $T(i,x,x')$ may be written
-as $T$.
 
 Given transition system $(i,x,I,T)$, a logical formula $C$ is, by definition,
 \emph{inductive relative} to logical formula $F$ if both
@@ -1263,14 +1272,15 @@ foreign import ccall safe "addMinisatClause"
 
 Using just the Haskell FFI for calling the C functions does not provide a
 sufficient abstraction for use by the rest of the model checker. All
-calls to C functions must occur inside of \verb,IO, monads, but having
+calls to C functions must occur inside the \verb,IO, monad, but having
 the interface functions return \verb,IO, monads means that any functions
 that use the interface functions to get values from MiniSat would need to
-perform all their computations inside monads as well, requiring them to
+perform all their computations inside the \verb,IO, monad as well, requiring them to
 be written imperatively.
 I wrote further functions to allow for a more natural interface to MiniSat,
 making use of \verb,unsafePerformIO, to have the functions return
-values outside the \verb,IO, monad.
+values outside the \verb,IO, monad, which is idiomatic Haskell for
+interfacing with C libraries.
 
 To use MiniSat to solve a query, the \verb,solveWithAssumps, function
 is usually called (see \ref{solveWithAssumps}),
@@ -1528,7 +1538,6 @@ outlining the general structure shared by all the
 implementations of the model checker except {\it PriorityQueue}
 and compare this structure with Figure \ref{overview} (see Section
 \ref{pqueue} for \emph{PriorityQueue}).
-
 The main components of the algorithm in Figure \ref{recstr} are as follows:
 \begin{itemize}
 \item The {\it prove} component (line \ref{recstr:prove})
@@ -1699,7 +1708,7 @@ These current-state literals are extracted from the model in the function that
 called \verb,nextCTI,.
 
 \subsubsection{Smaller Counterexamples to Induction}
-In the all implementations of the algorithm other than {\it Basic},
+In all implementations of the algorithm other than {\it Basic},
 \verb,nextCTI, again asks for a model $m$
 for the satisfiable query $\neg P' \wedge F_k \wedge T$. The only literals in $m$ that
 must be included in the CTI are those current-state literals that result in
@@ -1757,14 +1766,15 @@ returning a triple containing the updated \verb,f, along with the fixed-point \v
 and updates \verb,Frame, \verb,f',.
 
 \subsection{Inductive Generalization}
-Finding the minimal inductive subclause (MIC) for a clause is in practice inefficient
+Finding the minimal inductive subclause (MIC) of a clause is in practice inefficient
 \cite{griggio14},
 and all implemented versions of generalization
 (i.e. all the \verb,inductiveGeneralization, function implementations) approximate the MIC with a call to the function
 \verb,generalize,.
 
 \subsubsection{Simple}
-The simplest method for approximating a MIC attempts to drop each literal in turn and checks
+The simplest method for approximating a MIC (see Figure \ref{inductiveGeneralization})
+attempts to drop each literal in turn and checks
 that the resulting clause $c$ satisfies formulas $I \Rightarrow c$ and
 $F_k \wedge c \wedge T \Rightarrow c'$ as the original clause did.
 %If the resulting clause satisfies both queries
@@ -1795,6 +1805,7 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
           else generalize cs f0 fk (c:needed) ( k - 1 ) 
 \end{lstlisting}
 \caption{The {\tt inductiveGeneralization} Haskell function that approximates the {\it mic} algorithm.}
+\label{inductiveGeneralization}
 \end{figure}
 
 This corresponds to the algorithm described in Figure \ref{mic}, but where {\it down} simply
@@ -1823,10 +1834,11 @@ to handle CTGs.
   \Return{down(cls,i)}}
 }
 \caption{The algorithm for the version of {\it down} that handles CTGs.}
-\label{mic}
+\label{ctgdown}
 \end{algorithm}
 
-The modified {\it down} algorithm checks, as in the simple approximation for MIC, for the satisfiability of
+The modified {\it down} algorithm (Figure \ref{ctgdown})
+checks, as in the simple approximation for MIC, for the satisfiability of
 $I \Rightarrow c$ and $F_k \wedge c \wedge T \Rightarrow c'$, where $c$ is the subclause passed to
 the algorithm.
 The difference is that {\it down} does not immediately attempt to expand $c$
@@ -1853,7 +1865,7 @@ This variant of the algorithm makes
 use of some of the same functions (e.g. \verb,negCTI, and \verb,push,) as the other variants but
 differs in its overall structure.
 I provide a definition of proof obligations, an
-overview of the structure of the implementation for this variation of the algorithm,
+overview of the structure of the implementation for this variant of the algorithm,
 and some implementation details about representing proof obligations and the priority queue.
 
 \subsubsection{Proof Obligations}
@@ -1873,30 +1885,31 @@ $(s, i)$.
   \Let{${\it queue}$ = {\rm queue containing proof obligation} $(\neg P, 1)$}{
   \Return {${\it fulfillObligations}(M,[I],queue)$}}
 }
-\Fn{fulfillObligations$(M,[F_0,\ldots,F_k],{\it queue}])$}{
+\Fn{fulfillObligations$(M,[F_0,\ldots,F_k],{\it queue}])$ \label{pqueuestr:fulfillObs}}{
   \Let{$((s,i), {\it q}) = {\it dequeue(queue)}$ \label{dequeue}}{
   \lIf{$F_{i - 1} \wedge T \Rightarrow \neg s'$}{\Return{${\it pushFrame(M, [F_0, \dots, F_k], q, (s,i))}$} \label{pqueuestr:pushFrame}}
   }
   \lElse{\Let{${\it cti = nextCTI(F_{i - 1} \wedge T \Rightarrow \neg s')}$}{
-      \If{$I \Rightarrow \neg {\it cti}$}{
+      \If{$I \Rightarrow \neg {\it cti}$ \label{pqueuestr:preprop}}{
         \Let{${\it (fixed, [G_0, \ldots, G_k], d) = propagate([F_0 \cup \{\neg cti\}, F_1, \ldots, F_k], {\it \neg cti})}$ \label{pqueuestr:propagate}}{
-          \lIf{\it fixed}{\Return{True}}
-          \Return{${\it fulfillObligation(M, [G_0 , \ldots, G_k], (generalize(\neg cti, d),d))}$}
+          \lIf{\it fixed}{\Return{True} \label{pqueuestr:fix}}
+          \Return{${\it fulfillObligation(M, [G_0 , \ldots, G_k], (generalize(\neg cti, d),d))}$ \label{pqueuestr:rec}}
         }
       }
       \lElse{\Return{False}}}}
 }
-%\Fn{pushFrame$([M, F_0,\ldots,F_k], {\it queue}, (s,i))$}{
-%  \Let{$({\it fixed}, G_i) = {\it push}(F_{i - 1}, F_i)$}{
-%    \lIf{\it fixed}{\Return{True}}
-%    \lElse{\Let{$q = {\it enqueue{(s, i+1), queue)}}$}
-%      {\Return{${\it fulfillObligations}(M,[F_0,\ldots,F_{i - 1},G_i,F_{i + 1}, \ldots, F_k], q)$}}}}
-%}
-\caption{General structure of the algorithm implementation in {\it PriorityQueue}.}
+\Fn{pushFrame$([M, F_0,\ldots,F_k], {\it queue}, (s,i))$}{
+  \Let{$({\it fixed}, G_i) = {\it push}(F_{i - 1}, F_i)$ \label{pqueuestr:push}}{
+    \lIf{\it fixed}{\Return{True} \label{pqueuestr:pushfix}}
+    \lElse{\Let{$q = {\it enqueue{(s, i+1), queue)}}$ \label{pqueuestr:enqueue}}
+      {\Return{${\it fulfillObligations}(M,[F_0,\ldots,F_{i - 1},G_i,F_{i + 1}, \ldots, F_k], q)$}
+      \label{pqueuestr:pushrec}}}}
+}
+\caption{General structure of the algorithm in {\it PriorityQueue}.}
 \label{pqueuestr}
 \end{algorithm}
 
-The variant of the algorithm used in the {\it PriorityQueue} implementation
+The variant of the algorithm used in the {\it PriorityQueue} implementation (see Figure \ref{pqueuestr})
 relies on a priority queue of proof obligations.
 When a proof obligation $(s,i)$ is added to the priority queue,
 it is assigned a priority higher than any proof obligation in the queue $(t,j)$ with $j > i$,
@@ -1910,33 +1923,34 @@ no distinction between the negation of the safety property $P$ and any other pro
 needing
 to be proved.
 The priority queue maintains all the information about which properties need to be
-proven, and the main recursive {\it fulfillObligations} function attempts to prove
+proven, and the main recursive {\it fulfillObligations} function (line \ref{pqueuestr:fulfillObs}) attempts to prove
 whichever property has the highest priority in the queue, i.e. fulfill the proof obligation with the highest priority (this proof obligation
-is the one returned by ${\it dequeue(queue)}$ in line \ref{dequeue} of \ref{pqueuestr}).
+is the one returned by ${\it dequeue(queue)}$ in line \ref{dequeue}).
 
 Whenever a proof obligation $(s,i)$ is fulfilled (at a certain depth $i$) the proof obligation
-$(s, i + 1)$ is added to the queue. Enqueueing the new proof obligation is valid
+$(s, i + 1)$ is added to the queue by {\it pushFrame} (line \label{pqueuestr:enqueue}).
+Enqueueing the new proof obligation is valid
 because $s$ states can reach $\neg P$ states in some
 number of steps of the transition relation and should therefore
 not be reachable in any number of steps of the transition relation from the initial state.
 
 In attempting to fulfill a proof obligation $(s,i)$, {\it fulfillObligations} proceeds
 generally in the same way as the other variants: if a consecution query succeeds,
-then {\it pushFrame} is called, and if not, a CTI is discovered with the intent to
-prove its negation is inductive relative to frame $F_{i - 1}$.
+then {\it pushFrame} is called (line \label{pqueuestr:pushFrame}), and if not, a CTI is discovered with the intent
+to prove its negation is inductive relative to frame $F_{i - 1}$.
 
-The structure of the {\it pushFrame} function is modified to accomodate priority queues
+The structure of the {\it pushFrame} function is modified to
+accomodate priority queues
 and the fact that the pair of frames may not be the pair with the greatest possible depth.
-The {\it pushFrame} function pushes clauses from frame $F_{i - 1}$ to frame $F_i$ (where
+The {\it pushFrame} function pushes clauses (line \ref{pqueuestr:push})
+from frame $F_{i - 1}$ to frame $F_i$ (where
 $F_i$ is not necessarily the frontier frame) and checks
-for the equality of $F_{i - 1}$ and $F_i$.
-The recursive call in {\it pushFrame} is then
-$${\it fulfillObligations}(M,[F_0,\ldots,F_{i - 1},G_i,F_{i + 1}, \ldots, F_k], q),$$
-where $q = {\it enqueue((s, i+1), queue)}$, the result of enqueueing the proof obligation
-for property $s$ at the next depth $i + 1$ in the priority queue {\it queue}.
+for the equality of $F_{i - 1}$ and $F_i$ (line \ref{pqueuestr:pushfix}). If the fixed point has not been
+reached, {\it pushFrame} makes a recursive call to {\it filfillObligations} with the updated
+priority queue (line \ref{pqueuestr:pushrec}).
 
 When a CTI $c$ for proof obligation $(s,i)$ is discovered, the proof obligation $(c,i - 1)$
-for proving the negation of the CTI could enqueued before calling
+for proving the negation of the CTI could enqueued before
 calling {\it fulfillObligations} recursively again,
 but the implementation employs a different approach.
 This approach keeps the number of
@@ -1948,12 +1962,13 @@ The approach employed by the {\it PriorityQueue} implementation checks
 that $I \Rightarrow \neg c$, adds $\neg c$ to $F_0$, and then uses a modified
 version of {\it propagate} to push clauses and check for fixed points up to
 depth $j \leq i$, where $j$ is the greatest value that is less than $i$
-such that $\neg c$ is inductive relative to $F_{j - 1}$. If a fixed point is
-found, then the algorithm can terminate with success. Otherwise, the clause
+such that $\neg c$ is inductive relative to $F_{j - 1}$
+(lines \ref{pqueuestr:preprop}, \ref{pqueuestr:propagate}). If a fixed point is
+found, then the algorithm can terminate with success (line \ref{pqueuestr:fix}). Otherwise, the clause
 $\neg c$ is generalized relative to frame $F_{j - 1}$
 using the simpler approximation for finding MICs, giving clause
 $\neg d \subseteq c$. The proof obligation $(d,j)$ is then enqueued, and
-{\it fulfillObligations} calls itself recursively.
+{\it fulfillObligations} calls itself recursively (line \ref{pqueuestr:rec}).
 
 \subsubsection{Proof Obligations and Priority Queues}
 
@@ -1972,7 +1987,7 @@ priority) of \verb,Obligation,s.
 For example, the initial \verb,MinQueue, created after the successful initiation query
 is given by \verb.singleton (1, 0, [prop])., which represents the priority queue that
 contains only \verb,Obligation, \verb.(1, 0, [prop])., representing the proof obligation
-$(\neg P,1)$, where the clause $P$ is the one that \verb,[prop], represents.
+$(\neg P,1)$, where \verb,[prop], represents the clause $P$.
 
 \chapter{Evaluation}
 \label{eval}
@@ -2127,7 +2142,8 @@ Model Checking Competition examples.}
 
 \begin{figure}[t]
 \includegraphics[width=16cm]{handwritten.pdf}
-\caption{Benchmark results for the 14 handwritten examples on a log scale.}
+\caption{Benchmark results for the 14 handwritten examples on a log scale. Whiskers
+indicate one standard deviation above and below the average time.}
 \label{eval:time}
 \end{figure}
 
@@ -2196,10 +2212,6 @@ This result disagrees with findings that implementations of the IC3 algorithm th
 use priority queues are more efficient than simple recursive implementations
 \cite{een11,griggio14}.
 
-The early, one-time generalization employed in the \emph{PriorityQueue} variant may
-account for its worse perofrmance in spite of the benefits gained from not needing
-to rediscover CTIs.
-
 One of the performance advantages of the \emph{PriorityQueue} implementation is that CTIs do not need
 to be rediscovered \cite{een11}: after a proof obligation $(s,i)$ is enqueued, until the algorithm fails or finds a fixed point,
 the queue will always contain a proof obligation $(s,j)$ for $j \geq i$. When the proof obligation $(s,i)$
@@ -2260,14 +2272,16 @@ CTI states can be eliminated at once.
 The \verb,stateOf, function uses the information kept in \verb,Model,s to extract the smaller
 cube from the model $s$ giving the satisfying assignment for a failed consecution query directly,
 without further SAT-solver queries.
-The \emph{MC} implementations do not store as much information in their hardware
-models and instead use several SAT-solver queries to extract the necessary literals
+
+The \emph{MC} variants implement the IC3 algorithm more directly and do not store as
+much information in their hardware
+models. They instead use several SAT-solver queries to extract the necessary literals
 from $s$.
 
 \subsubsection{MiniSat}
 \label{eval:ic3ref:minisat}
 The reference implementation is more closely coupled to MiniSat's implementation. Because both the reference
-implementation and MiniSat are in C++, the reference implementation can and does call MiniSat functions
+implementation and MiniSat are written in C++, the reference implementation can and does call MiniSat functions
 and instantiate MiniSat objects (e.g. \verb,SimpSolver,s) directly.
 In contrast, the Haskell implementations
 must interact with MiniSat through an interface and suffer from associated overheads, such as those from
@@ -2324,28 +2338,49 @@ safety properties of hardware, and the performance of its initial implementation
 \verb,ic3, in HWMCC'10 resulted in the development of several variants of
 and extensions to the algorithm.
 
-This project aims to implement a basic version of the IC3 algorithm in Haskell with the
-necessary parser and SAT-solver interface, with the goal of having the model checker
-be able to check small example hardware models. These goals have been achieved.
+This project's main goal is to implement a model checker that uses the IC3 algorithm.
+This goal was achieved by meeting the success criteria outlined in
+the project proposal:
 
-I described the implementation of the different components required by
-the project in Chapter \ref{impl}.
-In addition to the basic version of the IC3 algorithm, I implemented several variants of
-\emph{MC} (also described in Chapter \ref{impl}).
-The implementations of the model checker can model check not only
-the fourteen handwritten examples but also models from the
-Hardware Model Checking Competitions with thousands of variables.
+\begin{itemize}
+\item I met the requirement that an AIGER parser must be implemented by understanding
+the AIGER format (Section \ref{prep:aiger}) and writing the parser (Section
+\ref{impl:aiger}).
+\item I met the requirement that a MiniSat interface must be implemented by
+learning about MiniSat (Section \ref{prep:minisat}) and writing a Haskell
+interface to it (Section \ref{impl:minisat}).
+\item I met the requirement that a basic version of the IC3 algorithm must be
+implemented by
+understanding the IC3 algorithm (Section \ref{prep:ic3}) and implementing the
+\emph{Basic} variant (Section \ref{impl:modelchecker}).
+\item I verified that the requirement that the model checker correctly solves some small
+examples through testing and validating against \emph{IC3ref}
+(Section \ref{eval:solving}).
+\end{itemize}
 
-In chapter \ref{eval}, I evaluated the different model checker variants by comparing their performance on examples from
-the Hardware Model Checking Competition.
-The \emph{Basic} implementation correctly
-solved fourteen small handwritten examples, validated against the reference implementation
-of IC3, meeting the project goal of being able to check
-small examples.
-The benchmark results show that finding smaller CTI clauses
-results in a dramatic improvement in performance, with the best-performing implementation
-\emph{betterPropagation} finding smaller CTI clauses and removing subsumed clauses from frames,
-though none of the variants performs as well as \emph{IC3ref}.
+The project aims and success criteria were exceeded with the implementation of other
+IC3 backends for \emph{MC} (Section \ref{prep:ic3})
+and the ability of \emph{MC} to correctly check examples
+from the HWMCC (Section \ref{eval:solving}).
+
+%\section{Project Details}
+In the process of completing the project, I have written code and hardware model
+examples, the quantity of which is captured in the following table:
+\begin{center}
+\begin{tabular}{| l | l |}
+\hline
+Language & Lines of Code\\
+\hline
+Haskell (\emph{Basic} variant) & 946\\
+C++ & 70\\
+C/C++ header & 44\\
+AIGER & 65\\
+BLIF & 233\\
+\hline
+\end{tabular}
+\end{center}
+
+The code for this project may be found at \url{https://github.com/lmp47/ModelChecker}.
 
 \section{Further Extensions}
 \label{conc:extensions}
