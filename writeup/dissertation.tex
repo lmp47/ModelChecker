@@ -142,8 +142,7 @@ algorithm.
 To provide context for the project,
 I provide a brief introduction to formal verification and model checking, followed
 by a discussion of symbolic model checking and SAT-based model checking.
-I then highlight some of the important features of the IC3 algorithm and its more
-recent uses.
+I then highlight some of the important features of the IC3 algorithm.
 
 Software and hardware bugs can be costly. The Pentium FDIV hardware bug cost an
 estimated \$475 million \cite{pratt95}, and the Ariane 5 software bug cost
@@ -151,7 +150,7 @@ approximately \$370 million \cite{dowson97}.
 The cost of such bugs catalyzed the adoption of new techniques for developing systems
 that would help reduce the number of (or mitigate the effects of) residual bugs.
 In particular, the Pentium FDIV bug encouraged the use of formal verification in
-hardware design throughout the semi-conductor industry.
+hardware design throughout the semiconductor industry.
 
 Formal methods is an umbrella term that refers to any application of mathematics or logic
 in the improvement of the design or implementation of hardware or software systems
@@ -160,7 +159,7 @@ properties of systems.
 Some formal methods, such as type checking and static analysis, are widely
 adopted. Forms of formal methods that are not as lightweight and easy-to-use
 may not be as widely applied but may still be commonly applied within certain
-domains, such as model checking in the semi-conductor industry.
+domains, such as model checking in the semiconductor industry.
 The formal verification technique of model
 checking has been used to verify that circuits correctly implement the SRT
 algorithm that the Pentium processors with the FDIV bug did not \cite{clarke96}.
@@ -179,7 +178,7 @@ the state explosion problem: the number of
 states in a system can be (and often is) exponential in the
 number of state variables \cite{clarke12}. 
 
-The initial approach to the model checking problem involved explicitly
+The initial approach to the model-checking problem involved explicitly
 considering each reachable state in the model.
 Symbolic model checking arose as a method of mitigating the effects of
 the state explosion problem. By representing
@@ -258,13 +257,13 @@ it has been applied to model checking more
 elaborate properties expressing temporal constraints (e.g. LTL and CTL
 properties) and model checking software
 \cite{bradley12,cimatti12}.
-Results for more recent developments of software verification
-techniques based on IC3 suggest that these techniques are competitive with
+Results suggest that more recent developments of software verification
+techniques based on IC3 are competitive with
 established software verification methods \cite{birgmeier14}.
 
 \section{Project Aims}
 
-The main aim in this project is to implement a basic form of the IC3 algorithm in
+The main aim of this project is to implement a basic form of the IC3 algorithm in
 Haskell that can correctly check several
 small examples. Additionally, the project is intended to provide an opportunity
 for me to learn and use Haskell, to understand formal methods and especially model
@@ -302,7 +301,7 @@ of hardware models
 (Section \ref{prep:logic}) and the IC3 algorithm (Section \ref{prep:ic3}) to
 adequately complete my project.
 Throughout this chapter and subsequent ones, I collectively refer to the model checker
-variants implemented as part of this project as \emph{MC}.
+variants implemented in this project as \emph{MC}.
 
 \section{Haskell}
 \label{prep:haskell}
@@ -439,7 +438,7 @@ as its analogue.
 %Modules
 \paragraph{Modules}{
 A Haskell program consists of modules, which organize code.
-Modules (or just selected functions from modules) can be imported into other
+Modules (or selected functions from modules) can be imported into other
 modules, allowing library functions to be used. Modules can be referred
 to (e.g. in import statements) by names that incorporate where they are
 stored in the directory structure. For example, the \verb,Model, module in file
@@ -486,9 +485,9 @@ as version control and testing, and to otherwise ease the development of
 the project's code.
 
 \paragraph{Git}{
-The Git version control system \cite{git}
-was used for managing the project's code, and the Git repository
-hosting service GitHub \cite{github} was used to
+I used the Git version control system \cite{git}
+for managing the project's code and the Git repository
+hosting service GitHub \cite{github} to
 keep backups.
 The previous versions maintained by the system proved useful in
 the development of the code, and branching and merging capabilities were
@@ -622,7 +621,7 @@ denoted $d \subset c$) iff the set of literals in $d$ are a subset of
 the literals in $c$.
 
 By de Morgan's laws, cubes and clauses are duals; the negation of a cube is the
-clause specified by the set resulting from negating each literal in the cube
+clause specified by the set obtained by negating each literal in the cube
 and vice-versa.
 
 A propositional formula is in \emph{conjunctive normal form} (CNF) iff it is a conjunction 
@@ -634,17 +633,17 @@ form.}
 \paragraph{Transition Systems}{
 A \emph{transition system} is a tuple $(i,x,I,T)$ consisting of a set of input
 variables $i$, state variables $x$, an initial
-set of states represented by the logical formula $I(x)$ and
-a transition relation represented by the logical formula $T(i,x,x')$,
+set of states represented by logical formula $I(x)$ and
+a transition relation represented by logical formula $T(i,x,x')$,
 where $x'$ is the set of next-state variables. 
 For a known set of inputs $i$ and variables $x$, $T(i,x,x')$ may be written
 as $T$.
 
 For each state variable $v$, $v'$ denotes the corresponding next-state variable.
-For example, a transition relation that states that all variables that are
+For example, a transition relation stating that all variables that are
 currently {\it True} should become {\it False} in the next state is as follows:
 $$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$
-In a similar fashion, for a formula $X$ involving only current-state variables,
+Similarly, for a formula $X$ involving only current-state variables,
 the formula $X'$ is the formula $X$ where each current-state variable $v$ has
 been replaced by the corresponding next-state variable $v'$.
 
@@ -668,7 +667,7 @@ More generally, any logical formula $b$ involving the variables in the transitio
 system gives the set of states
 $\{a \in {\it Full~Assignment} | a \wedge b~{\rm is~satisfiable}\}$.
 
-For a logical formula $B$, a \emph{$B$ state} is a state that is in the set of states
+Given logical formula $B$, a \emph{$B$ state} is a state contained in the set of states
 represented
 by $B$. A set of states $s$ is said to be \emph{reachable}
 in $k$ steps of the transition relation iff there exist input variables and
@@ -691,20 +690,21 @@ to specify fourteen example hardware models.
 The models that \emph{MC} accepts as input
 are specified using the AIGER format;
 however, because using the AIGER format to specify larger models was cumbersome,
-I specified some models using BLIF and converted them to AIGER format
-using the Aiger Utilities' \verb,bliftoaig, tool. Given that one of
+I specified some models using BLIF and converted them to AIGER
+using the Aiger Utilities' \verb,bliftoaig, tool. Because one of
 the project's components is an AIGER parser, I describe the AIGER format
 in more depth.
 
-The AIGER format has several versions, with each providing
-a method of specifying hardware as
-And-Inverter Graphs with latch elements providing single clock-tick
-delays. All circuits are modeled as a graph of nodes consisting only of
+The AIGER format has several versions, and each allows hardware to be
+specified as
+And-Inverter Graphs with latch elements.
+% that provide single clock-tick delays.
+All circuits are modeled as a graph of nodes consisting only of
 AND gates, inverters, and latches, where the latches behave like D
 flip-flops and output the value of the current input at the next
 clock tick.
 
-The AIGER format has an ASCII and a binary version; either
+The AIGER format has an ASCII and binary version; either
 can be used for inputs to \emph{MC}. The ASCII
 format is more flexible and human readable, imposing fewer constraints
 on the ordering of components within the file. For example, an
@@ -720,7 +720,7 @@ to be more compact. The HWMCC examples use the binary format.
 
 A new version of the AIGER format is currently under development \cite{aiger}, with
 examples from HWMCC'14 onward using the new version. The AIGER parser component
-of this project handles both the old and new versions of the format.
+of this project handles both old and new versions of the format.
 
 I describe how variables are represented in all AIGER formats
 and then describe the old ASCII version of the AIGER format, which
@@ -743,7 +743,7 @@ $${\it index}(x, b) =
 2x & {\rm if}~b \\
 2x + 1 & {\rm otherwise}
 \end{cases}$$
-The indices 0 and 1 are used to represent the constant Boolean values {\it False}
+The indices 0 and 1 represent the constant Boolean values {\it False}
 and {\it True}, respectively.
 
 Any index above 1 represents a literal. 
@@ -779,7 +779,7 @@ The first index represents the positive literal for its corresponding variable n
 and the second represents the latch's next-state value.
 An AND gate, which is always binary,
 is specified by the index representing the positive literal
-for its variable name and the two indices that specify its input values.
+of its variable name and the two indices that specify its input values.
 
 \begin{figure}[t]
 \centering
@@ -811,26 +811,26 @@ working interface to MiniSat required some background knowledge of how MiniSat
 works. The MiniSat code explained in this section is in C++.
 
 To solve a SAT query, MiniSat creates an instance of a \verb,Solver, object,
-which contains a set of variables, sets of clauses, and possibly a model or a conflict vector.
+which contains a set of variables, sets of clauses, and possibly a model or conflict vector.
 The set of variables in the \verb,Solver, gives all the variables that may appear in
 a SAT query, the set of clauses forms the SAT query, and the model or conflict vector
 gives further information about the last SAT query made.
 
 In addition to a \verb,Var, type for representing variables, MiniSat has a \verb,Lit, type for
-representing literals, and MiniSat represents sets of clauses as \verb,vec<Lit>,s,
+representing literals. MiniSat represents sets of clauses as \verb,vec<Lit>,s,
 vectors of literals. The set of clauses in a \verb,Solver, represents a CNF query.
 If the \verb,Solver,'s \verb,solve(), function is called,
-the resulting \verb,bool, indicates whether the query is satisfiable or not. The
+the resulting \verb,bool, indicates the satisfiability of the query. The
 \verb,solve(), function is overloaded so that it may also take an assumption \verb,vec<Lit>*, as
 an argument. The literals in the assumption vector must hold in addition to the CNF query formed
-by the \verb,Solver,'s clauses: if the \verb,Solver,'s clauses form some CNF query $C$ and
+by the \verb,Solver,'s clauses; if the \verb,Solver,'s clauses form some CNF query $C$ and
 \verb,solve(assumps), is called, where \verb,assumps, represents some set $A$ of literals,
 then the SAT query is $C \wedge \bigwedge_{l \in A} l$.
 
-If there has been at least one query made of the \verb,Solver, object, and the query was
+If there has been at least one query made of the \verb,Solver, object and the last query was
 satisfiable, the \verb,Solver,'s \verb,model, variable points to a set of variable assignments
 for that SAT query.
-If there has been at least one query made of the \verb,Solver, object, and the query was
+If there has been at least one query made of the \verb,Solver, object and the last query was
 unsatisfiable, the \verb,Solver,'s \verb,conflict, variable points to a set of literals that
 contains the assumed literals that caused the query to be unsatisfiable.
 
@@ -894,7 +894,7 @@ as a state in which $\neg P$ holds is reachable in 0 steps.
 If it succeeds, then the algorithm proceeds to its main loop.
 
 The main loop of the algorithm is the while loop beginning on line \ref{main}.
-The algorithm only exits the loop when it has determined whether or not the
+The algorithm only exits the loop when it has determined if the
 safety property holds at all reachable states in the model.
 
 %Consecution query
@@ -911,9 +911,9 @@ The algorithm then aims to refine the approximation $F_k$ of the set of states
 reachable in at most $k$ steps by showing that all states that are
 reachable in at most $k$ steps are $\neg s_k$ states.
 
-The call to {\it nextCTI} in line \ref{CTI} finds the CTI
+The call to {\it nextCTI} (line \ref{CTI}) finds the CTI
 state $s_k$ when passed parameters $s = s_k$ and $j = k$.
-The call to {\it proveNegCTI} on line \ref{negCTI}
+The call to {\it proveNegCTI} (line \ref{negCTI})
 attempts to prove that $\neg s$ is inductive relative to $F_{k - 1}$,
 in which case all $F_k$ states are necessarily $\neg s$ states, so $\neg s$ can
 be added to the set of $F_k$ clauses.
@@ -1388,7 +1388,7 @@ data Model = Model { vars :: Word
                    , safe :: Lit } deriving Show
 \end{lstlisting}
 
-The inputs $i$ and state variables $x$ in the transition system $T(i,x,I,T)$
+Inputs $i$ and state variables $x$ in the transition system $T(i,x,I,T)$
 are not distinguished; both are just treated as variables in the representation.
 The total count of variables is kept in \verb,vars,.
 Clauses that specify the initial state $I$ are kept in \verb,initial,.
@@ -1432,9 +1432,9 @@ uninitialized and no clauses are generated for its initial value.
 Generating next-state clauses proceeds similarly.
 By the semantics of a latch, the clauses generated for the next state should have
 a conjunction logically equivalent to $n \Leftrightarrow l'$.
-If $n = {\it True}$, then the singleton clause
+If $n = {\it True}$, then singleton clause
 $\{l'\}$ is generated because the next-state value for the variable is a constant-{\it True} value,
-and if $n = {\it False}$, then the singleton clause $\{\neg l'\}$ is generated.
+and if $n = {\it False}$, then singleton clause $\{\neg l'\}$ is generated.
 Otherwise, if $n$ is not a Boolean value,
 the next-value clauses generated for $l$, are $\{l', \neg n\}$
 and $\{\neg l', n\}$. The conjunction of these clauses are, as needed, logically equivalent
@@ -1467,14 +1467,14 @@ $a' \Leftrightarrow i_1' \wedge i_2'$.
 
 If both $i_1$ and $i_2$ are Booleans (corresponding to both \verb,in1, and \verb,in2, using the \verb,Boolean,
 constructor for \verb,Parser.AigModel.Lit,s), then a singleton clause suffices to describe the AND gate.
-If $i_1 \wedge i_2$ holds, then the singleton clause $\{a\}$ describes the constantly {\it True} AND gate,
-and if not, then the singleton clause $\{\neg a\}$ describes the constantly {\it False} AND gate.
+If $i_1 \wedge i_2$ holds, then singleton clause $\{a\}$ describes the constantly {\it True} AND gate,
+and if not, then singleton clause $\{\neg a\}$ describes the constantly {\it False} AND gate.
 
 If only one of the inputs is a Boolean, then if it is {\it False},
-the singleton clause $\{\neg a\}$ is generated. Otherwise,
+singleton clause $\{\neg a\}$ is generated. Otherwise,
 the clauses equivalent to $a \Leftrightarrow i$ (i.e. clauses
 $\{i, \neg a\}$ and $\{\neg i, a\}$)
-are generated, where $i$ is the input that is not a Boolean value.
+are generated, where $i$ is the input that is not a Boolean.
 
 If neither $i_1$ nor $i_2$ are Booleans, then the clauses generated are
 $\{\neg a, i_1\}$, $\{\neg a, i_2\}$, and
@@ -1616,7 +1616,7 @@ The {\it prove} function (line \ref{recstr:prove}) makes an initiation query
 which corresponds to a recursive version of the main while loop
 in line \ref{main} of Figure \ref{overview}.
 
-Because functions in Haskell are pure, the assumption made in Figure \ref{overview}
+Because Haskell functions are pure, the assumption made in Figure \ref{overview}
 that functions can modify the set of (passed-by-reference) frames can no longer be made.
 Instead, updated values of frames are returned explicitly from the function call in
 a tuple along with any other values needed from the function call, as seen in
@@ -1626,8 +1626,8 @@ a tuple along with any other values needed from the function call, as seen in
 %indicating whether or not the negated CTI was proven, but also returns the possibly updated
 %values for the frontier frame $G_k$ and previous frames $G_0, \ldots, G_{k - 1}$.
 
-In addition to the necessary language-related modifications to the algorithm, I made a
-change to how often the full propagation phase is carried out, calling the {\it pushFrame}
+In addition to the necessary language-related modifications to the algorithm, I 
+changed how often the full propagation phase executes, calling the {\it pushFrame}
 function (line \ref{recstr:pushFrame}) instead where appropriate.
 
 %In Figure \ref{overview}, each iteration of the algorithm calls the propagation
@@ -1759,7 +1759,7 @@ checker can avoid making the consecution queries that arise from attempts to pus
 The versions of \verb,push, that consider subsumed clauses include a call to the function
 \verb,removeSubsumed, when acquiring the list of clauses to attempt to push.
 The \verb,removeSubsumed, function takes a list of clauses and removes all clauses in the list
-that are subsumed by other clauses in the list.
+subsumed by other clauses in the list.
 The \verb,push, function replaces the frame
 \verb,f, with a version of \verb,f, without subsumed clauses
 for the rest of the function and proceeds as the basic implementation's \verb,push, function does,
@@ -1810,8 +1810,8 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
 \label{inductiveGeneralization}
 \end{figure}
 
-This corresponds to the algorithm described in Figure \ref{mic}, but where {\it down} simply
-checks for the relative inductiveness of the subclause and does not attempt to expand it.
+This corresponds to the algorithm described in Figure \ref{mic}, but where {\it down}
+checks for the relative inductiveness of the subclause without attempting to expand it.
 
 \subsubsection{Minimal Inductive Subclauses and Counterexamples to Generalization}
 The more elaborate version of generalization implements the full
@@ -1994,8 +1994,8 @@ $(\neg P,1)$, where \verb,[prop], represents the clause $P$.
 \chapter{Evaluation}
 \label{eval}
 
-This chapter discusses the evaluation of the model checker implementations.
-I describe the solving capabilities of the \emph{MC} variants
+This chapter discusses the evaluation of the \emph{MC} variants.
+I describe the solving capabilities of the variants
 and how the project aim of being able to solve several examples has been met
 (Section \ref{eval:solving}). I then provide an empirical analysis of the
 model checker (Section \ref{eval:analysis}), which includes a description of
@@ -2012,8 +2012,8 @@ I did not take examples from HWMCC'12 and instead took examples
 with relatively short solving times for some of the solvers in HWMCC'13
 \cite{hwmcc13}.
 
-If an attempt to solve an example took longer than ten minutes, that
-attempt was considered to have timed out. The parameterizable number of failed attempts
+If an attempt to solve an example took longer than ten minutes, it was considered to have timed out.
+The parameterizable number of failed attempts
 at dropping literals in the \verb,inductiveGeneralization, functions was set to
 three, and the parameterizable number of CTGs that each generalization attempt
 in the {\it CTG} implementation will handle was also set to three, matching the
@@ -2022,15 +2022,38 @@ values for these parameters used by \emph{IC3ref}.
 \section{Correctness}
 \label{eval:solving}
 
+\begin{figure}[t]
+\begin{lstlisting}
+parseTest :: String -> IO [Test]
+parseTest name =
+  do
+    aigModel  <- Parser.getModelFromFile ("examples/" ++ name)
+    aigModel' <- Tools.getModelFromFile ("examples/" ++ name)
+    return (map TestCase
+             [ assertEqual (name ++ " numVars") (numVars aigModel)
+                           (numVars aigModel')
+             , assertEqual (name ++ " numInputs") (numInputs aigModel)
+                           (numInputs aigModel')
+             , assertEqual (name ++ " latches") (sort (latches aigModel))
+                           (sort (latches aigModel'))
+             , assertEqual (name ++ " outputs") (sort (outputs aigModel))
+                           (sort (outputs aigModel'))
+             , assertEqual (name ++ " ands") (sort (ands aigModel))
+                           (sort (ands aigModel')) ])
+\end{lstlisting}
+\caption{The {\tt parseTest} function for testing the AIGER parser on files in the {\tt examples} directory.}
+\end{figure}
+
 The \emph{MC} implementations have passed the HUnit tests for parsing AIGER files,
 making MiniSat queries, and model checking. The parser tests involve comparing
-the outputs of the two parsers and checking that they match. The MiniSat tests
+the outputs of the two parsers and checking that they match (see Figure
+\ref{parseTest}). The MiniSat tests
 involve checking that results from MiniSat queries are as expected and include checks
 for models and conflict
 vectors. The model-checking tests involve checking the results for specific
 functions in \verb,IC3.hs, such as \verb,consecution,.
 
-The variants could correctly solve all the handwritten examples and 50 HWMCC examples
+The variants could correctly solve all handwritten examples and 50 HWMCC examples
 within ten minutes, and some
 variants were able to solve additional examples without timing out.
 All solutions reported within the time limit agree with those
