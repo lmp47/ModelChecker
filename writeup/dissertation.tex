@@ -2042,6 +2042,7 @@ parseTest name =
                            (sort (ands aigModel')) ])
 \end{lstlisting}
 \caption{The {\tt parseTest} function for testing the AIGER parser on files in the {\tt examples} directory.}
+\label{parseTest}
 \end{figure}
 
 The \emph{MC} implementations have passed the HUnit tests for parsing AIGER files,
@@ -2275,7 +2276,7 @@ literals per clause (which suggests larger queries and worse performance).
 The performance of the \emph{MC} variants is, for all except very small examples
 (e.g. \verb,simple1.aag,),
 worse compared to the performance of \emph{IC3ref}
-with or without generalization involving CTGs enabled (as seen in Figure \ref{eval:benchmarks}).
+with or without generalization involving CTGs enabled (as seen in Figure \ref{eval:time}).
 
 The choice of implementation language may account for much of the difference in performance, as the reference
 implementation in C++ has more control over memory allocations than the implementations in Haskell, which is
