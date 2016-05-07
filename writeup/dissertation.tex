@@ -873,16 +873,16 @@ The pseudocode in Figure \ref{overview} gives an overview of the basic IC3 algor
     }
   }
 }
-\caption{An overview of the IC3 algorithm. Frames are assumed to be passed by reference.}
+\caption{An overview of the IC3 algorithm. Frames are passed by reference.}
 \label{overview}
 \end{algorithm}
 
-The IC3 algorithm maintains a set of $k + 1$ frames $F_0,\ldots,F_k$, where
-each frame $F_i$ is a set of clauses whose disjunction represents an
+The IC3 algorithm maintains a set of $k + 1$ frames $F_0,\ldots,F_k$.
+Each frame $F_i$ is a set of clauses whose disjunction represents an
 overapproximation of the set of states reachable by the transition
-system in at most $i$ steps from the initial state
-(so, for example, $F_0$ is just the initial state set $I$, as seen
-in the pseudocode).
+system in at most $i$ steps from the initial state.
+For example, $F_0$ is just the initial state set $I$, as seen
+in Figure \ref{overview}.
 The deepest frame $F_k$ in the set of frames is the \emph{frontier}.
 
 %Initiation query
@@ -1019,11 +1019,11 @@ $I \Rightarrow t$ and $F_i \wedge t \wedge T \Rightarrow t$ both hold.
 
 If both formulas hold, then the literal $l$ can be dropped from $\neg s$.
 If only $F_i \wedge t \wedge T \Rightarrow t'$ fails to hold, then
-it is possible that expanding the set of states in $t$ by removing some of the
+it is possible that expanding the set of states in $t$ by removing %some of the
 literals in $t$ would result in a clause that is inductive relative to $F_i$.
 If $I \Rightarrow t$ fails to hold, then removing any literals in $t$ to
 obtain a subclause $u \subset t$ would still result in the query $I \Rightarrow u$
-failing, since it is the case that $u \Rightarrow t$.
+failing, since $u \Rightarrow t$ holds.
 
 The formula $F_i \wedge t \wedge T \Rightarrow t'$ not holding indicates
 that there is a predecessor to a $\neg t$ state that is a $F_i \wedge t$ state.
@@ -1073,7 +1073,7 @@ $F_k$. In the original method of generalization described above,
 this means that $\neg s$ cannot be generalized to $\neg c$, and generalization
 proceeds without dropping $l$.
 
-The reason the query
+The reason that
 $F_k \wedge T \wedge c \Rightarrow c'$ is unsatisfiable might be that
 $F_k$ is too loose an approximation, similarly to the reason a consecution
 query at $F_k$ might fail. As with consecution queries, discovering a
@@ -1117,7 +1117,7 @@ frame $F_k$ allows $s$ to be generalized to $c$.
 \label{components}
 \end{figure}
 
-This chapter describes my implementation of the \emph{MC} model checkers.
+This chapter describes the implementation of the \emph{MC} model checkers.
 The implementation can be broken up into four main components
 (see Figure \ref{components}): the AIGER parser
 (Section \ref{impl:aiger}), the
@@ -1132,8 +1132,8 @@ versions of the backend.
 The variants of the backend component differ
 in their overall structure,
 their finding of CTIs, their implementation of propagation, and
-their inductive generalization of CTIs. The variants and the
-differences among them are given in the following table:\\
+their inductive generalization of CTIs. The variants and their
+differences among them are summarized in the following table:\\
 
 \begin{tabular}{| l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em} |}
 \hline
@@ -1170,7 +1170,7 @@ that improves upon the basic inductive generalization algorithm \cite{hassan13}.
 %the ASCII and binary versions of the format and the representation
 %of AIG models.
 
-The relevant files for this section can be found in the \verb,Parser, directory.
+%The relevant files for this section can be found in the \verb,Parser, directory.
 The parser component parses ASCII or binary-formatted AIGER files and
 assumes that the new format is used
 (note that the new format is backward compatible).
@@ -1203,7 +1203,7 @@ in {\tt Parser.AigModel} has the following constructors:
 \verb,Word, it takes as an argument, and \verb,Neg, represents the negative literal
 of the variable whose name is given by the \verb,Word, it takes as an argument.
 Variable names are adjusted (by subtracting 1) so that they start at 0.
-For example, the index 3 read from an AIGER file is parsed to \verb,Neg 0,;
+For example, the AIGER index 3 is parsed to \verb,Neg 0,;
 the odd index 3 indicates that it is a negative literal of the variable 1, and
 subtracting by 1 gives the new variable name 0.
 
@@ -1251,10 +1251,9 @@ Because the Haskell Foreign Function Interface (FFI) cannot interface with C++ d
 the interface to the MiniSat SAT solver is composed of a C wrapper for the relevant
 MiniSat functions and classes and a Haskell interface to the C wrapper.
 
-In the C wrapper,
-every MiniSat class is replaced with a C
-type, and every MiniSat function is replaced with a function with an \verb,extern C, function that
-calls the MiniSat C++ function. For instance, the following function
+The C wrapper replaces every MiniSat class with a C type and every MiniSat function with
+an \verb,extern C, function that calls the MiniSat C++ function.
+For instance, the following function
 in \verb,Minisat/CSolver.cpp, is a wrapper for the \verb,addClause, in the \verb,Solver,
 class:
 \begin{lstlisting}[language = C++]
@@ -1348,13 +1347,13 @@ struct result {
 
 The information kept in a \verb,Result, Haskell datatype is taken directly from the
 \verb,result, returned by the C Wrapper functions.
-I used the \verb,hsc2hs, preprocessor to help handle pointer offsets
+I used the \verb,hsc2hs, preprocessor to handle pointer offsets
 when unmarshalling from the C struct.
-Beyond straightforward unmarshalling, some additional work
+Beyond straightforward unmarshalling, some additional work was necessary
 to convert from the MiniSat representation of literals to the \emph{MC} representation of
-literals was necessary.
+literals.
 
-I chose to represent a variable with name $x$ taken from the nonnegative integers with
+I represented a variable with name $x$ taken from the nonnegative integers with
 the MiniSat variable $2 \times x$ and its corresponding next-state variable $x'$
 with MiniSat variable $(2 \times x) + 1$. The model returned in the \verb,result, struct
 points to an array of three-valued boolean (the normal boolean values including an
@@ -1366,11 +1365,11 @@ value the corresponding positive or negative literal for that index is added to 
 \section{Hardware Representation}
 \label{impl:representation}
 This section describes the representation and construction of hardware models (i.e.
-transition systems) and frames in the backend.
+transition systems) and frames in \emph{MC}.
 \subsection{Harware Model Representation}
 \subsubsection{Literals and Clauses}
 The \verb,Lit, data structure in \verb,Model.Model, represents literals in
-the model checker.
+the backend.
 The \verb,Var, constructor gives positive current-state (unprimed) literals, the \verb,Neg,
 constructor gives negative current-state literals, and the \verb,Var', and \verb,Neg', constructors
 respectively give positive and negative next-state (primed) literals.
@@ -2501,7 +2500,7 @@ format header.
 The header can be truncated
 after the AND-gate count if all remaining counts are
 zero, making the new format
-backwards-compatible.
+backward compatible.
 
 The ``bad state'' properties allow negated safety properties to be specified
 separately from outputs.
