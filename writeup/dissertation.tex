@@ -318,8 +318,8 @@ I assume a working knowledge of Standard ML.
 Unlike in Standard ML, there is no keyword in Haskell for defining functions. Instead,
 Haskell functions are defined as a series of equations. Otherwise,
 Haskell function definitions are similar to Standard ML function definitions with the
-\verb,fun, keyword omitted. Anonymous functions in Haskell are also defined similarly
-as in Standard ML, using \verb,\, to bind variables analagously to Standard
+\verb,fun, keyword omitted. Anonymous functions in Haskell
+use \verb,\, to bind variables analagously to Standard
 ML's \verb,fn, keyword. Function composition is achieved with infix operator
 \verb,.,.
 
@@ -386,8 +386,6 @@ in the form of \verb,do,-notation, which allows monadic computations
 to be written in an imperative fashion. For example, the code in Figure
 \ref{monad} is equivalent to the more readable code in Figure \ref{do}.
 
-For example, the \verb,addClause', function in \verb,Minisat/Minisat.hs, could
-be written as follows:
 \begin{figure}[t]
 \centering
 \begin{lstlisting}
@@ -1768,10 +1766,10 @@ and updates \verb,Frame, \verb,f',.
 
 \subsection{Inductive Generalization}
 \label{impl:generalization}
-Finding the minimal inductive subclause (MIC) of a clause is in practice inefficient
-\cite{griggio14},
-and all implemented versions of generalization
-(i.e. all the \verb,inductiveGeneralization, function implementations) approximate the MIC with a call to the function
+Finding the minimal inductive subclause (MIC) of a clause is inefficient in practice
+\cite{griggio14};
+all implemented versions of generalization
+(i.e. all \verb,inductiveGeneralization, function implementations) approximate the MIC with a call to the function
 \verb,generalize,.
 
 \subsubsection{Simple}
@@ -1780,14 +1778,13 @@ attempts to drop each literal in turn and checks
 that the resulting clause $c$ satisfies formulas $I \Rightarrow c$ and
 $F_k \wedge c \wedge T \Rightarrow c'$ as the original clause did.
 %If the resulting clause satisfies both queries
-If it does, then the literal can be successfully dropped,
-but if not, the literal is added to a list \verb,needed, of necessary literals.
+If it does, then the literal can be successfully dropped.
+Otherwise, the literal is added to a list \verb,needed, of necessary literals.
 After a parameterizable number of failed attempts at dropping a literal from the clause or after
 having attempted dropping all the literals, the
-\verb,inductiveGeneralization, function that implements this approximation
-returns the clause resulting from appending the remaining
-literals in the clause (i.e. the literals that the \verb,generalize, has not tried to drop)
-with the literals in \verb,needed,.
+\verb,inductiveGeneralization, function implementing this approximation
+returns the clause that results from appending \verb,needed, to the remaining
+literals in the clause (i.e. literals that the \verb,generalize, has not tried to drop).
 
 \begin{figure}[t]
 \centering
@@ -1868,7 +1865,7 @@ use of some of the same functions (e.g. \verb,negCTI, and \verb,push,) as the ot
 differs in its overall structure.
 I provide a definition of proof obligations, an
 overview of the structure of the implementation for this variant of the algorithm,
-and some implementation details about representing proof obligations and the priority queue.
+and implementation details about representing proof obligations and priority queues.
 
 \subsubsection{Proof Obligations}
 A \emph{proof obligation} is a pair $(s,i)$ of a state $s$ that is either a set of bad states
@@ -1920,7 +1917,7 @@ than any proof obligation already in the queue with the same depth (i.e. any
 proof obligation in the queue $(v, i)$). I discuss the
 way that the implementation achieves this priority ordering later.
 
-Unlike in other variants, in the {\it PriorityQueue} implementation, there is
+Unlike other variants, in the {\it PriorityQueue} implementation, there is
 no distinction between the negation of the safety property $P$ and any other property
 needing
 to be proved.
@@ -1969,7 +1966,7 @@ such that $\neg c$ is inductive relative to $F_{j - 1}$
 found, then the algorithm can terminate with success (line \ref{pqueuestr:fix}). Otherwise, the clause
 $\neg c$ is generalized relative to frame $F_{j - 1}$
 using the simpler approximation for finding MICs, giving clause
-$\neg d \subseteq c$. The proof obligation $(d,j)$ is then enqueued, and
+$\neg d \subseteq c$. Then proof obligation $(d,j)$ is enqueued, and
 {\it fulfillObligations} calls itself recursively (line \ref{pqueuestr:rec}).
 
 \subsubsection{Proof Obligations and Priority Queues}
@@ -1988,7 +1985,7 @@ priority) of \verb,Obligation,s.
 
 For example, the initial \verb,MinQueue, created after the successful initiation query
 is given by \verb.singleton (1, 0, [prop])., which represents the priority queue that
-contains only \verb,Obligation, \verb.(1, 0, [prop])., representing the proof obligation
+contains only \verb,Obligation, \verb.(1, 0, [prop]).. This \verb,Obligation, represents proof obligation
 $(\neg P,1)$, where \verb,[prop], represents the clause $P$.
 
 \chapter{Evaluation}
