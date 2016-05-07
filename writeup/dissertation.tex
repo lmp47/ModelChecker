@@ -816,8 +816,9 @@ The set of variables in the \verb,Solver, gives all the variables that may appea
 a SAT query, the set of clauses forms the SAT query, and the model or conflict vector
 gives further information about the last SAT query made.
 
-In addition to a \verb,Var, type for representing variables, MiniSat has a \verb,Lit, type for
-representing literals. MiniSat represents sets of clauses as \verb,vec<Lit>,s,
+In addition to representing variables with a \verb,Var, type, MiniSat represents
+literals with a \verb,Lit, type.
+MiniSat represents sets of clauses as \verb,vec<Lit>,s,
 vectors of literals. The set of clauses in a \verb,Solver, represents a CNF query.
 If the \verb,Solver,'s \verb,solve(), function is called,
 the resulting \verb,bool, indicates the satisfiability of the query. The
@@ -920,7 +921,7 @@ be added to the set of $F_k$ clauses.
 
 %The {\it proveNegCTI} algorithm works similarly to the
 %while loop on line \ref{reconsec}.
-For as long as the query
+While the query
 $F_k \wedge \neg s \wedge T \Rightarrow s'$ is unsuccessful,
 the algorithm extracts a CTI cube and
 calls {\it proveNegCTI} to show that the counterexample is
@@ -1017,7 +1018,7 @@ literal $l$ from $\neg s$, it checks that
 $I \Rightarrow t$ and $F_i \wedge t \wedge T \Rightarrow t$ both hold.
 
 If both formulas hold, then the literal $l$ can be dropped from $\neg s$.
-If only the formula $F_i \wedge t \wedge T \Rightarrow t'$ fails to hold, then
+If only $F_i \wedge t \wedge T \Rightarrow t'$ fails to hold, then
 it is possible that expanding the set of states in $t$ by removing some of the
 literals in $t$ would result in a clause that is inductive relative to $F_i$.
 If $I \Rightarrow t$ fails to hold, then removing any literals in $t$ to
@@ -1050,8 +1051,8 @@ The checking phase then repeats, checking the expanded clause $t \cap \neg p$.
   {\it cls} := $cls \cap p$\;
   \Return{down(cls,i)} 
 }
-\caption{The algorithm for finding the minimal inductive subclause. Clauses are assumed
-to be passed by reference.}
+\caption{The algorithm for finding the minimal inductive subclause. Clauses are
+passed by reference.}
 \label{mic}
 \end{algorithm}
 
@@ -1074,9 +1075,9 @@ proceeds without dropping $l$.
 
 The reason the query
 $F_k \wedge T \wedge c \Rightarrow c'$ is unsatisfiable might be that
-$F_k$ is too loose an approximation, similarly to why a consecution
+$F_k$ is too loose an approximation, similarly to the reason a consecution
 query at $F_k$ might fail. As with consecution queries, discovering a
-new clause that can be added to $F_k$ may allow the queries that
+new clause that can be added to $F_k$ may allow queries that
 check for relative induction to succeed, and the discovery of this
 clause can be directed by a counterexample extracted from the
 SAT solver after the query for $F_k \wedge T \wedge c \Rightarrow c'$.
@@ -1197,7 +1198,7 @@ in {\tt Parser.AigModel} has the following constructors:
 \item \verb,Var,, which takes a \verb,Word, argument; and
 \item \verb,Neg,, which takes a \verb,Word, argument.
 \end{itemize}
-\verb,Boolean,s represent the Boolean values corresponding with AIGER indices 0 and 1,
+\verb,Boolean,s represent the Boolean values corresponding to AIGER indices 0 and 1,
 \verb,Var, represents the positive literal of the variable whose name is given by the
 \verb,Word, it takes as an argument, and \verb,Neg, represents the negative literal
 of the variable whose name is given by the \verb,Word, it takes as an argument.
@@ -2045,7 +2046,7 @@ parseTest name =
 \label{parseTest}
 \end{figure}
 
-The \emph{MC} implementations have passed the HUnit tests for parsing AIGER files,
+The \emph{MC} implementations passed HUnit tests for parsing AIGER files,
 making MiniSat queries, and model checking. The parser tests involve comparing
 the outputs of the two parsers and checking that they match (see Figure
 \ref{parseTest}). The MiniSat tests
