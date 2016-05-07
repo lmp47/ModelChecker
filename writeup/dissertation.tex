@@ -1723,6 +1723,7 @@ the current-state literals from $q$ to obtain the CTI.
 
 
 \subsection{Propagation}
+\label{impl:propagation}
 
 Both the implementation of the {\it pushFrame} function and the implementation of the
 {\it propagate} function in Figure \ref{recstr} (lines \ref{recstr:pushFrame},
@@ -1766,6 +1767,7 @@ returning a triple containing the updated \verb,f, along with the fixed-point \v
 and updates \verb,Frame, \verb,f',.
 
 \subsection{Inductive Generalization}
+\label{impl:generalization}
 Finding the minimal inductive subclause (MIC) of a clause is in practice inefficient
 \cite{griggio14},
 and all implemented versions of generalization
@@ -2032,7 +2034,7 @@ The variants could correctly solve all the handwritten examples and 50 HWMCC exa
 within ten minutes, and some
 variants were able to solve additional examples without timing out.
 All solutions reported within the time limit agree with those
-given by \emph{IC3ref}, providing evidence for the correctness of the solutions given
+given by \emph{IC3ref}, providing further evidence for the correctness of the solutions given
 by \emph{MC}.
 
 The handwritten examples served as the ``small examples'' that the model checker
@@ -2164,7 +2166,7 @@ As mentioned previously, because the \emph{BetterCTI} implementation uses
 CTIs that encompass sets of states rather than single states, when a negated CTI is proven at a depth
 $k$, several states have been shown to be unreachable within $k$ steps of the transition relation
 from the initial state. Dealing with a set of CTI states rather than a single CTI state
-at a time should allow
+at a time allows
 the \emph{BetterCTI} implementation to deal with fewer CTIs in some cases,
 %(because the CTI sets of states
 %may encompass several CTI states)
@@ -2182,8 +2184,8 @@ solve six more examples (\verb,counterp0.aig,, \verb,counterp0neg.aig,, \verb,pd
 timing out.}
 
 \paragraph{Propagation}{
-Removing subsumed clauses also results in better performance on several examples.
-While the performance impact that the improvement has is less drastic than the improvement of
+Removing subsumed clauses (see Section \ref{impl:propagation}) also results in better performance on several
+examples. While the performance impact that the improvement has is less drastic than the improvement of
 \emph{BetterCTI} over \emph{Basic}, the \emph{BetterPropagation} version performs
 considerably better
 than the \emph{BetterCTI} version on the \verb,counters3.aig, and \verb,counters4.aig, examples in
@@ -2193,11 +2195,13 @@ queries than \emph{BetterCTI}, \emph{BetterPropagation} manages to perform bette
 because it makes smaller queries.}
 
 \paragraph{Counterexamples to Generalization}{
-The \emph{CTG} variation that deals with CTGs performs worse than the \emph{BetterPropagation} version
-on examples, even in cases where \emph{CTG} reduces the average number of frames per clause (see Figures \ref{eval:time}, \ref{eval:lits}),
-most likely because the examples used are too small for the performance benefit of
+The \emph{CTG} variation that deals with CTGs (see Section \ref{impl:generalization})
+performs worse than the \emph{BetterPropagation} version
+on examples, even in cases where \emph{CTG} reduces the average number of frames per clause (see Figures \ref{eval:time}, \ref{eval:lits}).
+The most likely cause is that the examples used are too small for the performance benefit of
 using CTGs to eliminate more states
-to overcome the overheads of finding and proving negated CTGs, which require
+to overcome the overhead of finding and proving negated CTGs;
+finding and proving negated CTGs requires
 making additional queries on each call to the \verb,inductiveGeneralization, function.
 
 Similar results can be found
@@ -2224,12 +2228,11 @@ $p$ at depth $i + 2$, then the proof obligation $(s, i+1)$ must be fulfilled
 in order to fulfill proof obligation $(\neg p, i+2)$. If $(s,i)$ is already
 in the priority queue, then \verb,proveObligations, must fulfill and
 remove $(s,i)$ from the
-priority queue and enqueue $(s, i + 1)$ before reaching proof obligation
-$(\neg p, i + 2)$. It must also then fulfill and remove $(s, i + 1)$ before
+priority queue and enqueue $(s, i + 1)$; it must then fulfill and remove $(s, i + 1)$ before
 reaching proof obligation $(\neg p, i + 2)$. By the time \verb,proveObligations,
 attempts to fulfill $(\neg p, i + 2)$, the CTI $s$ has already been proven
 unreachable in $i + 1$ steps; if there is a CTI preventing a proof obligation
-from being fulfilled ater $(s,i)$ has been fulfilled, then the CTI must be different
+from being fulfilled after $(s,i)$ has been fulfilled, then the CTI must be different
 from $s$.
 
 The \emph{PriorityQueue} implementation performs inductive generalization for each CTI only once, though,
@@ -2237,7 +2240,7 @@ when that CTI's first proof obligation is first enqueued. Rediscovering CTIs wou
 be generalized relative to later frames as well, rather than only to the first frame relative to which
 the negated CTI is inductive. Not generalizing CTIs relative to later frames may
 explain \emph{PriorityQueue}'s higher average number of
-literals per clause (which suggests larger queries).
+literals per clause (which suggests larger queries and worse performance).
 }
 
 \section{Reference Implementation}
@@ -2249,7 +2252,7 @@ literals per clause (which suggests larger queries).
 The performance of the \emph{MC} variants is, for all except very small examples
 (e.g. \verb,simple1.aag,),
 worse compared to the performance of \emph{IC3ref}
-(with or without generalization involving CTGs enabled).
+with or without generalization involving CTGs enabled (as seen in Figure \ref{eval:benchmarks}).
 
 The choice of implementation language may account for much of the difference in performance, as the reference
 implementation in C++ has more control over memory allocations than the implementations in Haskell, which is
@@ -2261,7 +2264,7 @@ some of the performance differences below.
 The reference implementation represents hardware models differently from
 \emph{MC}, which may account for some of the performance differences.
 The reference implementation keeps track of which variables are inputs, latches, and AND gates.
-Each \verb,Model, maintains both the the primed and current values for inputs and latches and keeps a
+Each \emph{IC3ref} \verb,Model, maintains both the primed and current values for inputs and latches and keeps a
 table to memoize the values of AND gates.
 
 As mentioned earlier, when the consecution query $F_k \wedge T \Rightarrow P'$ fails, this corresponds
@@ -2316,7 +2319,7 @@ MiniSat interface (Section \ref{eval:ic3ref:minisat}) differences.
 Because the reference implementation does not prevent CTIs from being rediscovered,
 it does not
 enqueue a new proof obligation $(s, i+1)$ each time a proof obligation $(s, i)$ has been
-fulfilled as the \emph{PriorityQueue} implementation does.
+fulfilled, unlike \emph{PriorityQueue}.
 The efficiency of \emph{IC3ref}'s other components compensates
 for the performance disadvantage of needing to rediscover CTIs.
 The safety property is maintained and
@@ -2422,83 +2425,75 @@ exhibit a similar improvement.
 
 \chapter{AIGER Format}
 \label{aiger}
-This appendix describes the binary version of the old AIGER format by comparison
-with the ASCII version and the new version of the AIGER format by
+This appendix describes the binary version of the old AIGER format
+and the new version of the AIGER format by
 comparison with the old format.
 
 \paragraph{Binary version}{
-The binary version of the format assumes that variable indices
-occur in increasing order. Since each literal must be defined, this assumption
-allows for variable indices to be omitted when defining inputs or latches.
-Inputs are not explicitly listed. the input variables are inferred based on
+The binary version assumes that variable indices always
+occur in increasing order. Each literal must be defined, so this assumption
+allows some indices to be omitted when defining components.
+Inputs are not explicitly listed; input variables are inferred based on
 the value of \verb,I,.
-Similarly, latches are specified by only listing their next-state literals'
-representations.
+Latches are specified by only listing next-state
+indices, and AND gates are represented by two differences (that tend to be
+small in practice).
+%These assumptions allow AND gates to be represented by two differences
+%that tend to be small in practice.
 
-The binary format also assumes that AND gates occur in order of their
-variable indices and that inputs to an AND gate will
-have already been defined before that AND gate.
-These assumptions allow AND gates to be represented by two differences
-that tend to be small in practice.
-
-For an AND gate specified in the old format by \verb,lhs rhs0 rhs1,,
-where inputs \verb,rhs0, and \verb,rhs1, have been ordered such that
+The binary format assumes that inputs to an AND gate
+have been defined before the gate.
+For an AND gate specified in the ASCII format by \verb,lhs rhs0 rhs1,,
+where inputs \verb,rhs0, and \verb,rhs1, are ordered such that
 $\verb,rhs0, \geq \verb,rhs1,$, define
-$$\delta_0 = \verb,lhs, - \verb,rhs0,$$
+$\delta_0 = \verb,lhs, - \verb,rhs0,$
 and
-$$\delta_1 = \verb,lhs, - \verb,rhs1,$$
-
-The values $\delta_i$ are represented with the following binary
-encoding, giving a more compact representation for AND gates than
-the ASCII version of the format.
+$\delta_1 = \verb,lhs, - \verb,rhs1,$.
 For 7-bit words $w_0, \ldots w_n$ with
-$$\delta_i = w_0 + 2^7w_1 + \ldots + 2^{7n}w_n,$$
+$\delta_i = w_0 + 2^7w_1 + \ldots + 2^{7n}w_n$,
 $\delta_i$ is represented as the sequence of $n + 1$ bytes
-$b_0, \ldots, b_n$, where
-\begin{itemize}
-\item for $0 \leq k < n$, $b_k$ is the byte obtained by setting the most
-significant bit to 1 and the rest of the bits to $w_k$, and
-\item $b_n$ is the byte obtained by setting the most
-significant bit to 0 and the rest of the bits to $w_n$
-\end{itemize}}
+$b_0, \ldots, b_n$.
+For $0 \leq k < n$, $b_k$ is the byte obtained by setting the most
+significant bit to 1 and the other bits to $w_k$. The byte
+$b_n$ is obtained by setting the most
+significant bit to 0 and the rest of the bits to $w_n$.
+This binary encoding gives a more compact representation for AND
+gates than the ASCII format.
+}
 
 \paragraph{New version} {
-The new AIGER format begins with a header of the form
-\begin{verbatim}
-V M I L O A B C J F
-\end{verbatim}
-where \verb,V,, \verb,M,, \verb,I,, \verb,L,, \verb,O,, \verb,A, are as
-in the old format, and
-\begin{itemize}
-\item \verb,B, gives the number of ``bad state'' properties
-\item \verb,C, gives the number of invariant constraints
-\item \verb,J, gives the number of justice properties
-\item \verb,F, gives the number of fairness constraints
-\end{itemize}
+The new format appends new counts \verb,B C J F, to the old
+format header.
+%\begin{verbatim}
+%V M I L O A B C J F
+%\end{verbatim}
+%where \verb,V,, \verb,M,, \verb,I,, \verb,L,, \verb,O,, \verb,A, are as
+%in the old format.
+\verb,B, gives the number of ``bad state'' properties,
+\verb,C, gives the number of invariant constraints,
+\verb,J, gives the number of justice properties, and
+\verb,F, gives the number of fairness constraints.
+The header can be truncated
+after the AND-gate count if all remaining counts are
+zero, making the new format
+backwards-compatible.
 
-The ``bad state'' properties allow for the specification of properties for
-negated safety properties separately from the outputs; in
-the old AIGER format, such properties had to be specified as outputs.
+The ``bad state'' properties allow negated safety properties to be specified
+separately from outputs.
 The invariant constraints allow for the specification of properties that
-are true at all states up to and including the state where the ``bad state''
-is found.
-Justice and fairness constraints are not included in the model used by
-the model checker and will not be explained further.
+hold at all states up to and including the state where the ``bad state''
+holds.
+Justice and fairness constraints are not used by
+\emph{MC} and will not be explained further.
 
 Components are specified after the header in the same order that their
 counts occur in the header with the exception of AND gates, which
-occur at the end of the file. Latches' initial values can also be specified
-now with an additional \verb,0, or \verb,1, after the next-state literal's
-index. The initial value may also be given as the index of the latch itself,
-in which case the latch is considered to be uninitialized.
+occur last. Latches' initial values can now be specified
+with an additional index after the next-state index.
+This index can be \verb,0,, \verb,1,, or the index of the latch itself,
+in which case the latch is uninitialized.
 If the initial value is omitted, the initial value is assumed to be
 0, as in the old version of the format.
-
-The header can be truncated
-after giving the AND-gate count if all remaining counts are
-zero, allowing parsers for the new AIGER format to be
-backwards-compatible.
-
 The new version of the format is otherwise
 the same as the old format.}
 
