@@ -320,8 +320,7 @@ Haskell functions are defined as a series of equations. Otherwise,
 Haskell function definitions are similar to Standard ML function definitions with the
 \verb,fun, keyword omitted. Anonymous functions in Haskell
 use \verb,\, to bind variables analagously to Standard
-ML's \verb,fn, keyword. Function composition is achieved with infix operator
-\verb,.,.
+ML's \verb,fn, keyword. Function composition is achieved with the \verb,., infix operator.
 
 Similarly to Standard ML, Haskell allows pattern matching
 for function definitions and \verb,case, expressions. The pattern languages of Standard
@@ -338,8 +337,8 @@ of a product type to be named.
 
 %Type signature syntax
 Though Haskell compilers perform type inference, type
-signatures can be (and, in cases where type inference cannot resolve
-ambiguities, must be) provided. For example, the type signature for
+signatures can (and, in cases where type inference cannot resolve
+ambiguities, must) be provided. For example, the type signature for
 the \verb,prove, function in \verb,IC3.hs,, a curried function that takes
 a \verb,Model, and returns a function that takes a \verb,Lit, and returns a \verb,Bool,,
 is \verb,prove :: Model -> Lit -> Bool,. Type signatures may begin with
@@ -351,7 +350,7 @@ signature must be an instance of a certain type class.
 Haskell's type classes facilitate ad hoc polymorphism \cite{hall94}.
 Functions specified within the definition of a type class
 must be supported for any type that is an instance of that type class.
-Haskell compilers are able to automatically provide instances of standard
+Haskell compilers can automatically provide instances of standard
 type classes for some types.
 For example, a the \verb,Lit, datatype (in \verb,Parser/AigModel.hs,) is an instance of
 the \verb,Show,, \verb,Eq,, and \verb,Ord, type classes, with the instances being
@@ -362,7 +361,7 @@ data Lit = Var Word | Neg Word | Boolean Bool deriving (Show, Eq, Ord)
 
 Haskell's \verb,Monad, class encompasses composable
 structures that describe computations. These computations
-may have side effects, and Haskell programs use instances of the
+may have side effects; Haskell programs use instances of the
 \verb,Monad, class to achieve side effects such as I/O, which is
 achieved using the \verb,IO, monad.
 
@@ -423,7 +422,7 @@ safety of the program.
 
 %List syntax
 \paragraph{Lists and Tuples}{
-Square brackets denots list types and values in Haskell, e.g.,
+Square brackets denote list types and values in Haskell, e.g.,
 a list of \verb,Lit,s has type \verb,[Lit],.
 Lists can be appended using the \verb,++, infix operator, and elements
 can be prepended to lists using the \verb,:, infix operator.
@@ -480,7 +479,7 @@ transition system representation, and IC3 algorithm implementation.
 \label{prep:tools}
 
 I used a variety of tools to employ standard software engineering practices, such
-as version control and testing, and otherwise to ease the development of
+as version control and testing, and to ease the development of
 the project's code.
 
 \paragraph{Git}{
@@ -528,7 +527,7 @@ of unit tests can be run.}
 \paragraph{Criterion}{
 Criterion \cite{criterion} is a library for benchmarking Haskell code.
 Criterion can output benchmarking results in any format specified in the \verb,.tpl,
-template format. The \verb,.tpl, file in this project
+template format. This project's \verb,.tpl, file
 was configured such that Criterion output benchmark sample results to a
 CSV file.}
 
@@ -559,10 +558,11 @@ since Cabal provides a standard, cross-platform method for building packages.}
 
 \paragraph{hsc2hs}{
 The \verb,hsc2hs, preprocessor \cite{hsc2hs} eases the writing of Haskell bindings to C
-code by enabling the programmer to write a \verb,.hsc, file containing
-macros that the preprocessor can expand to, e.g., pointer offsets. Expanding
-the macros in a \verb,.hsc, file produces a
-Haskell source (\verb,.hs,) file that can then be compiled with a Haskell compiler.
+code.
+It enables the programmer to write a \verb,.hsc, file containing
+macros that the preprocessor can expand (e.g., to pointer offsets)
+to yield a Haskell source (\verb,.hs,) file that can be compiled with a
+Haskell compiler.
 }
 
 \paragraph{HLint}{
@@ -746,8 +746,8 @@ and {\it True}, respectively.
 Any index above 1 represents a literal. 
 Because even indices represent positive literals and odd indices
 represent negative literals, the representation allows
-the least significant bit of an index to give the sign of a literal
-and a single bitwise right shift to find the variable name for the literal.
+the least significant bit of an index to give the sign of a literal.
+A single bitwise right shift finds the variable name for the literal.
 
 \paragraph{Old ASCII version}{
 All AIGER files in the old version begin with a header of the form
@@ -803,9 +803,9 @@ The output of the whole circuit is the output of the AND gate.
 \section{MiniSat}
 \label{prep:minisat}
 
-The creation of a
-working interface to MiniSat required some background knowledge of how MiniSat
-works. The MiniSat code explained in this section is in C++.
+This section provides some of the information about MiniSat that
+was prerequisite knowledge for creating an interface to MiniSat. MiniSat code
+explained is in C++.
 
 To solve a SAT query, MiniSat creates an instance of a \verb,Solver, object,
 which contains a set of variables, sets of clauses, and possibly a model or conflict vector.
@@ -875,7 +875,7 @@ The pseudocode in Figure \ref{overview} gives an overview of the basic IC3 algor
 \end{algorithm}
 
 The IC3 algorithm maintains a set of $k + 1$ frames $F_0,\ldots,F_k$.
-Each frame $F_i$ is a set of clauses whose disjunction represents an
+Each frame $F_i$ is a set of clauses whose conjunction represents an
 overapproximation of the set of states reachable by the transition
 system in at most $i$ steps from the initial state.
 For example, $F_0$ is just the initial state set $I$, as seen
@@ -889,10 +889,10 @@ the property holds in the initial state $I$.
 %the algorithm for the desired property.
 If it fails (i.e. if it is {\it False}), then the algorithm terminates,
 as a state in which $\neg P$ holds is reachable in 0 steps.
-If it succeeds, then the algorithm proceeds to its main loop.
+If it succeeds, then the algorithm proceeds to its main loop (line \ref{main}).
 
-The main loop of the algorithm is the while loop beginning on line \ref{main}.
-The algorithm only exits the loop when it has determined if the
+%The main loop of the algorithm is the while loop beginning on line \ref{main}.
+The algorithm only exits its main loop when it has determined if the
 safety property holds at all reachable states in the model.
 
 %Consecution query
@@ -1022,7 +1022,7 @@ If $I \Rightarrow t$ fails to hold, then removing any literals in $t$ to
 obtain a subclause $u \subset t$ would still result in the query $I \Rightarrow u$
 failing, since $u \Rightarrow t$ holds.
 
-If formula $F_i \wedge t \wedge T \Rightarrow t'$ does not hold, then
+If $F_i \wedge t \wedge T \Rightarrow t'$ does not hold, then
 there is a predecessor to a $\neg t$ state that is a $F_i \wedge t$ state.
 This predecessor state $p$ can be extracted from the SAT query for
 $F_i \wedge t \wedge T \Rightarrow t'$ in the same way that CTIs are found.
@@ -1048,7 +1048,7 @@ The checking phase then repeats, checking the expanded clause $t \cap \neg p$.
   {\it cls} := $cls \cap p$\;
   \Return{down(cls,i)} 
 }
-\caption{The algorithm for finding the MIC. Clauses are
+\caption{Algorithm for finding the MIC. Clauses are
 passed by reference.}
 \label{mic}
 \end{algorithm}
@@ -1241,7 +1241,7 @@ Model { numVars = 3
 
 The SAT solver for \emph{MC} is MiniSat.
 Because the Haskell Foreign Function Interface (FFI) cannot interface with C++ directly,
-the interface to the MiniSat SAT solver is composed of a C wrapper for the relevant
+the interface to the MiniSat SAT solver is composed of a C wrapper for relevant
 MiniSat functions and classes and a Haskell interface to the C wrapper.
 
 The C wrapper replaces every MiniSat class with a C type and every MiniSat function with
@@ -1267,12 +1267,12 @@ Using just the FFI for calling the C functions does not provide a
 sufficient abstraction for use by the rest of the model checker. All
 calls to C functions must occur inside the \verb,IO, monad, but having
 the interface functions return \verb,IO, monads means that any functions
-that use the interface functions to get values from MiniSat would need to
-perform all their computations inside the \verb,IO, monad as well, requiring them to
+using interface functions to get values from MiniSat would also need to
+perform all their computations inside the \verb,IO, monad, requiring them to
 be written imperatively.
-I wrote further functions to allow for a more natural interface to MiniSat,
-making use of \verb,unsafePerformIO, to have the functions return
-values outside the \verb,IO, monad, which is idiomatic Haskell for
+I wrote further functions to provide a more natural interface to MiniSat;
+I used \verb,unsafePerformIO, to have the functions return
+values outside the \verb,IO, monad, which is a Haskell idiom for
 interfacing with C libraries.
 
 To use MiniSat to solve a query, the \verb,solveWithAssumps, function
