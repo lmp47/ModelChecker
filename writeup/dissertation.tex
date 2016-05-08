@@ -224,8 +224,8 @@ The IC3 (Incremental Construction of Inductive Clauses for Indubitable Correctne
 algorithm is a state-of-the-art,
 SAT-based model-checking
 algorithm for proving safety properties (i.e. properties that must hold
-in all reachable states) of hardware \cite{bradley11}. In this section, I outline some of the
-merits of the IC3 algorithm, with a description of IC3 following in Section
+in all reachable states) of hardware \cite{bradley11}. This section outlines some of the
+merits of the IC3 algorithm; a description of IC3 follows in Section
 \ref{prep:ic3}.
 
 The first implementation of the algorithm \verb,ic3, written by Aaron Bradley placed third in
@@ -252,7 +252,7 @@ methods in practice \cite{bradley12}.
 %Mention other applications of the IC3 algorithm, e.g. to checking
 %LTL properties and to software model checking.
 
-While the IC3 algorithm was designed for model checking safety properties of hardware,
+Though the IC3 algorithm was designed for model checking safety properties of hardware,
 it has been applied to model checking more
 elaborate properties expressing temporal constraints (e.g. LTL and CTL
 properties) and model checking software
@@ -306,7 +306,7 @@ variants implemented in this project as \emph{MC}.
 \section{Haskell}
 \label{prep:haskell}
 
-All the code for the project, with the exception of the C wrapper for the
+All code for the project, with the exception of the C wrapper for the
 MiniSat interface (described in Section \ref{impl:minisat})
 is written in the purely functional
 programming language Haskell \cite{haskell}.
@@ -453,7 +453,7 @@ stored in the directory structure. For example, the \verb,Model, module in file
 The model checker \emph{MC} requires a way of taking input models and, since
 the IC3 algorithm uses a SAT solver as an internal subcomponent, also
 requires a way to solve SAT queries.
-I chose the AIGER format for representing the hardware models and
+I chose the AIGER format for representing hardware models and
 MiniSat SAT solver for answering SAT queries, resulting in a need for an
 AIGER parser and a Haskell interface to MiniSat. The choice of
 the AIGER format allows \emph{MC} to be run on examples from
@@ -466,7 +466,7 @@ for \emph{MC} removes the
 choice of SAT solver as a variable to consider when comparing performance,
 reducing confounding factors.
 
-Given that the model checking algorithm deals with transition systems
+Since model checking algorithm deals with transition systems
 (discussed in Section \ref{prep:logic}), the implementation also requires a representation of
 transition systems, which should correspond to the input hardware model.
 A further requirement is the implementation of the
@@ -488,7 +488,7 @@ for managing the project's code and the Git repository
 hosting service GitHub \cite{github} to
 keep backups.
 The previous versions maintained by the system proved useful in
-the development of the code, and branching and merging capabilities were
+developing the code, and branching and merging capabilities were
 useful for organizing variations of the model checker.
 I used Git submodules, which allow the inclusion of other Git projects within another
 project, to include MiniSat within the project, enabling easier
@@ -553,15 +553,15 @@ for this project compiles the C and C++ code for MiniSat and the MiniSat
 wrapper before Cabal attempts to build the rest of the project, so the
 files necessary for linking are already present.
 
-Using Cabal enables the project to be built easily on different platforms,
+Cabal enables the project to be built easily on different platforms,
 since Cabal provides a standard method for building the package that works
 across platforms.}
 
 \paragraph{hsc2hs}{
 The \verb,hsc2hs, preprocessor \cite{hsc2hs} eases the writing of Haskell bindings to C
 code by enabling the programmer to write a \verb,.hsc, file containing
-macros that the preprocessor can expand to, e.g., pointer offsets. The
-\verb,hsc2hs, expands the macros in a \verb,.hsc, file to produce a
+macros. that the preprocessor can expand to, e.g., pointer offsets. The
+expansion of the macros in a \verb,.hsc, file produces a
 Haskell source (\verb,.hs,) file that can then be compiled with a Haskell compiler.
 }
 
@@ -577,9 +577,9 @@ The
 AIGER parser was used for comparison with and as an alternative
 to the parser developed as part of this project. 
 
-The Aiger Utilities' tools to convert between formats for specifying
-hardware models eased the specification of new models that would
-be compatible with the model checker implementations,
+The Aiger Utilities' format-conversion tools
+eased the specification of new models that would
+be compatible with \emph{MC} and \emph{IC3ref},
 which accept only AIGER-formatted inputs.
 In particular, I used the {\tt bliftoaig}
 tool to convert circuits specified using the Berkeley Logic Interchange Format
@@ -595,7 +595,7 @@ posed in conjunctive normal form. Further details are given in Section \ref{prep
 \section{Symbolic Representation}
 \label{prep:logic}
 
-Symbolic model checkers rely on representing the underlying system as
+Symbolic model checkers represent the underlying system as
 logical formulas that describe the behavior of the system as one-step transitions
 between states. %Propositional logic formulas define transition systems and states.
 
@@ -653,8 +653,8 @@ Relative inductiveness plays a key role in the IC3 algorithm.
 
 \paragraph{States}{
 A single state of the transition system (or a singleton set containing that state)
-is specified through the assignment of all state variables in the transition system
-to Boolean values, where a \emph{complete} assignment is represented as a cube such
+is specified through the satisfying assignment of all state variables in the transition system
+to Boolean values. A \emph{complete} assignment is represented as a cube such
 that every variable appears in the formula exactly once.
 An incomplete assignment of variables in the transition system is a cube such that
 at least one variable in the transition system does not appear in the cube. Such an
@@ -704,7 +704,7 @@ clock tick.
 
 The AIGER format has an ASCII and binary version; either
 can be used for inputs to \emph{MC}. The ASCII
-format is more flexible and human readable, imposing fewer constraints
+format is more flexible and human-readable, imposing fewer constraints
 on the ordering of components within the file. For example, an
 AND gate with variable name {\tt 20} may be specified before an AND gate with
 variable name {\tt 11} in the ASCII format, but AND gates must be specified in
@@ -723,7 +723,7 @@ of this project handles both old and new versions of the format.
 I describe how variables are represented in all AIGER formats
 and then describe the old ASCII version of the AIGER format, which
 is sufficient to understand the handwritten examples written directly
-in AIGER format. Descriptions of the other formats can be found in Appendix
+in AIGER. Descriptions of the other formats can be found in Appendix
 \ref{aiger}.
 
 \paragraph{AIGER Variables}{
@@ -814,7 +814,7 @@ The set of variables in the \verb,Solver, gives all the variables that may appea
 a SAT query, the set of clauses forms the SAT query, and the model or conflict vector
 gives further information about the last SAT query made.
 
-In addition to representing variables with a \verb,Var, type, MiniSat represents
+Minisat represents variables with a \verb,Var, type and
 literals with a \verb,Lit, type.
 MiniSat represents sets of clauses as \verb,vec<Lit>,s,
 vectors of literals. The set of clauses in a \verb,Solver, represents a CNF query.
@@ -826,10 +826,10 @@ by the \verb,Solver,'s clauses; if the \verb,Solver,'s clauses form some CNF que
 \verb,solve(assumps), is called, where \verb,assumps, represents some set $A$ of literals,
 then the SAT query is $C \wedge \bigwedge_{l \in A} l$.
 
-If there has been at least one query made of the \verb,Solver, object and the last query was
+If there has been at least one query made of the \verb,Solver, and the last query was
 satisfiable, the \verb,Solver,'s \verb,model, variable points to a set of variable assignments
 for that SAT query.
-If there has been at least one query made of the \verb,Solver, object and the last query was
+If there has been at least one query made of the \verb,Solver, and the last query was
 unsatisfiable, the \verb,Solver,'s \verb,conflict, variable points to a set of literals that
 contains the assumed literals that caused the query to be unsatisfiable.
 
@@ -961,9 +961,9 @@ the process of finding the new CTI $d$ and trying to
 prove that $\neg d$ holds at depth $k$ repeats.
 When the consecution query succeeds, the algorithm moves to the propagation phase.
 
-\emph{Pushing} a clause $c$ from a frame $F_i$ to frame $F_{i + 1}$ refers to the act
+\emph{Pushing} a clause $c$ from frame $F_i$ to frame $F_{i + 1}$ refers to the act
 of setting $F_{i + 1} := F_{i + 1} \cup \{ c \}$ with $c \in F_i$.
-A clause $c$ can be pushed from a frame $F_i$ to the next frame $F_{i + 1}$
+A clause $c$ can be pushed from frame $F_i$ to the next frame $F_{i + 1}$
 if the consecution query $F_i \wedge T \Rightarrow c'$ holds.
 The propagation phase of the algorithm goes through the set of frames
 $F_0, \ldots, F_k$, and, for every $F_i$ with $0 \leq i < k$ (line \ref{forprop}),
@@ -1131,7 +1131,7 @@ The variants of the backend component differ
 in their overall structure,
 their finding of CTIs, their implementation of propagation, and
 their inductive generalization of CTIs. The variants and their
-differences among them are summarized in the following table:\\
+differences are summarized in the following table:\\
 
 \begin{tabular}{| l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em} |}
 \hline
@@ -1252,7 +1252,7 @@ MiniSat functions and classes and a Haskell interface to the C wrapper.
 The C wrapper replaces every MiniSat class with a C type and every MiniSat function with
 an \verb,extern C, function that calls the MiniSat C++ function.
 For instance, the following function
-in \verb,Minisat/CSolver.cpp, is a wrapper for the \verb,addClause, in the \verb,Solver,
+in \verb,Minisat/CSolver.cpp, is a wrapper for \verb,addClause, in the \verb,Solver,
 class:
 \begin{lstlisting}[language = C++]
 extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
@@ -1353,8 +1353,8 @@ literals.
 
 I represented a variable with name $x$ taken from the nonnegative integers with
 the MiniSat variable $2 \times x$ and its corresponding next-state variable $x'$
-with MiniSat variable $(2 \times x) + 1$. The model returned in the \verb,result, struct
-points to an array of three-valued boolean (the normal boolean values including an
+with MiniSat variable $(2 \times x) + 1$. The \verb,model, returned in the \verb,result, struct
+points to an array of three-valued Boolean (the normal Boolean values including an
 \emph{undefined} value) \verb,lbool, values indexed by MiniSat variable indices.
 To extract models, the array values are accessed, and for each \emph{True} or \emph{False}
 value the corresponding positive or negative literal for that index is added to the
@@ -1376,9 +1376,9 @@ list of the \verb,Lit,s in the clause.
 
 \subsubsection{Transition Systems and Safety Properties}
 % Describe how transition systems and safety properties are represented.
-The representation of transition systems and the safety property for the backend to check
-are both encompassed in the \verb,Model, data structure in \verb,Model.Model,,
-which serves as the representation of the hardware in the backend:
+The \verb,Model, data structure in \verb,Model.Model, encompasses both
+the representation of transition systems and the safety property for the backend to check.
+It serves as the representation of the hardware in the backend:
 \begin{lstlisting}
 data Model = Model { vars :: Word
                    , initial :: [Clause]
@@ -1390,9 +1390,9 @@ Inputs $i$ and state variables $x$ in the transition system $T(i,x,I,T)$
 are not distinguished; both are just treated as variables in the representation.
 The total count of variables is kept in \verb,vars,.
 Clauses that specify the initial state $I$ are kept in \verb,initial,.
-The \verb,transition, list of clauses that specify latches and clauses that specify AND
+The \verb,transition, list of clauses that specify latches and AND
 gates capture the transition relation $T$.
-The literal that gives the safety property is given by \verb,safe,.
+The \verb,safe, literal gives the safety property.
 
 \subsection{Hardware Model Construction}
 % Describe how transition systems are constructed given AIG models.
@@ -1530,7 +1530,6 @@ small differences that result from implementing the algorithm in a
 functional language and an adjustment to how the propagation phase is
 carried out.
 
-To explain the modifications to the structure of the algorithm,
 I give pseudocode in Figure \ref{recstr}
 outlining the general structure shared by all the
 implementations of the model checker except {\it PriorityQueue}
@@ -1616,7 +1615,7 @@ in line \ref{main} of Figure \ref{overview}.
 
 Because Haskell functions are pure, the assumption made in Figure \ref{overview}
 that functions can modify the set of (passed-by-reference) frames can no longer be made.
-Instead, updated values of frames are returned explicitly from the function call in
+Instead, updated values of frames are returned explicitly by the function in
 a tuple along with any other values needed from the function call, as seen in
 {\it proveNegCTI}, {\it propagate}, and {\it push}.
 %For example, {\it proveNegCTI} (line \ref{recstr:proveNegCTI})
@@ -1625,7 +1624,7 @@ a tuple along with any other values needed from the function call, as seen in
 %values for the frontier frame $G_k$ and previous frames $G_0, \ldots, G_{k - 1}$.
 
 In addition to the necessary language-related modifications to the algorithm, I 
-changed how often the full propagation phase executes, calling the {\it pushFrame}
+reduced how often the full propagation phase executes, calling the {\it pushFrame}
 function (line \ref{recstr:pushFrame}) instead where appropriate.
 
 %In Figure \ref{overview}, each iteration of the algorithm calls the propagation
@@ -1648,9 +1647,9 @@ $0 \leq i < k$.
 The modified algorithm is such
 that when the consecution query succeeds, it calls the ${\it pushFrame}$ function
 (line \ref{recstr:pushFrameCall}) that
-checks only a single pair of frames (which also makes the recursive call to ${\it prove}$).
+checks only a single pair of frames (and also makes the recursive call to ${\it prove}$).
 When the consecution query fails, the adjusted algorithm, like the original in Figure \ref{overview},
-calls the ${\it propagate}$ function (line \ref{recstr:propagate})
+calls ${\it propagate}$ (line \ref{recstr:propagate})
 to handle the updates to the frames made by ${\it proveNegCTI}$.
 
 %The {\it propagate} function carries out the propagation phase of the algorithm.
@@ -1663,7 +1662,7 @@ to handle the updates to the frames made by ${\it proveNegCTI}$.
 %Describe how the step involving the initiation query is implemented.
 
 The initiation query $I \Rightarrow P$ is an implication, but a MiniSat \verb,Solver, can only
-solve queries given in CNF (with an optional assumption cube).
+solve CNF queries (with an optional assumption cube).
 As a result, the implementation of query $I \Rightarrow P$ for frame $I$ and
 clause $P$ makes use of the fact that
 $I \Rightarrow P$ holds iff $\neg P \wedge I$ is unsatisfiable.
@@ -1692,12 +1691,12 @@ consecution f prop =
 %Describe how the implementation discovers counterexamples
 %to induction and proves them unreachable.
 
-CTIs are found by the \verb,nextCTI, function, which
-uses results from SAT queries to find a full or partial assignment to
+The \verb,nextCTI, function finds CTIs by
+using results from SAT queries to find a full or partial assignment to
 the variables in the \verb,Model,.
 
 \subsubsection{Basic}
-In the \emph{Basic} implementation, \verb,nextCTI, asks for a model
+In \emph{Basic}, \verb,nextCTI, asks for a model
 (i.e. the set of true literals) for the satisfiable query $\neg P' \wedge F_k \wedge T$.
 The current-state literals then give a predecessor state (a state from which
 a $\neg P$ state can be reached in one step of the transition relation) for $\neg P$,
@@ -1716,7 +1715,7 @@ the state $m$ being in the set represented by $q$.
 
 The conflict vector resulting from querying the SAT solver with $P' \wedge T$ and assumption
 cube $m$ contains such a $q$ that has only literals relevant to the conflict. This $q$ is
-then returned to the calling function, which, as in the \emph{Basic} implementation, extracts
+then returned to the calling function, which, as in \emph{Basic}, extracts
 the current-state literals from $q$ to obtain the CTI.
 
 
