@@ -1263,8 +1263,8 @@ foreign import ccall safe "addMinisatClause"
   addMinisatClause :: Ptr MinisatSolver -> Ptr MinisatVecLit -> IO CInt
 \end{lstlisting}
 
-Using just the FFI for calling the C functions does not provide a
-sufficient abstraction for use by the rest of the model checker. All
+Using just the FFI to call C functions does not provide a
+sufficient abstraction for use by the rest of \emph{MC}. All
 calls to C functions must occur inside the \verb,IO, monad, but having
 the interface functions return \verb,IO, monads means that any functions
 using interface functions to get values from MiniSat would also need to
@@ -1343,8 +1343,7 @@ The information kept in a \verb,Result, Haskell datatype comes directly from the
 I used the \verb,hsc2hs, preprocessor to handle pointer offsets
 when unmarshalling from the C struct.
 Beyond straightforward unmarshalling, some additional work was necessary
-to convert from the MiniSat representation of literals to the \emph{MC} representation of
-literals.
+to convert from the MiniSat representation of literals to the \emph{MC} representation.
 
 MiniSat variable $2 \times x$ represents the variable with name $x$ taken from the nonnegative
 integers. MiniSat variable $(2 \times x) + 1$ represents its corresponding next-state variable
@@ -1383,7 +1382,7 @@ data Model = Model { vars :: Word
 \end{lstlisting}
 
 Inputs $i$ and state variables $x$ in the transition system $T(i,x,I,T)$
-are not distinguished; both are just treated as variables in the representation.
+are not distinguished; both are just represented as variables.
 The total count of variables is kept in \verb,vars,.
 Clauses that specify the initial state $I$ are kept in \verb,initial,.
 The \verb,transition, list of clauses that specify latches and AND
@@ -1394,14 +1393,14 @@ The \verb,safe, literal gives the safety property.
 % Describe how transition systems are constructed given AIG models.
 
 The \verb,Model.Model, module contains functions to convert the \verb,Model, data
-structure from the \verb,Parser.AigModel, module into the hardware model representation
-used by the backend. In particular, the \verb,toModel, function takes a \verb,Parser.AigModel.Model,
+structure from the \verb,Parser.AigModel, module into the model representation
+used by the backend. In particular, \verb,toModel, takes a \verb,Parser.AigModel.Model,
 and outputs a \verb,Model.Model.Model,. As mentioned before, the \verb,Model.Model.Lit,
 data structure only has constructors for variables and their negations; \verb,Lit,s from
 the \verb,Parser.AigModel, module are either converted to \verb,Model.Model.Lit,s or, in the case
 that they use the \verb,Boolean, constructor, are removed from the model during the conversion of
-the \verb,Latch, and \verb,And, components to \verb,Clause,s in \verb,Model.Model, because
-Boolean values are not used in these representations.
+the \verb,Latch, and \verb,And, components to \verb,Clause,s in \verb,Model.Model,.
+%because Boolean values are not used in these representations.
 
 \subsubsection{Latches}
 The \verb,makeLatches, function generates a pair of \verb,Clause, lists
@@ -1411,7 +1410,7 @@ and the second contains a clauses whose conjunction describes the
 latches' next-state values.
 
 Consider a given \verb,Parser.AigModel.Latch, $[l, n, i]$, representing the latch with
-output variable $l$, next-state $n$ taken from the set of literals,
+output variable $l$, next state $n$ taken from the set of literals,
 and initial value $i$
 also taken from the set literals. The \verb,makeLatches, function uses the
 values of $l$, $n$, and $i$ to generate \verb,Clause,s that describe the latches' initial values and
@@ -1424,7 +1423,7 @@ If $i$ is a literal rather than a Boolean value, then the latch is
 uninitialized and no clauses are generated for its initial value.
 
 Generating next-state clauses proceeds similarly.
-By the semantics of a latch, the clauses generated for the next state should have
+By the semantics of latches, the generated next-state clauses should have
 a conjunction logically equivalent to $n \Leftrightarrow l'$.
 If $n = {\it True}$, then singleton clause
 $\{l'\}$ is generated because the next-state value for the variable is a constant-{\it True} value,
@@ -1444,9 +1443,9 @@ Consider a \verb,Parser.AigModel.And,, of the form $[a, i_1, i_2]$, representing
 with output variable $a$, and inputs $i_1$ and $i_2$.
 The \verb,makeAnds, function uses the values of $a$, $i_1$, and $i_2$ to generate the appropriate
 \verb,Clause,s that describe the AND gates' values.
-By the semantics of AND gates, the current-state clauses generated should have a conjunction
-logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$ and the next-state
-clauses generated should have a conjunction logically equivalent to
+By the semantics of AND gates, the generated current-state clauses should have a conjunction
+logically equivalent to $a \Leftrightarrow (i_1 \wedge i_2)$ and the generated next-state
+clauses should have a conjunction logically equivalent to
 $a' \Leftrightarrow i_1' \wedge i_2'$. The next-state clauses are generated
 by priming the generated current-state clauses, so they satisfy
 $a' \Leftrightarrow i_1' \wedge i_2'$.
@@ -1465,8 +1464,8 @@ are generated, where $i$ is the input that is not a Boolean.
 If neither $i_1$ nor $i_2$ are Booleans, then the clauses generated are
 $\{\neg a, i_1\}$, $\{\neg a, i_2\}$, and
 $\{\neg i_1,\neg i_2, a\}$. The conjunction of these clauses are, as needed,
-logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$:
-$$a \Leftrightarrow i_1 \wedge i_2 \simeq
+logically equivalent to $a \Leftrightarrow (i_1 \wedge i_2)$:
+$$a \Leftrightarrow (i_1 \wedge i_2) \simeq
 (\neg a \vee i_1) \wedge (\neg a \vee i_2) \wedge (\neg i_1 \vee \neg i_2 \vee a).$$
 
 \subsection{Frames}
@@ -1574,11 +1573,11 @@ clauses from $F$ to $F'$.
   \lElse{\Return{${\it prove'}(M, P, G_k, [F_0,\ldots,F_{k - 2},F_{k - 1}])$} \label{recstr:mutrecursion}}}
 }
 \caption{General structure of most \emph{MC} backends. The transition relation $T$ is acquired
-from the model $M$.}
+from model $M$.}
 \label{recstr}
 \end{algorithm}
 
-Because the implementation \emph{MC} is in Haskell, the overall
+Because the implementation \emph{MC} is in Haskell, the
 structure of the algorithm has been modified to be recursive rather than iterative.
 The {\it prove} function (line \ref{recstr:prove}) makes an initiation query
 (line \ref{recstr:init}), and, if it succeeds, calls
@@ -1596,9 +1595,9 @@ a tuple along with any other values needed from the function call, as seen in
 %indicating whether or not the negated CTI was proven, but also returns the possibly updated
 %values for the frontier frame $G_k$ and previous frames $G_0, \ldots, G_{k - 1}$.
 
-In addition to necessary language-related modifications to the algorithm, I 
-reduced how often the full propagation phase executes, calling the {\it pushFrame}
-function (line \ref{recstr:pushFrame}) instead where appropriate.
+In addition to making necessary language-related modifications to the algorithm, I 
+reduced how often the full propagation phase executes, calling {\it pushFrame}
+(line \ref{recstr:pushFrame}) instead where appropriate.
 
 %In Figure \ref{overview}, each iteration of the algorithm calls the propagation
 %phase (line \ref{forprop} in Figure \ref{overview});
@@ -1774,7 +1773,7 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
           then generalize cs f0 fk needed k
           else generalize cs f0 fk (c:needed) ( k - 1 ) 
 \end{lstlisting}
-\caption{The function that approximates the {\it mic} algorithm.}
+\caption{Function that approximates the {\it mic} algorithm.}
 \label{inductiveGeneralization}
 \end{figure}
 
@@ -1821,7 +1820,7 @@ and attempts to generalize $\neg {\it ctg}$ relative to that frame with a recurs
 {\it mic} algorithm. The generalization of $\neg {\it ctg}$ can then be added to frame $F_j$,
 and {\it down} is called recursively using the updated set of frames.
 
-The implementation of {\it down} is approximate for the aforementioned efficiency
+The implementation of {\it down} is approximate for aforementioned efficiency
 reasons; the function \verb,down, that implements
 the algorithm takes a parameter \verb,r, that limits the number of CTGs that it will handle for
 each non-recursive call to the function approximating the {\it mic} algorithm.
@@ -1840,7 +1839,7 @@ and implementation details about representing proof obligations and priority que
 
 \subsubsection{Proof Obligations}
 A \emph{proof obligation} is a pair $(s,i)$ of a state $s$ that is either a set of bad states
-or a CTI and a depth $i$. When the model checker encounters a proof obligation
+or a CTI and a depth $i$. When the \emph{PriorityQueue} encounters a proof obligation
 $(s,i)$ as the highest-priority element of the queue, it must prove $\neg s$ holds for all states
 reachable in at most $i$ steps of the transition relation to fulfill
 $(s, i)$.
@@ -1884,8 +1883,7 @@ relies on a priority queue of proof obligations.
 When proof obligation $(s,i)$ is added to the priority queue,
 it is assigned a priority higher than any proof obligation in the queue $(t,j)$ with $j > i$,
 lower than any proof obligation in the queue $(u,k)$ with $k < i$, and lower
-than any proof obligation already in the queue with the same depth (i.e. any
-proof obligation in the queue $(v, i)$).
+than any proof obligation $(v,i)$ (with the same depth) already in the queue.
 
 Unlike other variants, in {\it PriorityQueue}, there is
 no distinction between the safety property $P$ and any other property
@@ -1918,14 +1916,14 @@ reached, {\it pushFrame} makes a recursive call to {\it filfillObligations} with
 priority queue (line \ref{pqueuestr:pushrec}).
 
 When a CTI $c$ for proof obligation $(s,i)$ is discovered, the proof obligation $(c,i - 1)$
-for proving the negation of the CTI could be enqueued before
-calling {\it fulfillObligations} recursively again.
+%for proving the negation of the CTI
+could be enqueued before calling {\it fulfillObligations} recursively again.
 The \emph{PriorityQueue} implementation employs a different approach that keeps the number of
 generalization attempts low by generalizing once when the proof obligation
 for the CTI is enqueued rather than generalizing each time a proof obligation
 is fulfilled.
 
-The approach employed by \emph{PriorityQueue} checks
+The approach in \emph{PriorityQueue} checks
 that $I \Rightarrow \neg c$, adds $\neg c$ to $F_0$, and then uses a modified
 version of {\it propagate} to push clauses and check for fixed points up to
 depth $j \leq i$, where $j$ is the greatest value that is less than $i$
