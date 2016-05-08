@@ -96,8 +96,8 @@ As an extension, I implemented other variants of the IC3 algorithm.
 I benchmarked the variants on fourteen handwritten examples and
 fifty-six examples from the Hardware
 Model Checking Competition and compared results with those for
-the IC3 reference implementation. The implementation of
-the basic IC3 algorithm and its ability to solve
+the IC3 reference implementation. The basic IC3 algorithm implementation
+and its ability to solve
 the handwritten examples meets the project's goals;
 the implementation of other variants and their ability to solve
 additional examples exceeds them.
@@ -360,8 +360,8 @@ data Lit = Var Word | Neg Word | Boolean Bool deriving (Show, Eq, Ord)
 \end{lstlisting}
 
 Haskell's \verb,Monad, class encompasses composable
-structures that describe computations. These computations
-may have side effects; Haskell programs use instances of the
+structures that describe (possibly impure) computations.
+Haskell programs use instances of the
 \verb,Monad, class to achieve side effects such as I/O, which is
 achieved using the \verb,IO, monad.
 
@@ -374,12 +374,12 @@ As expected given its type signature
 \verb,(>>=) :: Monad m => m a -> (a -> m b) -> m b,, the function
 takes a monadic value containing a computation that produces a value of type
 \verb,a, and a function that takes values of type \verb,a, and returns
-monadic values, and returns the result of applying the function to the value.
+monadic values as arguments and returns the result of applying the function to the value.
 The \verb,>>, infix operator, which has type signature
 \verb,(>>) :: Monad m => m a -> m b -> m b,, also allows computations to be composed,
 with the output of the first action ignored by the second.
 
-To avoid unwieldy code resulting from composing several
+To avoid unwieldy code from composing several
 computations with \verb,>>=,, Haskell provides syntactic sugar
 in the form of \verb,do,-notation, allowing monadic computations
 to be written in an imperative fashion. For example, the code in Figure
@@ -449,7 +449,7 @@ stored in the directory structure. For example, the \verb,Model, module in file
 %Describe the requirements for the project: AIGER parser, Minisat interface,
 %transition system representation, algorithm implementation.
 
-The model checker \emph{MC} requires a way of taking input models and, since
+\emph{MC} requires a way of taking input models and, since
 the IC3 algorithm uses a SAT solver as an internal subcomponent, also
 requires a way to solve SAT queries.
 I chose the AIGER format for representing hardware models and the
@@ -818,10 +818,11 @@ literals with a \verb,Lit, type.
 MiniSat represents sets of clauses as \verb,vec<Lit>,s,
 vectors of literals. The set of clauses in a \verb,Solver, represents a CNF query.
 If the \verb,Solver,'s \verb,solve(), function is called,
-the resulting \verb,bool, indicates the satisfiability of the query. The
-\verb,solve(), function is overloaded so that it may also take an assumption \verb,vec<Lit>*, as
-an argument. The literals in the assumption vector must hold in addition to the CNF query formed
-by the \verb,Solver,'s clauses; if the \verb,Solver,'s clauses form some CNF query $C$ and
+the resulting \verb,bool, indicates the satisfiability of the query.
+
+The \verb,solve(), function is overloaded so that it may also take an assumption \verb,vec<Lit>*, as
+an argument.
+If the \verb,Solver,'s clauses form some CNF query $C$ and
 \verb,solve(assumps), is called, where \verb,assumps, represents some set $A$ of literals,
 then the SAT query is $C \wedge \bigwedge_{l \in A} l$.
 
@@ -841,7 +842,7 @@ for the queries that IC3 makes.
 %Describe how the IC3 algorithm works when trying to prove a model has a property
 %$P$.
 This section describes the basic IC3 algorithm and some of its extensions that are
-necessary to understand the following chapters.
+necessary to understand following chapters.
 Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
 safety property $P$, IC3 aims either to prove inductively that $P$ holds
 at all states reachable from the initial state or
@@ -1154,7 +1155,7 @@ The ``Subsumed Clauses'' alteration was based on the observation that subsumed c
 down the SAT-solver and should be eliminated to achieve better performance
 \cite{een11}.
 The ``Generalization with CTGs'' alteration was based on the description of an algorithm
-that improves upon the basic inductive generalization algorithm \cite{hassan13}.
+that improves upon basic inductive generalization \cite{hassan13}.
 
 \section{Parser}
 \label{impl:aiger}
@@ -1275,7 +1276,7 @@ I used \verb,unsafePerformIO, to have the functions return
 values outside the \verb,IO, monad, which is a Haskell idiom for
 interfacing with C libraries.
 
-To use MiniSat to solve a query, the \verb,solveWithAssumps, function
+To solve a query with MiniSat, the \verb,solveWithAssumps, function
 is usually called (see \ref{solveWithAssumps}),
 taking a solver \verb,s, and a list of literals \verb,assumps,
 that make up the assumption vector. The \verb,solveWithAssumps, function
@@ -1345,15 +1346,15 @@ when unmarshalling from the C struct.
 Beyond straightforward unmarshalling, some additional work was necessary
 to convert from the MiniSat representation of literals to the \emph{MC} representation.
 
-MiniSat variable $2 \times x$ represents the variable with name $x$ taken from the nonnegative
-integers. MiniSat variable $(2 \times x) + 1$ represents its corresponding next-state variable
+MiniSat variable $2 \times x$ represents the variable with name $x$, where $x$ is a nonnegative
+integer. MiniSat variable $(2 \times x) + 1$ represents its corresponding next-state variable
 $x'$.
 The \verb,model, returned in the \verb,result, struct
-points to an array of three-valued Boolean (the normal Boolean values including an
+points to an array of three-valued Boolean (the normal Boolean values and an
 \emph{undefined} value) \verb,lbool, values indexed by MiniSat variable indices.
-To extract models, the array values are accessed, and for each \emph{True} or \emph{False}
-value the corresponding positive or negative literal for that index is added to the
-\verb,Lit, list representing the model.
+To extract models, the array values are accessed; for each \emph{True} or \emph{False}
+value the positive or negative literal for that index is added to the
+\verb,[Lit], representing the model.
 
 \section{Hardware Representation}
 \label{impl:representation}
@@ -1363,8 +1364,8 @@ transition systems) and frames in \emph{MC}.
 \subsubsection{Literals and Clauses}
 The \verb,Lit, data structure in \verb,Model.Model, represents literals in
 the backend.
-The \verb,Var, constructor gives positive current-state (unprimed) literals, the \verb,Neg,
-constructor gives negative current-state literals, and the \verb,Var', and \verb,Neg', constructors
+The \verb,Var, and \verb,Neg, constructors respectively give positive and negative
+current-state (unprimed) literals, and the \verb,Var', and \verb,Neg', constructors
 respectively give positive and negative next-state (primed) literals.
 A clause is represented with type \verb,Clause,, where each \verb,Clause, is a
 list of the \verb,Lit,s in the clause.
@@ -1410,9 +1411,10 @@ and the second contains a clauses whose conjunction describes the
 latches' next-state values.
 
 Consider a given \verb,Parser.AigModel.Latch, $[l, n, i]$, representing the latch with
-output variable $l$, next state $n$ taken from the set of literals,
-and initial value $i$
-also taken from the set literals. The \verb,makeLatches, function uses the
+output $l$, next state $n$, %taken from the set of literals,
+and initial value $i$.
+%also taken from the set literals.
+The \verb,makeLatches, function uses the
 values of $l$, $n$, and $i$ to generate \verb,Clause,s that describe the latches' initial values and
 next-state values.
 
@@ -1436,12 +1438,12 @@ $$l' \Leftrightarrow n \simeq (\neg l' \vee n) \wedge (l' \vee \neg n).$$
 
 \subsubsection{AND gates}
 The \verb,makeAnds, function generates a single \verb,Clause, list for a list of \verb,Parser.AigModel.And,s,
-where the conjunction of the clauses in the list describes the relationship between the AND-gate output
-and the AND-gate inputs.
+where the conjunction of the clauses in the list describes the relationship between the AND-gate's output
+and inputs.
 
 Consider a \verb,Parser.AigModel.And,, of the form $[a, i_1, i_2]$, representing the AND gate
-with output variable $a$, and inputs $i_1$ and $i_2$.
-The \verb,makeAnds, function uses the values of $a$, $i_1$, and $i_2$ to generate the appropriate
+with output $a$ and inputs $i_1$ and $i_2$.
+The \verb,makeAnds, function uses the values of $a$, $i_1$, and $i_2$ to generate
 \verb,Clause,s that describe the AND gates' values.
 By the semantics of AND gates, the generated current-state clauses should have a conjunction
 logically equivalent to $a \Leftrightarrow (i_1 \wedge i_2)$ and the generated next-state
@@ -1450,18 +1452,18 @@ $a' \Leftrightarrow i_1' \wedge i_2'$. The next-state clauses are generated
 by priming the generated current-state clauses, so they satisfy
 $a' \Leftrightarrow i_1' \wedge i_2'$.
 
-If both $i_1$ and $i_2$ are Booleans (i.e. both use the \verb,Boolean,
-constructor for \verb,Parser.AigModel.Lit,s), then a singleton clause suffices to describe the AND gate.
-If $i_1 \wedge i_2$ holds, then $\{a\}$ describes this constantly {\it True} AND gate,
-and if not, then $\{\neg a\}$ describes this constantly {\it False} AND gate.
+If both inputs are Booleans (i.e. both use \verb,Parser.AigModel.Lit,'s \verb,Boolean,
+constructor), then a singleton clause suffices to describe the AND gate.
+If $i_1 \wedge i_2$ holds, then $\{a\}$ describes this constantly {\it True} AND gate.
+If not, then $\{\neg a\}$ describes this constantly {\it False} AND gate.
 
-If only one of the inputs is a Boolean, then if it is {\it False},
-singleton clause $\{\neg a\}$ is generated. Otherwise,
-the clauses equivalent to $a \Leftrightarrow i$ (i.e. clauses
+If only one input is a Boolean, then if it is {\it False},
+singleton clause $\{\neg a\}$ is generated. If it is {\it True},
+the clauses equivalent to $a \Leftrightarrow i$ (i.e.
 $\{i, \neg a\}$ and $\{\neg i, a\}$)
 are generated, where $i$ is the input that is not a Boolean.
 
-If neither $i_1$ nor $i_2$ are Booleans, then the clauses generated are
+If neither $i_1$ nor $i_2$ are Booleans, then \verb,makeAnds, generates
 $\{\neg a, i_1\}$, $\{\neg a, i_2\}$, and
 $\{\neg i_1,\neg i_2, a\}$. The conjunction of these clauses are, as needed,
 logically equivalent to $a \Leftrightarrow (i_1 \wedge i_2)$:
@@ -1485,11 +1487,11 @@ the most basic variant (\emph{Basic}), a variant that
 improves upon \emph{Basic} by discovering smaller CTIs (\emph{BetterCTI}),
 and a variant that improves upon \emph{BetterCTI} by considering subsumed clauses
 (\emph{BetterPropagation}).
-I also implemented a variant of IC3 that uses priority queues (\emph{PriorityQueue})
+I also implemented a variant that uses priority queues (\emph{PriorityQueue})
 and a variant that uses CTGs to improve generalization (\emph{CTG}).
 
 I describe the overall structure shared by all variants except
-\emph{PriorityQueue} and then describe the implementation
+\emph{PriorityQueue} before describing the implementation
 details of smaller components of the algorithm and how they differ across
 variants. A separate description of \emph{PriorityQueue}
 follows.
@@ -1497,15 +1499,15 @@ follows.
 \subsection{Overall structure}
 
 The general structure of the algorithm in the implementations is similar
-to the structure given in Figure \ref{overview}; however, there are
+to the structure in Figure \ref{overview}; however, there are
 small differences that result from implementing the algorithm in a
 functional language and an adjustment to how the propagation phase is
 carried out.
 
 The pseudocode in Figure \ref{recstr}
-outlines the general structure shared by all the \emph{MC}
+outlines the structure shared by all the \emph{MC}
 implementations except {\it PriorityQueue}.
-I now compare this structure with Figure \ref{overview} (see Section
+I compare this structure with Figure \ref{overview} (see Section
 \ref{pqueue} for \emph{PriorityQueue}).
 The main components of the algorithm in Figure \ref{recstr} are as follows:
 \begin{itemize}
@@ -1590,25 +1592,10 @@ that functions can modify the set of (passed-by-reference) frames can no longer 
 Instead, updated values of frames are returned explicitly by the function in
 a tuple along with any other values needed from the function call, as seen in
 {\it proveNegCTI}, {\it propagate}, and {\it push}.
-%For example, {\it proveNegCTI} (line \ref{recstr:proveNegCTI})
-%returns not only the result
-%indicating whether or not the negated CTI was proven, but also returns the possibly updated
-%values for the frontier frame $G_k$ and previous frames $G_0, \ldots, G_{k - 1}$.
 
 In addition to making necessary language-related modifications to the algorithm, I 
 reduced how often the full propagation phase executes, calling {\it pushFrame}
 (line \ref{recstr:pushFrame}) instead where appropriate.
-
-%In Figure \ref{overview}, each iteration of the algorithm calls the propagation
-%phase (line \ref{forprop} in Figure \ref{overview});
-%however, if the consecution query succeeds and a new frontier frame $F_k$
-%is added in that iteration, then none of the frames have had any new clauses
-%added to them. As a result, the only frame that modified during the propagation phase
-%is the frame $F_k$ because all the frames before $F_{k - 1}$ have already had all
-%possible clauses pushed forward in previous iterations.
-%Similarly, the only way a fixed point would be detected is if $F_{k - 1} = F_k$,
-%since all pairs of consecutive frames except $(F_{k - 1}, F_k)$ have been checked for
-%equality.
 
 If the consecution query (line \ref{recstr:consecution}) succeeds, then
 considering pairs of frames other
@@ -1624,21 +1611,14 @@ When the consecution query fails, the adjusted algorithm, like the original in F
 calls ${\it propagate}$ (line \ref{recstr:propagate})
 to handle the updates to the frames made by ${\it proveNegCTI}$.
 
-%The {\it propagate} function carries out the propagation phase of the algorithm.
-%The actual implementation of the ${\it propagate}$ function returns type \verb,Maybe [Frame],,
-%but for the sake of discussing the high level structure of the implementation,
-%it is assumed here to return a pair of a Boolean value indicating whether a fixed point
-%has been found while pushing clauses and a list of the updated frames.
-
 \subsection{Initiation}
 %Describe how the step involving the initiation query is implemented.
 
 The initiation query $I \Rightarrow P$ is an implication, but a MiniSat \verb,Solver, can only
 solve CNF queries (with an optional assumption cube).
-As a result, the implementation of query $I \Rightarrow P$ for frame $I$ and
-clause $P$ makes use of the fact that
-$I \Rightarrow P$ holds iff $\neg P \wedge I$ is unsatisfiable.
-The resulting implementation in \verb,IC3.hs, is the following:
+As a result, all variants use the fact that
+$I \Rightarrow P$ holds iff $\neg P \wedge I$ is unsatisfiable to yield
+the following implementation in \verb,IC3.hs,:
 
 \begin{lstlisting}
 initiation :: Frame -> Clause -> Bool
@@ -1650,7 +1630,7 @@ initiation f prop =
 %Describe how the step involving the consecution query is implemented.
 
 Like the initiation query, the consecution query must be expressed in CNF.
-All variants make use of the fact that
+All variants use the fact that
 $F_k \wedge T \Rightarrow P'$ holds iff $\neg P' \wedge F_k \wedge T$ is unsatisfiable
 to yield the following implementation:
 \begin{lstlisting}
@@ -1670,11 +1650,10 @@ the variables in the \verb,Model,.
 \subsubsection{Basic}
 In \emph{Basic}, \verb,nextCTI, asks for a model
 (i.e. the set of true literals) for the satisfiable query $\neg P' \wedge F_k \wedge T$.
-The current-state literals then give a predecessor state (a state from which
+The model's current-state literals then give a predecessor state (a state from which
 a $\neg P$ state can be reached in one step of the transition relation) for $\neg P$,
 i.e., the current-state literals give the CTI.
-These current-state literals are extracted from the model in the function that
-called \verb,nextCTI,.
+The function that called \verb,nextCTI, extracts these current-state literals from the model.
 
 \subsubsection{Smaller Counterexamples to Induction}
 In all implementations of the algorithm other than {\it Basic},
@@ -1724,7 +1703,7 @@ in $c'$. In this case, $c \Rightarrow c'$ holds, so $c'$ can be removed from the
 removing subsumed clauses $c'$ from a frame before trying to push clauses, the model
 checker can avoid making the consecution queries that arise from attempts to push those clauses.
 
-The versions of \verb,push, that consider subsumed clauses include a call to the function
+Versions of \verb,push, that consider subsumed clauses include a call to the function
 \verb,removeSubsumed, when acquiring the list of clauses to attempt to push.
 The \verb,removeSubsumed, function takes a list of clauses and removes all clauses in the list
 subsumed by other clauses in the list.
@@ -1755,27 +1734,6 @@ having attempted dropping all the literals, the
 \verb,inductiveGeneralization, function implementing this approximation
 returns the clause that results from appending \verb,needed, to the remaining
 literals in the clause (i.e. literals that the \verb,generalize, has not tried to drop).
-
-\begin{figure}[t]
-\centering
-\begin{lstlisting}
-inductiveGeneralization :: Clause -> Frame -> Frame -> Model -> Word
-                        -> Clause
-inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
-  where
-    generalize cs _ _ needed 0 = cs ++ needed
-    generalize [] _ _ needed _ = needed
-    generalize (c:cs) f0 fk needed k = 
-      let res = solveWithAssumps
-                  (solver (getFrameWith ((cs ++ needed):clauses fk) m))
-                  (map (prime.neg) (cs ++ needed))
-        if not (satisfiable res) && initiation f0 cs
-          then generalize cs f0 fk needed k
-          else generalize cs f0 fk (c:needed) ( k - 1 ) 
-\end{lstlisting}
-\caption{Function that approximates the {\it mic} algorithm.}
-\label{inductiveGeneralization}
-\end{figure}
 
 This corresponds to the algorithm described in Figure \ref{mic}, but where {\it down}
 checks for the relative inductiveness of the subclause without attempting to expand it.
@@ -1945,10 +1903,9 @@ rank \verb,r, for deciding the ordering of proof obligations at the same depth w
 queue, and the clause \verb,c, representing $\neg s$. The
 function implementing {\it fulfillObligations} is named \verb,proveObligations,.
 
-A \verb,MinQueue, (the minimal element has the highest priority) of \verb,Obligation,s
+A \verb,MinQueue, (minimal element has highest priority) of \verb,Obligation,s
 represents the priority queue.
-
-For example, the initial \verb,MinQueue, created after the successful initiation query
+For example, the \verb,MinQueue, created after the successful initiation query
 is given by \verb.singleton (1, 0, [prop])., the \verb,MinQueue, that
 contains only \verb,Obligation, \verb.(1, 0, [prop]).. This \verb,Obligation, represents proof obligation
 $(\neg P,1)$, where \verb,[prop], represents the clause $P$.
@@ -2482,6 +2439,31 @@ If the initial value is omitted, the initial value is assumed to be
 0, as in the old version of the format.
 The new version of the format is otherwise
 the same as the old format.}
+
+\chapter{Code Extracts}
+This appendix contains some code extracts from the project implementation.
+
+\begin{figure}[H]
+\centering
+\begin{lstlisting}
+inductiveGeneralization :: Clause -> Frame -> Frame -> Model -> Word
+                        -> Clause
+inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
+  where
+    generalize cs _ _ needed 0 = cs ++ needed
+    generalize [] _ _ needed _ = needed
+    generalize (c:cs) f0 fk needed k = 
+      let res = solveWithAssumps
+                  (solver (getFrameWith ((cs ++ needed):clauses fk) m))
+                  (map (prime.neg) (cs ++ needed))
+        if not (satisfiable res) && initiation f0 cs
+          then generalize cs f0 fk needed k
+          else generalize cs f0 fk (c:needed) ( k - 1 ) 
+\end{lstlisting}
+\caption{The function that approximates the {\it mic} algorithm in the most basic way.}
+\label{inductiveGeneralization}
+\end{figure}
+
 
 \chapter{Benchmark Results}
 \label{benchmarks}
