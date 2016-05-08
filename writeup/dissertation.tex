@@ -290,7 +290,7 @@ I have met and exceeded all aims submitted in the project proposal.
 
 This chapter describes the knowledge gained and plans made while preparing
 to write code for the project.
-The preparation for the project involved learning
+Preparation for this project involved learning
 Haskell (Section \ref{prep:haskell}),
 distinguishing the main components of the project
 (Section \ref{prep:requirements}), choosing and learning how to use
@@ -315,7 +315,7 @@ language that will make the rest of the report easier to follow.
 I assume a working knowledge of Standard ML.
 
 \paragraph{Functions}{
-Unlike in Standard ML, there is no keyword in Haskell for defining functions. Instead,
+There is no keyword in Haskell for defining functions;
 Haskell functions are defined as a series of equations. Otherwise,
 Haskell function definitions are similar to Standard ML function definitions with the
 \verb,fun, keyword omitted. Anonymous functions in Haskell
@@ -382,7 +382,7 @@ with the output of the first action ignored by the second.
 
 To avoid unwieldy code resulting from composing several
 computations with \verb,>>=,, Haskell provides syntactic sugar
-in the form of \verb,do,-notation, which allows monadic computations
+in the form of \verb,do,-notation, allowing monadic computations
 to be written in an imperative fashion. For example, the code in Figure
 \ref{monad} is equivalent to the more readable code in Figure \ref{do}.
 
@@ -415,7 +415,7 @@ addClause' solver clause =
 \label{do}
 \end{figure}
 
-Values inside the \verb,IO, instances of the \verb,Monad, class can be extracted
+Values inside \verb,IO, instances of the \verb,Monad, class can be extracted
 using \verb,unsafePerformIO, at the expense of guaranteed type safety; for pure
 computations, the use of \verb,unsafePerformIO, does not compromise the type
 safety of the program.
@@ -423,7 +423,7 @@ safety of the program.
 
 %List syntax
 \paragraph{Lists and Tuples}{
-List types and values in Haskell are denoted using square brackets, e.g.,
+Square brackets denots list types and values in Haskell, e.g.,
 a list of \verb,Lit,s has type \verb,[Lit],.
 Lists can be appended using the \verb,++, infix operator, and elements
 can be prepended to lists using the \verb,:, infix operator.
@@ -453,7 +453,7 @@ stored in the directory structure. For example, the \verb,Model, module in file
 The model checker \emph{MC} requires a way of taking input models and, since
 the IC3 algorithm uses a SAT solver as an internal subcomponent, also
 requires a way to solve SAT queries.
-I chose the AIGER format for representing hardware models and
+I chose the AIGER format for representing hardware models and the
 MiniSat SAT solver for answering SAT queries, resulting in a need for an
 AIGER parser and a Haskell interface to MiniSat. The choice of
 the AIGER format allows \emph{MC} to be run on examples from
@@ -462,13 +462,14 @@ use this format to specify examples. I chose the MiniSat SAT
 solver to allow for better comparison of \emph{MC}
 with Aaron Bradley's reference implementation of IC3 (\emph{IC3ref})\cite{refic3}.
 Because \emph{IC3ref} uses MiniSat, using it as the solver
-for \emph{MC} removes the
-choice of SAT solver as a variable to consider when comparing performance,
-reducing confounding factors.
+for \emph{MC} reduces confounding factors to consider when comparing performance.
+%removes the
+%choice of SAT solver as a variable to consider when comparing performance,
+%reducing confounding factors
 
-Since model checking algorithm deals with transition systems
+Since symbolic model-checking algorithms deal with transition systems
 (discussed in Section \ref{prep:logic}), the implementation also requires a representation of
-transition systems, which should correspond to the input hardware model.
+transition systems that correspond to the input hardware model.
 A further requirement is the implementation of the
 IC3 algorithm itself.
 
@@ -479,7 +480,7 @@ transition system representation, and IC3 algorithm implementation.
 \label{prep:tools}
 
 I used a variety of tools to employ standard software engineering practices, such
-as version control and testing, and to otherwise ease the development of
+as version control and testing, and otherwise to ease the development of
 the project's code.
 
 \paragraph{Git}{
@@ -489,13 +490,13 @@ hosting service GitHub \cite{github} to
 keep backups.
 The previous versions maintained by the system proved useful in
 developing the code, and branching and merging capabilities were
-useful for organizing variations of the model checker.
+useful for organizing \emph{MC} variants.
 I used Git submodules, which allow the inclusion of other Git projects within another
 project, to include MiniSat within the project, enabling easier
 acquisition of project dependencies.
 
 \paragraph{Haddock}{
-The commonly-used Haddock \cite{haddock} documentation tool for Haskell was used to generate documentation
+The commonly-used Haddock \cite{haddock} documentation tool was used to generate documentation
 for the code. Haddock automatically generates documentation in
 several formats (e.g. HTML) from annotated Haskell code.
 %It is commonly
@@ -505,7 +506,7 @@ several formats (e.g. HTML) from annotated Haskell code.
 
 \paragraph{HUnit}{
 HUnit \cite{hunit} is a framework for writing unit tests in Haskell based on the
-JUnit framework \cite{junit} for unit testing in Java.
+JUnit framework \cite{junit} for Java.
 HUnit tests can be specified by using functions
 that return the \verb,Assertion, type to write \verb,TestCase,s.
 %For example, the
@@ -525,7 +526,7 @@ of unit tests can be run.}
 % See Section \ref{eval:solving} for more on testing.}
 
 \paragraph{Criterion}{
-Criterion \cite{criterion} is a library for performing benchmarking in Haskell.
+Criterion \cite{criterion} is a library for benchmarking Haskell code.
 Criterion can output benchmarking results in any format specified in the \verb,.tpl,
 template format. The \verb,.tpl, file in this project
 was configured such that Criterion output benchmark sample results to a
@@ -554,14 +555,13 @@ wrapper before Cabal attempts to build the rest of the project, so the
 files necessary for linking are already present.
 
 Cabal enables the project to be built easily on different platforms,
-since Cabal provides a standard method for building the package that works
-across platforms.}
+since Cabal provides a standard, cross-platform method for building packages.}
 
 \paragraph{hsc2hs}{
 The \verb,hsc2hs, preprocessor \cite{hsc2hs} eases the writing of Haskell bindings to C
 code by enabling the programmer to write a \verb,.hsc, file containing
-macros. that the preprocessor can expand to, e.g., pointer offsets. The
-expansion of the macros in a \verb,.hsc, file produces a
+macros that the preprocessor can expand to, e.g., pointer offsets. Expanding
+the macros in a \verb,.hsc, file produces a
 Haskell source (\verb,.hs,) file that can then be compiled with a Haskell compiler.
 }
 
@@ -652,20 +652,20 @@ Relative inductiveness plays a key role in the IC3 algorithm.
 }
 
 \paragraph{States}{
-A single state of the transition system (or a singleton set containing that state)
-is specified through the satisfying assignment of all state variables in the transition system
-to Boolean values. A \emph{complete} assignment is represented as a cube such
-that every variable appears in the formula exactly once.
-An incomplete assignment of variables in the transition system is a cube such that
-at least one variable in the transition system does not appear in the cube. Such an
-assignment $c$ specifies the set of cubes $\{a \in{\it Full~Assignment}|c \subset a\}$,
-where {\it Full Assignment} is the set of complete assignments to the variables in the
+A single state of the transition system (or singleton set containing that state)
+is specified through the assignment of all state variables in the transition system
+to Boolean values.
+A cube in which every variable appears exactly once represents a \emph{complete} assignment.
+An incomplete assignment is a cube in which
+at least one variable in the transition system does not appear. An incomplete
+assignment $c$ specifies the set of cubes $\{a \in{\it FullAssignment}|c \subset a\}$,
+where {\it FullAssignment} is the set of complete assignments to variables in the
 transition system.
 More generally, any logical formula $b$ involving the variables in the transition
 system gives the set of states
-$\{a \in {\it Full~Assignment} | a \wedge b~{\rm is~satisfiable}\}$.
+$\{a \in {\it FullAssignment} | a \wedge b~{\rm is~satisfiable}\}$.
 
-Given logical formula $B$, a \emph{$B$ state} is a state contained in the set of states
+Given logical formula $B$, a \emph{$B$ state} is an element in the set of states
 represented
 by $B$. A set of states $s$ is said to be \emph{reachable}
 in $k$ steps of the transition relation iff there exist input variables and
@@ -683,10 +683,9 @@ where $T$ represents the transition relation of the transition system.
 
 %Comments?
 
-I used both the AIGER format and Berkeley Logic Interchange Format (BLIF)
-to specify fourteen example hardware models.
-The models that \emph{MC} accepts as input
-are specified using the AIGER format;
+I specified fourteen example hardware models using
+both the AIGER format and Berkeley Logic Interchange Format (BLIF).
+\emph{MC} accepts only AIGER-formatted inputs;
 however, because using the AIGER format to specify larger models was cumbersome,
 I specified some models using BLIF and converted them to AIGER
 using the Aiger Utilities' \verb,bliftoaig, tool. Because one of
@@ -706,7 +705,7 @@ The AIGER format has an ASCII and binary version; either
 can be used for inputs to \emph{MC}. The ASCII
 format is more flexible and human-readable, imposing fewer constraints
 on the ordering of components within the file. For example, an
-AND gate with variable name {\tt 20} may be specified before an AND gate with
+AND gate with variable name {\tt 20} may be specified before a gate with
 variable name {\tt 11} in the ASCII format, but AND gates must be specified in
 ascending order of their variable names in the binary format.
 %Another
@@ -720,7 +719,7 @@ A new version of the AIGER format is currently under development \cite{aiger}, w
 examples from HWMCC'14 onward using the new version. The AIGER parser component
 of this project handles both old and new versions of the format.
 
-I describe how variables are represented in all AIGER formats
+I describe how all AIGER formats represent variables
 and then describe the old ASCII version of the AIGER format, which
 is sufficient to understand the handwritten examples written directly
 in AIGER. Descriptions of the other formats can be found in Appendix
@@ -841,11 +840,11 @@ for the queries that IC3 makes.
 \label{prep:ic3}
 %Describe how the IC3 algorithm works when trying to prove a model has a property
 %$P$.
-I now describe the basic IC3 algorithm and some of its extensions, which are
+This section describes the basic IC3 algorithm and some of its extensions that are
 necessary to understand the following chapters.
 Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
 safety property $P$, IC3 aims either to prove inductively that $P$ holds
-at all reachable states from the initial state or
+at all states reachable from the initial state or
 to find a reachable $\neg P$ state.
 The pseudocode in Figure \ref{overview} gives an overview of the basic IC3 algorithm.	
 
@@ -871,7 +870,7 @@ The pseudocode in Figure \ref{overview} gives an overview of the basic IC3 algor
     }
   }
 }
-\caption{An overview of the IC3 algorithm. Frames are passed by reference.}
+\caption{Overview of IC3. Frames are passed by reference.}
 \label{overview}
 \end{algorithm}
 
@@ -898,7 +897,7 @@ safety property holds at all reachable states in the model.
 
 %Consecution query
 The \emph{consecution query} $F_k \wedge T \Rightarrow P'$ (line \ref{consecution})
-is used to check whether the property $P$ holds in the next
+checks whether the property $P$ holds in the next
 frame. If it does, then IC3 creates a new
 frontier frame $F_{k + 1}$ (line \ref{create}).
 %Describe what happens when a consecution query fails
@@ -970,7 +969,7 @@ $F_0, \ldots, F_k$, and, for every $F_i$ with $0 \leq i < k$ (line \ref{forprop}
 pushes all the clauses that it can from $F_i$ to $F_{i + 1}$ (line \ref{push}).
 
 If $F_i = F_{i + 1}$ holds for any $i$ at any point, then a fixed point has
-been found; frames at any greater depth than $i$ will continue to be the
+been found; frames at any depth greater than $i$ will be the
 same as $F_i$, since all the the clauses in $F_i$ and therefore $F_{i + 1}$
 can be pushed.
 Because $F_i$ contains the safety property $P$ as one of its clauses,
@@ -986,7 +985,7 @@ After showing that a negated CTI state $\neg s$ is relatively inductive to a
 frame $F_i$ and adding the clause $\neg s$ to frame $F_{i + 1}$, the state
 $s$ is eliminated from the approximation $F_{i + 1}$ of the set of states
 reachable in at most $i + 1$ steps. An improvement can be made by generalizing
-$s$ to a set of several states $c$ rather than a single state, and treating
+the single state $s$ to a set of several states $c$ and treating
 $c$ as the CTI. If $\neg c$ is successfully proven to be relatively inductive
 to $F_i$, then adding it to frame $F_{i + 1}$ eliminates several states (i.e.,
 all $c$ states) at once rather than only $s$. Because the cube $c$
@@ -998,13 +997,13 @@ is referred to as \emph{generalization}, and the best such $c$ is the
 one such the $\neg c$ is the minimal inductive subclause for $F_i$ and $\neg s$.
 
 \subsection{Minimal Inductive Subclauses}
-The \emph{minimal inductive subclause} for a frame $F_i$ and a clause $\neg s$ that
+The \emph{minimal inductive subclause} (MIC) for a frame $F_i$ and a clause $\neg s$ that
 is inductive relative to $F_i$
 (i.e. $F_0 \Rightarrow s'$ and $F_i \wedge T \wedge s \Rightarrow s'$)
 is a clause $\neg c$ whose
 literals are the smallest subset of the literals in $\neg s$ such that
 $\neg c$ is also inductive relative to $F_i$.
-The minimal inductive subclause can be found by dropping each literal
+The MIC can be found by dropping each literal
 in $\neg s$ in turn and checking the resulting clause.
 
 The checking phase (described by {\it down} in Figure \ref{mic},
@@ -1023,8 +1022,8 @@ If $I \Rightarrow t$ fails to hold, then removing any literals in $t$ to
 obtain a subclause $u \subset t$ would still result in the query $I \Rightarrow u$
 failing, since $u \Rightarrow t$ holds.
 
-The formula $F_i \wedge t \wedge T \Rightarrow t'$ not holding indicates
-that there is a predecessor to a $\neg t$ state that is a $F_i \wedge t$ state.
+If formula $F_i \wedge t \wedge T \Rightarrow t'$ does not hold, then
+there is a predecessor to a $\neg t$ state that is a $F_i \wedge t$ state.
 This predecessor state $p$ can be extracted from the SAT query for
 $F_i \wedge t \wedge T \Rightarrow t'$ in the same way that CTIs are found.
 The clause $t$ can then be expanded to the clause $t \cap \neg p$
@@ -1049,17 +1048,13 @@ The checking phase then repeats, checking the expanded clause $t \cap \neg p$.
   {\it cls} := $cls \cap p$\;
   \Return{down(cls,i)} 
 }
-\caption{The algorithm for finding the minimal inductive subclause. Clauses are
+\caption{The algorithm for finding the MIC. Clauses are
 passed by reference.}
 \label{mic}
 \end{algorithm}
 
-%Finding the minimal inductive subclause can be computationally
-%expensive, so it is often approximated in practice.
-
-An improvement to the generalization provided by finding minimal
-inductive subclauses in this way incorporates the use of counterexamples
-to generalization \cite{hassan13}.
+Using counterexamples to generalization can improve upon the
+generalization provided by finding MICs \cite{hassan13}.
 
 \subsubsection{Counterexamples to Generalization}
 
@@ -1068,19 +1063,19 @@ relative to a frame $F_i$ involves checking if
 $F_i \wedge T \wedge \neg c \Rightarrow \neg c'$ holds.
 If the implication does not hold, then $\neg c$ is not inductive relative to
 $F_k$. In the original method of generalization described above,
-this means that $\neg s$ cannot be generalized to $\neg c$, and generalization
+$\neg s$ then cannot be generalized to $\neg c$, and generalization
 proceeds without dropping $l$.
 
-The reason that
+Similarly to the reason that a consecution query at $F_k$ might fail,
+the reason that
 $F_k \wedge T \wedge c \Rightarrow c'$ is unsatisfiable might be that
-$F_k$ is too loose an approximation, similarly to the reason a consecution
-query at $F_k$ might fail. As with consecution queries, discovering a
+$F_k$ is too loose an approximation. As with consecution queries, discovering a
 new clause that can be added to $F_k$ may allow queries that
 check for relative induction to succeed, and the discovery of this
 clause can be directed by a counterexample extracted from the
 SAT solver after the query for $F_k \wedge T \wedge c \Rightarrow c'$.
 
-The counterexample state in this case is called a \emph{counterexample
+This counterexample is called a \emph{counterexample
 to generalization} (CTG), and proving the negated CTG to be true at
 frame $F_k$ allows $s$ to be generalized to $c$.
 
@@ -1202,10 +1197,10 @@ in {\tt Parser.AigModel} has the following constructors:
 of the variable whose name is given by the \verb,Word, it takes as an argument.
 Variable names are adjusted (by subtracting 1) so that they start at 0.
 For example, the AIGER index 3 is parsed to \verb,Neg 0,;
-the odd index 3 indicates that it is a negative literal of the variable 1, and
+the odd index 3 indicates that it is a negative literal of the variable 1;
 subtracting by 1 gives the new variable name 0.
 
-Latches and AND gates are represented using three-element \verb,[Lit],s. For latches,
+Latches and AND gates are represented by three-element \verb,[Lit],s. For latches,
 \begin{itemize}
 \item the first element gives the output (i.e. variable name)
 of the latch as a positive literal,
@@ -1261,14 +1256,14 @@ extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
 }
 \end{lstlisting}
 
-The Haskell FFI is then used to provide a wrapper function that calls
+The FFI is then used to provide a wrapper function that calls
 the C function:
 \begin{lstlisting}
 foreign import ccall safe "addMinisatClause"
   addMinisatClause :: Ptr MinisatSolver -> Ptr MinisatVecLit -> IO CInt
 \end{lstlisting}
 
-Using just the Haskell FFI for calling the C functions does not provide a
+Using just the FFI for calling the C functions does not provide a
 sufficient abstraction for use by the rest of the model checker. All
 calls to C functions must occur inside the \verb,IO, monad, but having
 the interface functions return \verb,IO, monads means that any functions
@@ -1292,7 +1287,7 @@ The function \verb,solveMinisatWithAssumps,, a wrapper for the version of \verb,
 that takes an assumption vector as an argument, returns a pointer to a
 \verb,result, struct rather than just whether or not the query was satisfiable
 as the MiniSat \verb,solve(), function does.
-The Haskell interface uses the Haskell FFI and the \verb,hsc2hs, preprocessor
+The Haskell interface uses the FFI and the \verb,hsc2hs, preprocessor
 for handling the \verb,result, struct. For example, \verb,solveWithAssumps,
 uses the Haskell FFI's \verb,peek, function,
 which provides a value read from a memory location inside
@@ -1343,7 +1338,7 @@ struct result {
 \label{solveWithAssumps}
 \end{figure}
 
-The information kept in a \verb,Result, Haskell datatype is taken directly from the
+The information kept in a \verb,Result, Haskell datatype comes directly from the
 \verb,result, returned by the C Wrapper functions.
 I used the \verb,hsc2hs, preprocessor to handle pointer offsets
 when unmarshalling from the C struct.
@@ -1351,9 +1346,10 @@ Beyond straightforward unmarshalling, some additional work was necessary
 to convert from the MiniSat representation of literals to the \emph{MC} representation of
 literals.
 
-I represented a variable with name $x$ taken from the nonnegative integers with
-the MiniSat variable $2 \times x$ and its corresponding next-state variable $x'$
-with MiniSat variable $(2 \times x) + 1$. The \verb,model, returned in the \verb,result, struct
+MiniSat variable $2 \times x$ represents the variable with name $x$ taken from the nonnegative
+integers. MiniSat variable $(2 \times x) + 1$ represents its corresponding next-state variable
+$x'$.
+The \verb,model, returned in the \verb,result, struct
 points to an array of three-valued Boolean (the normal Boolean values including an
 \emph{undefined} value) \verb,lbool, values indexed by MiniSat variable indices.
 To extract models, the array values are accessed, and for each \emph{True} or \emph{False}
@@ -1437,14 +1433,6 @@ Otherwise, if $n$ is not a Boolean value,
 the next-value clauses generated for $l$, are $\{l', \neg n\}$
 and $\{\neg l', n\}$. The conjunction of these clauses are, as needed, logically equivalent
 to $n \Leftrightarrow l'$, i.e., where $\simeq$ denotes logical equivalence,
-%the following hold:
-%\begin{align*}
-%l' \Leftrightarrow n &\simeq (l' \Rightarrow n) \wedge (n \Rightarrow l')\\
-%l' \Rightarrow n &\simeq \neg l' \vee n\\
-%n \Rightarrow l' &\simeq l' \vee \neg n.
-%\end{align*}
-%It follows that the original double implication is equivalent to the 
-%the CNF formula that corresponds to the generated clauses:
 $$l' \Leftrightarrow n \simeq (\neg l' \vee n) \wedge (l' \vee \neg n).$$
 
 \subsubsection{AND gates}
@@ -1463,10 +1451,10 @@ $a' \Leftrightarrow i_1' \wedge i_2'$. The next-state clauses are generated
 by priming the generated current-state clauses, so they satisfy
 $a' \Leftrightarrow i_1' \wedge i_2'$.
 
-If both $i_1$ and $i_2$ are Booleans (corresponding to both \verb,in1, and \verb,in2, using the \verb,Boolean,
+If both $i_1$ and $i_2$ are Booleans (i.e. both use the \verb,Boolean,
 constructor for \verb,Parser.AigModel.Lit,s), then a singleton clause suffices to describe the AND gate.
-If $i_1 \wedge i_2$ holds, then singleton clause $\{a\}$ describes the constantly {\it True} AND gate,
-and if not, then singleton clause $\{\neg a\}$ describes the constantly {\it False} AND gate.
+If $i_1 \wedge i_2$ holds, then $\{a\}$ describes this constantly {\it True} AND gate,
+and if not, then $\{\neg a\}$ describes this constantly {\it False} AND gate.
 
 If only one of the inputs is a Boolean, then if it is {\it False},
 singleton clause $\{\neg a\}$ is generated. Otherwise,
@@ -1478,21 +1466,6 @@ If neither $i_1$ nor $i_2$ are Booleans, then the clauses generated are
 $\{\neg a, i_1\}$, $\{\neg a, i_2\}$, and
 $\{\neg i_1,\neg i_2, a\}$. The conjunction of these clauses are, as needed,
 logically equivalent to $a \Leftrightarrow i_1 \wedge i_2$:
-%\begin{align*}
-%a \Leftrightarrow (i_1 \wedge i_2) &\simeq (a \Rightarrow i_1 \wedge i_2) \wedge (i_1 \wedge i_2 \Rightarrow a)\\
-%a \Rightarrow (i_1 \wedge i_2) &\simeq \neg a \vee (i_1 \wedge i_2)\\
-%(i_1 \wedge i_2) \Rightarrow a &\simeq \neg (i_1 \wedge i_2) \vee a
-%\end{align*}
-%Distributing $\vee$ over $\wedge$ gives further equivalence
-%$$\neg a \vee (i_1 \wedge i_2) \simeq
-%(\neg a \vee i_1) \wedge (\neg a \vee i_2),$$
-%and using de Morgan's laws gives equivalence
-%$$\neg (i_1 \wedge i_2) \vee a \simeq
-%\neg i_1 \vee \neg i_2 \vee a.$$
-
-%It follows from distribution and application of de Morgan's laws
-%that the original double implication is equivalent to the CNF
-%formula corresponding to the generated clauses:
 $$a \Leftrightarrow i_1 \wedge i_2 \simeq
 (\neg a \vee i_1) \wedge (\neg a \vee i_2) \wedge (\neg i_1 \vee \neg i_2 \vee a).$$
 
@@ -1530,16 +1503,16 @@ small differences that result from implementing the algorithm in a
 functional language and an adjustment to how the propagation phase is
 carried out.
 
-I give pseudocode in Figure \ref{recstr}
-outlining the general structure shared by all the
-implementations of the model checker except {\it PriorityQueue}
-and compare this structure with Figure \ref{overview} (see Section
+The pseudocode in Figure \ref{recstr}
+outlines the general structure shared by all the \emph{MC}
+implementations except {\it PriorityQueue}.
+I now compare this structure with Figure \ref{overview} (see Section
 \ref{pqueue} for \emph{PriorityQueue}).
 The main components of the algorithm in Figure \ref{recstr} are as follows:
 \begin{itemize}
 \item The {\it prove} component (line \ref{recstr:prove})
 takes a model $M$ and a property $P$ as input
- and provides the same output as the \emph{prove} component in Figure \ref{overview}
+ and provides the same output as the \emph{prove} component in Figure \ref{overview}.
 \item The ${\it prove'}$ component (line \ref{recstr:prove'})
 takes a model $M$, a property $P$,
 the frontier frame $F_k$, and the rest of the frames $[F_0,\ldots,F_k]$ as input. It
@@ -1551,7 +1524,7 @@ the model $M$, and the rest of the frames $[F_0, \ldots, F_k]$ as input.
 It implements a specialized part of the propagation phase.
 \item The {\it nextCTI} component (line \ref{recstr:nextCTI})
 takes a failing consecution query as input and returns
-a CTI, just as in Figure \ref{overview}
+a CTI, just as in Figure \ref{overview}.
 \item The {\it proveNegCTI} component (line \ref{recstr:proveNegCTI})
 takes a model $M$, a CTI, and a depth $k - 1$ as input and
 returns a triple $({\it result}, [G_0, \ldots, G_{k - 1}], G_k)$, where {\it result}
@@ -1600,12 +1573,12 @@ clauses from $F$ to $F'$.
   \lIf{\it fixed}{\Return{True}}
   \lElse{\Return{${\it prove'}(M, P, G_k, [F_0,\ldots,F_{k - 2},F_{k - 1}])$} \label{recstr:mutrecursion}}}
 }
-\caption{General structure of the algorithm implementation in Haskell. The transition relation $T$ is acquired
+\caption{General structure of most \emph{MC} backends. The transition relation $T$ is acquired
 from the model $M$.}
 \label{recstr}
 \end{algorithm}
 
-Because the implementation of the model checker is in Haskell, the overall
+Because the implementation \emph{MC} is in Haskell, the overall
 structure of the algorithm has been modified to be recursive rather than iterative.
 The {\it prove} function (line \ref{recstr:prove}) makes an initiation query
 (line \ref{recstr:init}), and, if it succeeds, calls
@@ -1623,7 +1596,7 @@ a tuple along with any other values needed from the function call, as seen in
 %indicating whether or not the negated CTI was proven, but also returns the possibly updated
 %values for the frontier frame $G_k$ and previous frames $G_0, \ldots, G_{k - 1}$.
 
-In addition to the necessary language-related modifications to the algorithm, I 
+In addition to necessary language-related modifications to the algorithm, I 
 reduced how often the full propagation phase executes, calling the {\it pushFrame}
 function (line \ref{recstr:pushFrame}) instead where appropriate.
 
@@ -1713,7 +1686,7 @@ the unsatisfiability of $m \wedge P' \wedge T$. That is, the current-state liter
 subcube $q$ of $m$ for which $q \wedge P' \wedge T$ holds is also a valid CTI, with
 the state $m$ being in the set represented by $q$.
 
-The conflict vector resulting from querying the SAT solver with $P' \wedge T$ and assumption
+The conflict vector obtained from SAT-solver query $P' \wedge T$ and assumption
 cube $m$ contains such a $q$ that has only literals relevant to the conflict. This $q$ is
 then returned to the calling function, which, as in \emph{Basic}, extracts
 the current-state literals from $q$ to obtain the CTI.
@@ -1721,9 +1694,8 @@ the current-state literals from $q$ to obtain the CTI.
 
 \subsection{Propagation}
 \label{impl:propagation}
-
-Both the implementation of the {\it pushFrame} function and the implementation of the
-{\it propagate} function in Figure \ref{recstr} (lines \ref{recstr:pushFrame},
+The implementations of both the {\it pushFrame} and {\it propagate} functions
+in Figure \ref{recstr} (lines \ref{recstr:pushFrame},
 \ref{recstr:propagate}) and
 Figure \ref{pqueuestr} (lines \ref{pqueuestr:pushFrame}, \ref{pqueuestr:propagate})
 rely on the implementation of the
@@ -1765,10 +1737,10 @@ and updates \verb,Frame, \verb,f',.
 
 \subsection{Inductive Generalization}
 \label{impl:generalization}
-Finding the minimal inductive subclause (MIC) of a clause is inefficient in practice
+Finding the MIC of a clause is inefficient in practice
 \cite{griggio14};
 all implemented versions of generalization
-(i.e. all \verb,inductiveGeneralization, function implementations) approximate the MIC with a call to the function
+(i.e. all \verb,inductiveGeneralization, function implementations) approximate the MIC with a call to
 \verb,generalize,.
 
 \subsubsection{Simple}
@@ -1802,7 +1774,7 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
           then generalize cs f0 fk needed k
           else generalize cs f0 fk (c:needed) ( k - 1 ) 
 \end{lstlisting}
-\caption{The {\tt inductiveGeneralization} Haskell function that approximates the {\it mic} algorithm.}
+\caption{The function that approximates the {\it mic} algorithm.}
 \label{inductiveGeneralization}
 \end{figure}
 
@@ -1831,39 +1803,39 @@ to handle CTGs.
   {\it cls} := $cls \cap p$\;
   \Return{down(cls,i)}}
 }
-\caption{The algorithm for the version of {\it down} that handles CTGs.}
+\caption{CTG-handling version of the {\it down} algorithm.}
 \label{ctgdown}
 \end{algorithm}
 
-The modified {\it down} algorithm (Figure \ref{ctgdown})
-checks, as in the simple approximation for MIC, for the satisfiability of
+The modified {\it down} algorithm (Figure \ref{ctgdown}), like the simple MIC approximation,
+checks the satisfiability of
 $I \Rightarrow c$ and $F_k \wedge c \wedge T \Rightarrow c'$, where $c$ is the subclause passed to
 the algorithm.
 The difference is that {\it down} does not immediately attempt to expand $c$
-if $I \Rightarrow c$ is true and $F_k \wedge c \wedge T \Rightarrow c'$ is
+if $I \Rightarrow c$ holds and $F_k \wedge c \wedge T \Rightarrow c'$ does
 not; in this case, the CTG {\it ctg} is acquired by taking the current literals in
 the model the SAT solver gives for $\neg c' \wedge c \wedge T \wedge F_k$.
 
-The {\it down} algorithm then finds the deepest frame $F_{j - 1}$ for which $\neg {\it ctg}$ is inductive,
+The {\it down} algorithm then finds the deepest frame $F_{j - 1}$ for which $\neg {\it ctg}$ is inductive
 and attempts to generalize $\neg {\it ctg}$ relative to that frame with a recursive call to the
 {\it mic} algorithm. The generalization of $\neg {\it ctg}$ can then be added to frame $F_j$,
 and {\it down} is called recursively using the updated set of frames.
 
 The implementation of {\it down} is approximate for the aforementioned efficiency
-reasons; the Haskell function \verb,down, that implements
+reasons; the function \verb,down, that implements
 the algorithm takes a parameter \verb,r, that limits the number of CTGs that it will handle for
-each non-recursive call to the implementation of the approximation of the {\it mic} algorithm.
+each non-recursive call to the function approximating the {\it mic} algorithm.
 
 \subsection{Priority Queue Variant}
 \label{pqueue}
 Unlike other variants, which use recursive calls that explicitly specify which property
 to prove at which depth, the \emph{PriorityQueue} implementation keeps track of what
 to prove next with a priority queue of proof obligations.
-This variant of the algorithm makes
-use of some of the same functions (e.g. \verb,negCTI, and \verb,push,) as the other variants but
+This variant makes
+use of some of the same functions (e.g. \verb,negCTI, and \verb,push,) as the others but
 differs in its overall structure.
 I provide a definition of proof obligations, an
-overview of the structure of the implementation for this variant of the algorithm,
+overview of the structure of the \emph{PriorityQueue} variant,
 and implementation details about representing proof obligations and priority queues.
 
 \subsubsection{Proof Obligations}
@@ -1874,7 +1846,7 @@ reachable in at most $i$ steps of the transition relation to fulfill
 $(s, i)$.
 
 \subsubsection{Overall Structure}
-\begin{algorithm}[!Ht]
+\begin{algorithm}[t]
 \DontPrintSemicolon
 \Fn{prove$(M,P)$}{
   \lIf{$\neg (I \Rightarrow P)$}{
@@ -1907,26 +1879,24 @@ $(s, i)$.
 \label{pqueuestr}
 \end{algorithm}
 
-The variant of the algorithm used in the {\it PriorityQueue} implementation (see Figure \ref{pqueuestr})
+The variant of the algorithm used in \emph{PriorityQueue} (see Figure \ref{pqueuestr})
 relies on a priority queue of proof obligations.
-When a proof obligation $(s,i)$ is added to the priority queue,
+When proof obligation $(s,i)$ is added to the priority queue,
 it is assigned a priority higher than any proof obligation in the queue $(t,j)$ with $j > i$,
 lower than any proof obligation in the queue $(u,k)$ with $k < i$, and lower
 than any proof obligation already in the queue with the same depth (i.e. any
-proof obligation in the queue $(v, i)$). I discuss the
-way that the implementation achieves this priority ordering later.
+proof obligation in the queue $(v, i)$).
 
-Unlike other variants, in the {\it PriorityQueue} implementation, there is
-no distinction between the negation of the safety property $P$ and any other property
-needing
-to be proved.
+Unlike other variants, in {\it PriorityQueue}, there is
+no distinction between the safety property $P$ and any other property
+needing to be proved.
 The priority queue maintains all the information about which properties need to be
 proven, and the main recursive {\it fulfillObligations} function (line \ref{pqueuestr:fulfillObs}) attempts to prove
 whichever property has the highest priority in the queue, i.e. fulfill the proof obligation with the highest priority (this proof obligation
 is the one returned by ${\it dequeue(queue)}$ in line \ref{dequeue}).
 
 Whenever a proof obligation $(s,i)$ is fulfilled (at a certain depth $i$) the proof obligation
-$(s, i + 1)$ is added to the queue by {\it pushFrame} (line \label{pqueuestr:enqueue}).
+$(s, i + 1)$ is added to the queue by {\it pushFrame} (line \ref{pqueuestr:enqueue}).
 Enqueueing the new proof obligation is valid
 because $s$ states can reach $\neg P$ states in some
 number of steps of the transition relation and should therefore
@@ -1934,7 +1904,7 @@ not be reachable in any number of steps of the transition relation from the init
 
 In attempting to fulfill a proof obligation $(s,i)$, {\it fulfillObligations} proceeds
 generally in the same way as the other variants: if a consecution query succeeds,
-then {\it pushFrame} is called (line \label{pqueuestr:pushFrame}), and if not, a CTI is discovered with the intent
+then {\it pushFrame} is called (line \ref{pqueuestr:pushFrame}), and if not, a CTI is discovered with the intent
 to prove its negation is inductive relative to frame $F_{i - 1}$.
 
 The structure of the {\it pushFrame} function is modified to
@@ -1948,15 +1918,14 @@ reached, {\it pushFrame} makes a recursive call to {\it filfillObligations} with
 priority queue (line \ref{pqueuestr:pushrec}).
 
 When a CTI $c$ for proof obligation $(s,i)$ is discovered, the proof obligation $(c,i - 1)$
-for proving the negation of the CTI could enqueued before
-calling {\it fulfillObligations} recursively again,
-but the implementation employs a different approach.
-This approach keeps the number of
+for proving the negation of the CTI could be enqueued before
+calling {\it fulfillObligations} recursively again.
+The \emph{PriorityQueue} implementation employs a different approach that keeps the number of
 generalization attempts low by generalizing once when the proof obligation
 for the CTI is enqueued rather than generalizing each time a proof obligation
 is fulfilled.
 
-The approach employed by the {\it PriorityQueue} implementation checks
+The approach employed by \emph{PriorityQueue} checks
 that $I \Rightarrow \neg c$, adds $\neg c$ to $F_0$, and then uses a modified
 version of {\it propagate} to push clauses and check for fixed points up to
 depth $j \leq i$, where $j$ is the greatest value that is less than $i$
@@ -1978,12 +1947,11 @@ rank \verb,r, for deciding the ordering of proof obligations at the same depth w
 queue, and the clause \verb,c, representing $\neg s$. The
 function implementing {\it fulfillObligations} is named \verb,proveObligations,.
 
-The priority queue is represented by
-a \verb,MinQueue, (the minimal element has the highest
-priority) of \verb,Obligation,s.
+A \verb,MinQueue, (the minimal element has the highest priority) of \verb,Obligation,s
+represents the priority queue.
 
 For example, the initial \verb,MinQueue, created after the successful initiation query
-is given by \verb.singleton (1, 0, [prop])., which represents the priority queue that
+is given by \verb.singleton (1, 0, [prop])., the \verb,MinQueue, that
 contains only \verb,Obligation, \verb.(1, 0, [prop]).. This \verb,Obligation, represents proof obligation
 $(\neg P,1)$, where \verb,[prop], represents the clause $P$.
 
@@ -1998,8 +1966,8 @@ model checker (Section \ref{eval:analysis}), which includes a description of
 the output of the model checker and a comparison of benchmarks.
 
 To evaluate the implementations, I ran them
-on 14 handwritten examples and 150 examples taken from
-the Hardware Model Checking Competitions spanning four years \cite{hwmcc10, hwmcc11, hwmcc13}.
+on 14 handwritten examples and 150 examples from
+Hardware Model Checking Competitions across four years \cite{hwmcc10, hwmcc11, hwmcc13}.
 I chose examples from HWMCC'10 that \verb,ic3, solved in relatively short
 (under 2 second) amounts of time. I chose examples from HWMCC'11 that were
 not included in HWMCC'10.
@@ -2122,7 +2090,7 @@ Number of ctgs: 242
 Number of queries: 15225
 True
 \end{lstlisting}
-\caption{Sample output for running the {\it CTG} implementation on example {\tt counters3.aig}.}
+\caption{Sample output for running the \emph{CTG} implementation on example {\tt counters3.aig}.}
 \label{sampleoutput}
 \end{figure}
 
@@ -2232,7 +2200,7 @@ the reference implementation performs better overall with CTG-handling disabled.
 \paragraph{Priority Queues}{
 The \emph{PriorityQueue} implementation generally does not perform as well as the
 other variants, with the exception of \emph{CTG} (as seen in Figure \ref{eval:time}).
-This result disagrees with findings that implementations of the IC3 algorithm that
+This result disagrees with findings that implementations of IC3 that
 use priority queues are more efficient than simple recursive implementations
 \cite{een11,griggio14}.
 
