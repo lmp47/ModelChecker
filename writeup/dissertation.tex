@@ -137,14 +137,15 @@ extent for a comparable purpose.
 
 \chapter{Introduction}
 
-This project focuses on implementing the IC3 algorithm, a SAT-based model-checking
+This project focuses on implementing the IC3 algorithm
+\cite{bradley11}, a SAT-based model-checking
 algorithm.
 To provide context for the project,
 I provide a brief introduction to formal verification and model checking, followed
-by a discussion of symbolic model checking and SAT-based model checking.
+by a discussion of symbolic and SAT-based model checking.
 I then highlight some of the important features of the IC3 algorithm.
 
-Software and hardware bugs can be costly. The Pentium FDIV hardware bug cost an
+Software and hardware bugs can be costly. The Intel Pentium FDIV hardware bug cost an
 estimated \$475 million \cite{pratt95}, and the Ariane 5 software bug cost
 approximately \$370 million \cite{dowson97}.
 The cost of such bugs catalyzed the adoption of new techniques for developing systems
@@ -152,22 +153,21 @@ that would help reduce the number of (or mitigate the effects of) residual bugs.
 In particular, the Pentium FDIV bug encouraged the use of formal verification in
 hardware design throughout the semiconductor industry.
 
-Formal methods is an umbrella term that refers to any application of mathematics or logic
-in the improvement of the design or implementation of hardware or software systems
-and formal verification is a form of formal methods that that focuses on proving
+``Formal methods'' is an umbrella term that refers to any application of mathematics or logic
+in the improvement of the design or implementation of hardware or software systems,
+and formal verification is a form of formal methods that focuses on proving
 properties of systems.
 Some formal methods, such as type checking and static analysis, are widely
-adopted. Forms of formal methods that are not as lightweight and easy-to-use
+adopted, but others that are not as lightweight and easy-to-use
 may not be as widely applied but may still be commonly applied within certain
 domains, such as model checking in the semiconductor industry.
-The formal verification technique of model
-checking has been used to verify that circuits correctly implement the SRT
+Model checking has been used to verify that circuits correctly implement the SRT
 algorithm that the Pentium processors with the FDIV bug did not \cite{clarke96}.
 
 Given a model and a specification of a system, a model checker will check whether or
 not the system satisfies the specification.
 Model checking is fully automated, unlike formal verification techniques that employ
-Hoare Logic or proof assistants, which require user guidance.
+proof assistants, which require user guidance.
 
 \section{Symbolic Model Checking}
 
@@ -211,7 +211,7 @@ problem and, unlike BDD-based methods, do not use the canonical representations
 of propositional formulas.
 Such techniques include bounded model checking (BMC)
 \cite{biere99a}, $k$-induction \cite{sheeran00},
-and the IC3 algorithm that is the focus of this project.
+and the IC3 algorithm.
 
 % Understanding IC3
 
@@ -232,7 +232,7 @@ The first implementation of the algorithm \verb,ic3, written by Aaron Bradley pl
 the 2010 Hardware Model Checking Competition (HWMCC'10) \cite{hwmcc10},
 a competitive event that receives model checker and benchmark submissions from
 industry and
-academia. Its performance at HWMCC'10 generated interest in the algorithm, and
+academia. Its performance at HWMCC'10 generated interest in the IC3 algorithm, and
 since then, several variants of the algorithm have been developed.
 %2015 paper
 
@@ -310,9 +310,8 @@ All code for the project, with the exception of the C wrapper for the
 MiniSat interface (described in Section \ref{impl:minisat})
 is written in the purely functional
 programming language Haskell \cite{haskell}.
-I briefly explain some features of the
+Assuming knowledge of Standard ML, I briefly explain some features of the
 language that will make the rest of the report easier to follow.
-I assume a working knowledge of Standard ML.
 
 \paragraph{Functions}{
 Haskell functions are defined as a series of equations and
@@ -321,8 +320,7 @@ are defined similarly to Standard ML functions with the
 use \verb,\, to bind variables analagously to Standard
 ML's \verb,fn, keyword. Function composition is achieved with the \verb,., infix operator.
 
-Similarly to Standard ML, Haskell allows pattern matching
-for function definitions and \verb,case, expressions. The pattern languages of Standard
+Haskell functions may be defined  by pattern matching, and the pattern languages of Standard
 ML and Haskell are identical.
 }
 
@@ -336,10 +334,9 @@ of a product type to be named.
 
 %Type signature syntax
 Though Haskell compilers perform type inference, type
-signatures can (and, in cases where type inference cannot resolve
-ambiguities, must) be provided. For example, the type signature for
+signatures can be provided. For example, the type signature for
 the \verb,prove, function in \verb,IC3.hs,, a curried function that takes
-a \verb,Model, and returns a function that takes a \verb,Lit, and returns a \verb,Bool,,
+a \verb,Model, and a \verb,Lit, and returns a \verb,Bool,,
 is \verb,prove :: Model -> Lit -> Bool,. Type signatures may begin with
 constraints specifying that a polymorphic type variable occuring in the type
 signature must be an instance of a certain type class.
@@ -378,10 +375,9 @@ The \verb,>>, operator with type signature
 \verb,(>>) :: Monad m => m a -> m b -> m b, composes two computations where
 the output of the first is ignored by the second.
 
-To avoid unwieldy code from composing several
-computations with \verb,>>=,, Haskell provides syntactic sugar
+Haskell provides syntactic sugar
 in the form of \verb,do,-notation, allowing monadic computations
-to be written in an imperative fashion. For example, the code in Figure
+to be written in a more readable, imperative fashion. For example, the code in Figure
 \ref{monad} is equivalent to the more readable code in Figure \ref{do}.
 
 \begin{figure}[t]
@@ -458,7 +454,7 @@ the AIGER format allows \emph{MC} to be run on examples from
 the Hardware Model Checking Competition (HWMCC), since the competitions
 use this format to specify examples. I chose the MiniSat SAT
 solver to allow for better comparison of \emph{MC}
-with Aaron Bradley's reference implementation of IC3 (\emph{IC3ref})\cite{refic3}.
+with Bradley's reference implementation of IC3 (\emph{IC3ref})\cite{refic3}.
 Because \emph{IC3ref} uses MiniSat, using it as the solver
 for \emph{MC} reduces confounding factors to consider when comparing performance.
 %removes the
@@ -490,8 +486,7 @@ The previous versions maintained by the system proved useful in
 developing the code, and branching and merging capabilities were
 useful for organizing \emph{MC} variants.
 I used Git submodules, which allow the inclusion of other Git projects within another
-project, to include MiniSat within the project, enabling easier
-acquisition of project dependencies.
+project, to include MiniSat within the project.
 
 \paragraph{Haddock}{
 The commonly-used Haddock \cite{haddock} documentation tool was used to generate documentation
@@ -507,32 +502,16 @@ HUnit \cite{hunit} is a framework for writing unit tests in Haskell based on the
 JUnit framework \cite{junit} for Java.
 HUnit tests can be specified by using functions
 that return the \verb,Assertion, type to write \verb,TestCase,s.
-%For example, the
-%\verb,assertBool :: String -> Bool -> Assertion, function takes a \verb,String,
-%that gives an error message and a \verb,Bool, value, and raises an exception (with
-%the error message) if the \verb,Bool, is not \verb,True,, so the
-%following expression gives a \verb,TestCase, that tests that function
-%\verb,isEven, returns \verb,True, when called with parameter 12:
-%\begin{lstlisting}
-%TestCase (assertBool "Error: (isEven 12) results in False" (isEven 12))
-%\end{lstlisting}
-
-The \verb,Test, datatype in HUnit allows \verb,Test,s to be grouped
-and built up hierarchically. Tests that have been assembled into a
-single tree can be treated as a test suite, and the whole tree
-of unit tests can be run.}
+}
 % See Section \ref{eval:solving} for more on testing.}
 
 \paragraph{Criterion}{
 Criterion \cite{criterion} is a library for benchmarking Haskell code.
-Criterion can output benchmarking results in any format specified in the \verb,.tpl,
-template format. This project's \verb,.tpl, file
-was configured such that Criterion output benchmark sample results to a
-CSV file.}
+Criterion can output benchmarking results in any format (e.g. CSV) specified in the \verb,.tpl,
+template format.}
 
 \paragraph{Cabal}{
-Cabal \cite{cabal} is the standard package and dependency management system for Haskell,
-where a package may be a library or a complete piece of executable software.
+Cabal \cite{cabal} is the standard package and dependency management system for Haskell.
 A \verb,.cabal, file in the root directory of a project specifies
 information (e.g. version and dependencies) about the Cabal package.
 The \verb,.cabal, file for this project uses the \verb,Test-Suite, and \verb,Benchmark,
@@ -591,7 +570,7 @@ to convert between the ASCII and binary AIGER formats. }
 \paragraph{MiniSat}{
 MiniSat \cite{minisat,een05}
 is a SAT solver implemented in C++ that solves Boolean satisfiability problems
-posed in conjunctive normal form. Further details are given in Section \ref{prep:minisat}.
+posed in conjunctive normal form (CNF). Further details are given in Section \ref{prep:minisat}.
 }
 
 \section{Symbolic Representation}
@@ -622,35 +601,33 @@ the literals in $c$.
 
 By de Morgan's laws, cubes and clauses are duals; the negation of a cube is the
 clause specified by the set obtained by negating each literal in the cube
-and vice-versa.
+and vice-versa.}
 
-A propositional formula is in \emph{conjunctive normal form} (CNF) iff it is a conjunction 
-$\bigwedge_i D_i$ of disjunctions $D_i$ of literals (i.e. clauses). A set of clauses
-can be interpreted as the CNF formula resulting from the conjunction
-of the clauses. Any propositional formula can be converted to an equivalent CNF
-form.}
+%A propositional formula is in \emph{conjunctive normal form} (CNF) iff it is a conjunction 
+%$\bigwedge_i D_i$ of disjunctions $D_i$ of literals (i.e. clauses). A set of clauses
+%can be interpreted as the CNF formula resulting from the conjunction
+%of the clauses. Any propositional formula can be converted to an equivalent CNF
+%form.}
 
 \paragraph{Transition Systems}{
 A \emph{transition system} is a tuple $(i,x,I,T)$ consisting of a set of input
 variables $i$, state variables $x$, an initial
 set of states represented by logical formula $I(x)$ and
 a transition relation represented by logical formula $T(i,x,x')$,
-where $x'$ is the set of next-state variables. 
+where for any variable or set of variables $x$, $x'$ is the set of next-state variables. 
 For a known set of inputs $i$ and variables $x$, $T(i,x,x')$ may be written
 as $T$.
 
-For each state variable $v$, $v'$ denotes the corresponding next-state variable.
-For example, a transition relation stating that all variables that are
-currently {\it True} should become {\it False} in the next state is as follows:
+For each logical expression $X$ containing only current-state variables,
+$X'$ denotes the same expression in which each variable has been
+replaced by its corresponding next-state variable.
+For example, the following gives a transition relation that toggles all the
+{\it True} variables to {\it False}:
 $$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$
-Similarly, for a formula $X$ involving only current-state variables,
-the formula $X'$ is the formula $X$ where each current-state variable $v$ has
-been replaced by the corresponding next-state variable $v'$.
 
-Given transition system $(i,x,I,T)$, a logical formula $C$ is, by definition,
+Given transition system $(i,x,I,T)$, a logical formula $C$ is
 \emph{inductive relative} to logical formula $F$ if both
 $I \Rightarrow C$ and $F \wedge C \wedge T \Rightarrow C'$ hold.
-Relative inductiveness plays a key role in the IC3 algorithm.
 }
 
 \paragraph{States}{
@@ -687,8 +664,7 @@ where $T$ represents the transition relation of the transition system.
 
 I specified fourteen example hardware models using
 both the AIGER format and Berkeley Logic Interchange Format (BLIF).
-\emph{MC} accepts only AIGER-formatted inputs;
-however, because using the AIGER format to specify larger models was cumbersome,
+Because using the AIGER format to specify larger models was cumbersome,
 I specified some models using BLIF and converted them to AIGER
 using the Aiger Utilities' \verb,bliftoaig, tool. Because one of
 the project's components is an AIGER parser, I describe the AIGER format
@@ -721,17 +697,17 @@ A new version of the AIGER format is currently under development \cite{aiger}, w
 examples from HWMCC'14 onward using the new version. The AIGER parser component
 of this project handles both old and new versions of the format.
 
-I describe how all AIGER formats represent variables
+I describe how AIGER formats represent variables
 and describe the old ASCII version of the AIGER format, which
 is sufficient to understand the handwritten examples written directly
-in AIGER. Descriptions of the other formats can be found in Appendix
+in AIGER. Descriptions of the other formats are in Appendix
 \ref{aiger}.
 
 \paragraph{AIGER Variables}{
 AIGER identifies each Boolean variable with a positive integer.
-Variables themselves are not represented directly in AIGER format; instead, literals,
-which identify wires and their values in a circuit,
-occur in the format. Nonnegative numbers called indices are used to represent literals.
+Variables themselves are not represented directly in AIGER format; instead, the
+format uses nonnegative numbers called indices to represent literals,
+which identify wires and their values in a circuit.
 
 For any variable named $x$, the index for positive literal $x$ is given by
 $2 \times x$, and the index for negative literal $\neg x$ is given by
@@ -805,7 +781,7 @@ The output of the whole circuit is the output of the AND gate.
 \label{prep:minisat}
 
 This section provides some of the information about MiniSat that
-was prerequisite knowledge for creating an interface to MiniSat. MiniSat code
+was prerequisite knowledge for creating an interface to MiniSat. The MiniSat code
 explained is in C++.
 
 To solve a SAT query, MiniSat creates an instance of a \verb,Solver, object,
@@ -842,8 +818,7 @@ for the queries that IC3 makes.
 \label{prep:ic3}
 %Describe how the IC3 algorithm works when trying to prove a model has a property
 %$P$.
-This section describes the basic IC3 algorithm and some of its extensions that are
-necessary to understand following chapters.
+This section describes the basic IC3 algorithm and some of its extensions.
 Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
 safety property $P$, IC3 aims either to prove inductively that $P$ holds
 at all states reachable from the initial state or
@@ -905,15 +880,15 @@ frontier frame $F_{k + 1}$ (line \ref{create}).
 %Describe what happens when a consecution query fails
 
 If a consecution query $F_k \wedge T \Rightarrow P'$ fails, then
-there is an $F_k$ state $s_k$ and a $\neg P'$ state $s_{k + 1}$ with $T(i,s,s_{k + 1})$.
-The state $s_k$ is called a \emph{counterexample to induction} (CTI) state.
+there is an $F_k$ state $s_k$ and a $\neg P'$ state $s_{k + 1}$ with $T(i,s_k,s_{k + 1})$.
+The state $s_k$ is called a \emph{counterexample to induction} (CTI).
 The algorithm then aims to refine the approximation $F_k$ of the set of states
 reachable in at most $k$ steps by showing that all states that are
 reachable in at most $k$ steps are $\neg s_k$ states.
 
 The call to {\it nextCTI} (line \ref{CTI}) finds the CTI
-state $s_k$ when passed parameters $s = s_k$ and $j = k$.
-The call to {\it proveNegCTI} (line \ref{negCTI})
+state $s_k$. When passed parameters $s = s_k$ and $j = k$,
+the call to {\it proveNegCTI} (line \ref{negCTI})
 attempts to prove that $\neg s$ is inductive relative to $F_{k - 1}$,
 in which case all $F_k$ states are necessarily $\neg s$ states, so $\neg s$ can
 be added to the set of $F_k$ clauses.
@@ -931,10 +906,10 @@ If the shallowest possible depth $j = 0$ is reached, then
 
 The {\it proveNegCTI} pseudocode in Figure \ref{proveNegCTI}
 does not explicitly check for $I \Rightarrow
-\neg s$. An explicit check is unnecessary because if
+\neg s$ because if
 $I \Rightarrow \neg s$ does not hold, then eventually ${\it proveNegCTI}$
-will be called recursively with $j = 0$ and the attempt to show that
-$\neg s$ is relatively inductive to $F_j$ fails.
+will be called recursively with $j = 0$, and the attempt to show that
+$\neg s$ is relatively inductive to $F_j$ will fail.
 
 \begin{algorithm}[t]
 \DontPrintSemicolon
@@ -956,8 +931,8 @@ set of states reachable in $k$ steps from the initial state, then a $\neg P$ sta
 is reachable in $k + 1$ steps from the initial state; the safety property does not
 hold, and the algorithm terminates (line \ref{Unsafe}).
 
-Because there may be several CTIs, it is necessary to
-perform the consecution query again (line \ref{reconsec}). If it fails again,
+Because there may be several CTIs,
+the consecution query must be performed again (line \ref{reconsec}). If it fails again,
 the process of finding the new CTI $d$ and trying to
 prove that $\neg d$ holds at depth $k$ repeats.
 When the consecution query succeeds, the algorithm moves to the propagation phase.
@@ -971,8 +946,7 @@ $F_0, \ldots, F_k$, and, for every $F_i$ with $0 \leq i < k$ (line \ref{forprop}
 pushes all the clauses that it can from $F_i$ to $F_{i + 1}$ (line \ref{push}).
 
 If $F_i = F_{i + 1}$ holds for any $i$ at any point, then a fixed point has
-been found; frames at any depth greater than $i$ will be the
-same as $F_i$, since all the the clauses in $F_i$ and therefore $F_{i + 1}$
+been found; all the clauses in $F_i$ and therefore $F_{i + 1}$
 can be pushed.
 Because $F_i$ contains the safety property $P$ as one of its clauses,
 $P$ holds in all reachable states from the initial state,
@@ -985,8 +959,7 @@ terminates.
 
 After showing that a negated CTI state $\neg s$ is relatively inductive to a
 frame $F_i$ and adding the clause $\neg s$ to frame $F_{i + 1}$, the state
-$s$ is eliminated from the approximation $F_{i + 1}$ of the set of states
-reachable in at most $i + 1$ steps. An improvement can be made by generalizing
+$s$ is eliminated from $F_{i + 1}$. An improvement can be made by generalizing
 the single state $s$ to a set of several states $c$ and treating
 $c$ as the CTI. If $\neg c$ is successfully proven to be relatively inductive
 to $F_i$, then adding it to frame $F_{i + 1}$ eliminates several states (i.e.,
@@ -999,9 +972,8 @@ is referred to as \emph{generalization}, and the best such $c$ is the
 one such the $\neg c$ is the minimal inductive subclause for $F_i$ and $\neg s$.
 
 \subsection{Minimal Inductive Subclauses}
-The \emph{minimal inductive subclause} (MIC) for a frame $F_i$ and a clause $\neg s$ that
-is inductive relative to $F_i$
-(i.e. $F_0 \Rightarrow s'$ and $F_i \wedge T \wedge s \Rightarrow s'$)
+The \emph{minimal inductive subclause} (MIC) for a frame $F_i$ and a clause $\neg s$
+inductive relative to $F_i$
 is a clause $\neg c$ whose
 literals are the smallest subset of the literals in $\neg s$ such that
 $\neg c$ is also inductive relative to $F_i$.
@@ -1010,16 +982,16 @@ in $\neg s$ in turn and checking the resulting clause.
 
 The checking phase (described by {\it down} in Figure \ref{mic},
 which takes a clause ${\it cls} = \neg s$ and a depth $i$ as arguments)
-performs the normal queries
+performs queries
 for determining whether the subclause is inductive relative to
 $F_i$: for a subclause $t = \neg s \setminus \{l\}$ obtained by dropping
 literal $l$ from $\neg s$, it checks that
-$I \Rightarrow t$ and $F_i \wedge t \wedge T \Rightarrow t$ both hold.
+$I \Rightarrow t$ and $F_i \wedge t \wedge T \Rightarrow t'$ both hold.
 
 If both formulas hold, then the literal $l$ can be dropped from $\neg s$.
 If only $F_i \wedge t \wedge T \Rightarrow t'$ fails to hold, then
-it is possible that expanding the set of states in $t$ by removing %some of the
-literals in $t$ would result in a clause that is inductive relative to $F_i$.
+expanding the set of states in $t$ by removing %some of the
+literals in $t$ could result in a clause that is inductive relative to $F_i$.
 If $I \Rightarrow t$ fails to hold, then removing any literals in $t$ to
 obtain a subclause $u \subset t$ would still result in the query $I \Rightarrow u$
 failing, since $u \Rightarrow t$ holds.
@@ -1055,8 +1027,8 @@ passed by reference.}
 \label{mic}
 \end{algorithm}
 
-Using counterexamples to generalization can improve upon the
-generalization provided by finding MICs \cite{hassan13}.
+Considering counterexamples to generalization can result in more effective
+generalization \cite{hassan13}.
 
 \subsubsection{Counterexamples to Generalization}
 
@@ -1225,7 +1197,7 @@ parsed to \verb.[Var 2, Var 0, Var 1]..
 
 The full AIGER representation for the circuit in Figure \ref{aagCircuit} is
 as follows:
-\begin{verbatim}
+\begin{lstlisting}
 Model { numVars = 3
       , numInputs = 0
       , latches = [ [Var 0, Neg 0, Boolean False]
@@ -1234,7 +1206,7 @@ Model { numVars = 3
       , ands = [ [Var 2,Var 0,Var 1] ]
       , bad = []
       , constraints = []}
-\end{verbatim}
+\end{lstlisting}
 
 \section{MiniSat Interface}
 \label{impl:minisat}
