@@ -857,12 +857,12 @@ The deepest frame $F_k$ in the set of frames is the \emph{frontier}.
 
 %Initiation query
 The \emph{initiation query} $I \Rightarrow P$ (line \ref{initiation}) checks that
-the property holds in the initial state $I$.
+the property $P$ holds in the initial state $I$.
 %This query is run once at the start of
 %the algorithm for the desired property.
-If it fails (i.e. does not hold), then the algorithm terminates,
-as a state in which $\neg P$ holds is reachable in 0 steps.
-If it succeeds, then the algorithm proceeds to its main loop (line \ref{main}).
+If it fails (i.e. does not hold), then the algorithm terminates;
+a state in which $\neg P$ holds is reachable in 0 steps.
+If it succeeds, then the algorithm enters its main loop (line \ref{main}).
 
 %The main loop of the algorithm is the while loop beginning on line \ref{main}.
 The algorithm only exits its main loop when it has determined whether or not the
@@ -922,7 +922,7 @@ $\neg s$ is relatively inductive to $F_j$ will fail.
 \end{algorithm}
 
 If $\neg s_k$ cannot be proven to hold at each of $k$ steps of
-the transition relation from the initial state, i.e. the state $s$ is in the actual
+the transition relation from the initial state, i.e., $s_k$ is in the actual
 set of states reachable in $k$ steps from the initial state, then a $\neg P$ state
 is reachable in $k + 1$ steps from the initial state; the safety property does not
 hold, and the algorithm terminates (line \ref{Unsafe}).
@@ -1908,29 +1908,6 @@ values for these parameters used by \emph{IC3ref}.
 \section{Correctness}
 \label{eval:solving}
 
-\begin{figure}[t]
-\begin{lstlisting}
-parseTest :: String -> IO [Test]
-parseTest name =
-  do
-    aigModel  <- Parser.getModelFromFile ("examples/" ++ name)
-    aigModel' <- Tools.getModelFromFile ("examples/" ++ name)
-    return (map TestCase
-             [ assertEqual (name ++ " numVars") (numVars aigModel)
-                           (numVars aigModel')
-             , assertEqual (name ++ " numInputs") (numInputs aigModel)
-                           (numInputs aigModel')
-             , assertEqual (name ++ " latches") (sort (latches aigModel))
-                           (sort (latches aigModel'))
-             , assertEqual (name ++ " outputs") (sort (outputs aigModel))
-                           (sort (outputs aigModel'))
-             , assertEqual (name ++ " ands") (sort (ands aigModel))
-                           (sort (ands aigModel')) ])
-\end{lstlisting}
-\caption{The {\tt parseTest} function for testing the AIGER parser on files in the {\tt examples} directory.}
-\label{parseTest}
-\end{figure}
-
 The \emph{MC} implementations passed HUnit tests for parsing AIGER files,
 making MiniSat queries, and model checking. The parser tests involve comparing
 the outputs of the two parsers and checking that they match (see Figure
@@ -2402,13 +2379,12 @@ The new version of the format is otherwise
 the same as the old format.}
 
 \chapter{Code Extracts}
-This appendix contains some code extracts from the project implementation.
+%This appendix contains some code extracts from the project implementation.
 
 \begin{figure}[H]
 \centering
 \begin{lstlisting}
-inductiveGeneralization :: Clause -> Frame -> Frame -> Model -> Word
-                        -> Clause
+inductiveGeneralization :: Clause -> Frame -> Frame -> Model -> Word -> Clause
 inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
   where
     generalize cs _ _ needed 0 = cs ++ needed
@@ -2425,6 +2401,27 @@ inductiveGeneralization clause f0 fk m = generalize clause f0 fk []
 \label{inductiveGeneralization}
 \end{figure}
 
+\begin{figure}[H]
+\begin{lstlisting}
+parseTest :: String -> IO [Test]
+parseTest name =
+  do aigModel  <- Parser.getModelFromFile ("examples/" ++ name)
+     aigModel' <- Tools.getModelFromFile ("examples/" ++ name)
+     return (map TestCase
+              [ assertEqual (name ++ " numVars") (numVars aigModel)
+                            (numVars aigModel')
+              , assertEqual (name ++ " numInputs") (numInputs aigModel)
+                            (numInputs aigModel')
+              , assertEqual (name ++ " latches") (sort (latches aigModel))
+                            (sort (latches aigModel'))
+              , assertEqual (name ++ " outputs") (sort (outputs aigModel))
+                            (sort (outputs aigModel'))
+              , assertEqual (name ++ " ands") (sort (ands aigModel))
+                            (sort (ands aigModel')) ])
+\end{lstlisting}
+\caption{The function for testing the AIGER parser on files in the {\tt examples} directory.}
+\label{parseTest}
+\end{figure}
 
 \chapter{Benchmark Results}
 \label{benchmarks}
