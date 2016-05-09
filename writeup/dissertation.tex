@@ -453,10 +453,10 @@ AIGER parser and a Haskell interface to MiniSat. The choice of
 the AIGER format allows \emph{MC} to be run on examples from
 the Hardware Model Checking Competition (HWMCC), since the competitions
 use this format to specify examples. I chose the MiniSat SAT
-solver to allow for better comparison of \emph{MC}
-with Bradley's reference implementation of IC3 (\emph{IC3ref})\cite{refic3}.
-Because \emph{IC3ref} uses MiniSat, using it as the solver
-for \emph{MC} reduces confounding factors to consider when comparing performance.
+solver because Bradley's reference implementation of IC3 (\emph{IC3ref})
+\cite{refic3} uses MiniSat; using it as the solver for \emph{MC}
+reduces confounding factors to consider when comparing the performance
+of \emph{MC} and \emph{IC3ref}.
 %removes the
 %choice of SAT solver as a variable to consider when comparing performance,
 %reducing confounding factors
@@ -699,7 +699,7 @@ of this project handles all versions of the format.
 I describe how AIGER formats represent variables
 and describe the old ASCII version of the AIGER format, which
 is sufficient to understand the handwritten examples written directly
-in AIGER. Descriptions of the other formats are in Appendix
+in AIGER. Appendix \ref{aiger} contains descriptions of the other formats
 \ref{aiger}.
 
 \paragraph{AIGER Variables}{
@@ -1092,9 +1092,10 @@ versions of the back end.
 
 The variants of the back-end component differ
 in their overall structure,
-their finding of CTIs, their implementation of propagation, and
-their inductive generalization of CTIs. The variants and their
-differences are summarized in the following table:\\
+finding of CTIs, implementations of propagation, and
+inductive generalization of CTIs. The following table
+summarizes the variants and their
+differences:\\
 
 \begin{tabular}{| l | p{3.5em} | p{3em} | p{4.5em} | p{5em} | p{6em} |}
 \hline
@@ -1160,9 +1161,9 @@ in {\tt Parser.AigModel} has the following constructors:
 \item \verb,Neg,, which takes a \verb,Word, argument.
 \end{itemize}
 \verb,Boolean,s represent the Boolean values corresponding to AIGER indices 0 and 1,
-\verb,Var, represents the positive literal of the variable whose name is given by the
-\verb,Word, it takes as an argument, and \verb,Neg, represents the negative literal
-of the variable whose name is given by the \verb,Word, it takes as an argument.
+and \verb,Var, and \verb,Neg, respectively represent the positive or negative literal
+of the variable whose name is given by the \verb,Word, the constructor takes as an
+argument.
 Variable names are adjusted (by subtracting 1) so that they start at 0.
 For example, the AIGER index 3 is parsed to \verb,Neg 0,;
 the odd index 3 indicates that it is a negative literal of the variable 1;
@@ -1170,21 +1171,19 @@ subtracting by 1 gives the new variable name 0.
 
 Latches and AND gates are represented by three-element \verb,[Lit],s. For latches,
 \begin{itemize}
-\item the first element gives the output (i.e. variable name)
-of the latch as a positive literal,
-\item the second gives the input to the latch (i.e. the next-state literal), and
-\item the final element gives the initial state
-of the latch.
+\item the first element gives the latch's output (i.e. variable name)
+as a positive literal,
+\item the second gives the latch's input (i.e. the next-state literal), and
+\item the final element gives the latch's initial state.
 \end{itemize}
 For example, the latch from Figure \ref{aagCircuit} represented by \verb,2 3, is parsed
 to \verb.[Var 0, Neg 0, Boolean False]..
 
 For AND gates,
 \begin{itemize}
-\item the first element gives the output (i.e. variable name) of the AND gate
+\item the first element gives the AND gate's output (i.e. variable name)
 (as a positive literal), and
-\item the next two elements give the literals whose values are taken
-as inputs to the AND gate.
+\item the next two elements give the literals whose values are the AND gate's inputs.
 \end{itemize}
 For example, the AND gate from Figure \ref{aagCircuit} represented by \verb,6 2 4, is
 parsed to \verb.[Var 2, Var 0, Var 1]..
@@ -1207,12 +1206,12 @@ Model { numVars = 3
 %Describe the process of implementing the Haskell bindings for Minisat
 %functions, including the wrapper functions for Minisat written in C.
 
-The SAT solver for \emph{MC} is MiniSat.
+\emph{MC} uses the MiniSat SAT solver.
 Because the Haskell Foreign Function Interface (FFI) cannot interface with C++ directly,
 the interface to the MiniSat SAT solver is composed of a C wrapper for relevant
 MiniSat functions and classes and a Haskell interface to the C wrapper.
 
-The C wrapper replaces every MiniSat class with a C type and every MiniSat function with
+The C wrapper replaces each MiniSat class with a C type and each MiniSat function with
 an \verb,extern C, function that calls the MiniSat C++ function.
 For instance, the following function
 in \verb,Minisat/CSolver.cpp, is a wrapper for \verb,addClause, in the \verb,Solver,
@@ -1231,17 +1230,16 @@ foreign import ccall safe "addMinisatClause"
   addMinisatClause :: Ptr MinisatSolver -> Ptr MinisatVecLit -> IO CInt
 \end{lstlisting}
 
-Using just the FFI to call C functions does not provide a
-sufficient abstraction for use by the rest of \emph{MC}. All
+Just using the FFI to call C functions does not provide a
+sufficient abstraction for an interface used by the rest of \emph{MC}. All
 calls to C functions must occur inside the \verb,IO, monad, but having
 the interface functions return \verb,IO, monads means that any functions
 using interface functions to get values from MiniSat would also need to
 perform all their computations inside the \verb,IO, monad, requiring them to
 be written imperatively.
-I wrote further functions to provide a more natural interface to MiniSat;
-I used \verb,unsafePerformIO, to have the functions return
-values outside the \verb,IO, monad, which is a Haskell idiom for
-interfacing with C libraries.
+Additional functions use a Haskell idiom for providing a more natural
+interface for C libraries; they use \verb,unsafePerformIO, to return
+values outside the \verb,IO, monad.
 
 To solve a query with MiniSat, the \verb,solveWithAssumps, function
 is usually called (see \ref{solveWithAssumps}),
@@ -1307,7 +1305,7 @@ struct result {
 \end{figure}
 
 The information kept in a \verb,Result, Haskell datatype comes directly from the
-\verb,result, returned by the C Wrapper functions.
+\verb,result, returned by the C wrapper functions.
 I used the \verb,hsc2hs, preprocessor to handle pointer offsets
 when unmarshalling from the C struct.
 Beyond straightforward unmarshalling, some additional work was necessary
@@ -1363,10 +1361,15 @@ The \verb,safe, literal gives the safety property.
 The \verb,Model.Model, module contains functions to convert the \verb,Model, data
 structure from the \verb,Parser.AigModel, module into the model representation
 used by the back end. In particular, \verb,toModel, takes a \verb,Parser.AigModel.Model,
-and outputs a \verb,Model.Model.Model,. As mentioned before, the \verb,Model.Model.Lit,
-data structure only has constructors for variables and their negations; \verb,Lit,s from
-the \verb,Parser.AigModel, module are either converted to \verb,Model.Model.Lit,s or, in the case
-that they use the \verb,Boolean, constructor, are removed from the model during the conversion of
+and outputs a \verb,Model.Model.Model,. The \verb,Model.Model.Lit,
+data structure only has constructors for variables and their negations,
+with the following datatype declaration:
+\begin{lstlisting}
+data Lit = Var Word | Neg Word | Var' Word | Neg' Word deriving (Show, Eq, Ord)
+\end{lstlisting}
+All \verb,Lit,s from
+the \verb,Parser.AigModel, module are either converted to \verb,Model.Model.Lit,s or, if
+they use the \verb,Boolean, constructor, are removed from the model during the conversion of
 the \verb,Latch, and \verb,And, components to \verb,Clause,s in \verb,Model.Model,.
 %because Boolean values are not used in these representations.
 
