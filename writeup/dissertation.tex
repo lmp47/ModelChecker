@@ -140,10 +140,10 @@ extent for a comparable purpose.
 This project focuses on implementing the IC3 algorithm
 \cite{bradley11}, a SAT-based model-checking
 algorithm.
-To provide context for the project,
-I provide a brief introduction to formal verification and model checking, followed
-by a discussion of symbolic and SAT-based model checking.
-I then highlight some of the important features of the IC3 algorithm.
+This chapter provides context for the project through a
+brief introduction to formal verification and model checking,
+a discussion of symbolic and SAT-based model checking,
+and an outline of some of the important features of the IC3 algorithm.
 
 Software and hardware bugs can be costly. The Intel Pentium FDIV hardware bug cost an
 estimated \$475 million \cite{pratt95}, and the Ariane 5 software bug cost
@@ -741,9 +741,9 @@ where
 \end{itemize}
 
 The different components are specified after the header
-in the order that their counts are given in the header.
+in the order that their counts occur in the header.
 
-In the ASCII version of the format, an input is specified by the
+In the ASCII version, an input is specified by the
 index giving the positive literal for its corresponding variable name,
 and an output is specified similarly by a single index (that may represent
 a literal of any sign).
@@ -780,8 +780,8 @@ The output of the whole circuit is the output of the AND gate.
 \section{MiniSat}
 \label{prep:minisat}
 
-This section provides some of the information about MiniSat that
-was prerequisite knowledge for creating an interface to MiniSat. The MiniSat code
+This section provides some of the prerequisite knowledge about MiniSat
+for creating an interface to MiniSat. The MiniSat code
 explained is in C++.
 
 To solve a SAT query, MiniSat creates an instance of a \verb,Solver, object,
@@ -854,9 +854,7 @@ The pseudocode in Figure \ref{overview} gives an overview of the basic IC3 algor
 The IC3 algorithm maintains a set of $k + 1$ frames $F_0,\ldots,F_k$.
 Each frame $F_i$ is a set of clauses whose conjunction represents an
 over-approximation of the set of states reachable by the transition
-system in at most $i$ steps from the initial state.
-For example, $F_0$ is just the initial state set $I$, as seen
-in Figure \ref{overview}.
+system in at most $i$ steps from the initial state (e.g. $F_0 = I$).
 The deepest frame $F_k$ in the set of frames is the \emph{frontier}.
 
 %Initiation query
@@ -864,12 +862,12 @@ The \emph{initiation query} $I \Rightarrow P$ (line \ref{initiation}) checks tha
 the property holds in the initial state $I$.
 %This query is run once at the start of
 %the algorithm for the desired property.
-If it fails (i.e. if it is {\it False}), then the algorithm terminates,
+If it fails (i.e. does not hold), then the algorithm terminates,
 as a state in which $\neg P$ holds is reachable in 0 steps.
 If it succeeds, then the algorithm proceeds to its main loop (line \ref{main}).
 
 %The main loop of the algorithm is the while loop beginning on line \ref{main}.
-The algorithm only exits its main loop when it has determined if the
+The algorithm only exits its main loop when it has determined whether or not the
 safety property holds at all reachable states in the model.
 
 %Consecution query
