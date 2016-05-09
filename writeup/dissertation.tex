@@ -722,7 +722,7 @@ examples from HWMCC'14 onward using the new version. The AIGER parser component
 of this project handles both old and new versions of the format.
 
 I describe how all AIGER formats represent variables
-and then describe the old ASCII version of the AIGER format, which
+and describe the old ASCII version of the AIGER format, which
 is sufficient to understand the handwritten examples written directly
 in AIGER. Descriptions of the other formats can be found in Appendix
 \ref{aiger}.
@@ -742,7 +742,7 @@ $${\it index}(x, b) =
 2x & {\rm if}~b \\
 2x + 1 & {\rm otherwise}
 \end{cases}$$
-The indices 0 and 1 represent the constant Boolean values {\it False}
+Indices 0 and 1 represent the constant Boolean values {\it False}
 and {\it True}, respectively.
 
 Because even indices represent positive literals and odd indices
@@ -878,7 +878,7 @@ The pseudocode in Figure \ref{overview} gives an overview of the basic IC3 algor
 
 The IC3 algorithm maintains a set of $k + 1$ frames $F_0,\ldots,F_k$.
 Each frame $F_i$ is a set of clauses whose conjunction represents an
-overapproximation of the set of states reachable by the transition
+over-approximation of the set of states reachable by the transition
 system in at most $i$ steps from the initial state.
 For example, $F_0$ is just the initial state set $I$, as seen
 in Figure \ref{overview}.
@@ -1117,14 +1117,14 @@ The implementation can be broken up into four main components
 (see Figure \ref{components}): the AIGER parser
 (Section \ref{impl:aiger}), the
 MiniSat interface (Section \ref{impl:minisat}), the hardware model representation
-(Section \ref{impl:representation}), and the backend
+(Section \ref{impl:representation}), and the back end
 (Section \ref{impl:modelchecker}).
 The implementation of the AIGER parser, MiniSat interface, and \emph{Basic} version
 of the IC3 algorithm satisfy the project aims to implement these components. As
 extensions, I have implemented additional variants of the IC3 algorithm in different
-versions of the backend.
+versions of the back end.
 
-The variants of the backend component differ
+The variants of the back-end component differ
 in their overall structure,
 their finding of CTIs, their implementation of propagation, and
 their inductive generalization of CTIs. The variants and their
@@ -1364,7 +1364,7 @@ transition systems) and frames in \emph{MC}.
 \subsection{Harware Model Representation}
 \subsubsection{Literals and Clauses}
 The \verb,Lit, data structure in \verb,Model.Model, represents literals in
-the backend.
+the back end.
 The \verb,Var, and \verb,Neg, constructors respectively give positive and negative
 current-state (unprimed) literals, and the \verb,Var', and \verb,Neg', constructors
 respectively give positive and negative next-state (primed) literals.
@@ -1374,8 +1374,8 @@ list of the \verb,Lit,s in the clause.
 \subsubsection{Transition Systems and Safety Properties}
 % Describe how transition systems and safety properties are represented.
 The \verb,Model, data structure in \verb,Model.Model, encompasses both
-the representation of transition systems and the safety property for the backend to check.
-It serves as the representation of the hardware in the backend:
+the representation of transition systems and the safety property for the back end to check.
+It serves as the representation of the hardware in the back end:
 \begin{lstlisting}
 data Model = Model { vars :: Word
                    , initial :: [Clause]
@@ -1396,7 +1396,7 @@ The \verb,safe, literal gives the safety property.
 
 The \verb,Model.Model, module contains functions to convert the \verb,Model, data
 structure from the \verb,Parser.AigModel, module into the model representation
-used by the backend. In particular, \verb,toModel, takes a \verb,Parser.AigModel.Model,
+used by the back end. In particular, \verb,toModel, takes a \verb,Parser.AigModel.Model,
 and outputs a \verb,Model.Model.Model,. As mentioned before, the \verb,Model.Model.Lit,
 data structure only has constructors for variables and their negations; \verb,Lit,s from
 the \verb,Parser.AigModel, module are either converted to \verb,Model.Model.Lit,s or, in the case
@@ -1474,7 +1474,7 @@ $$a \Leftrightarrow (i_1 \wedge i_2) \simeq
 \subsection{Frames}
 In addition to a representation of transition systems, \emph{MC} needs a representation
 of the frames used by the IC3 algorithm.
-The \verb,Frame, data structure represents frames in all backends.
+The \verb,Frame, data structure represents frames in all back ends.
 Along with the set of clauses (represented by a list of literals), a \verb,Frame, also
 includes a \verb,Solver,, which contains at least all the clauses in the frame's set
 of clauses.
@@ -1575,7 +1575,7 @@ clauses from $F$ to $F'$.
   \lIf{\it fixed}{\Return{True}}
   \lElse{\Return{${\it prove'}(M, P, G_k, [F_0,\ldots,F_{k - 2},F_{k - 1}])$} \label{recstr:mutrecursion}}}
 }
-\caption{General structure of most \emph{MC} backends. The transition relation $T$ is acquired
+\caption{General structure of most \emph{MC} back ends. The transition relation $T$ is acquired
 from model $M$.}
 \label{recstr}
 \end{algorithm}
@@ -1689,7 +1689,7 @@ results in a pair containing a \verb,Bool, indicating whether a fixed point has 
 the clauses in \verb,f, that could be pushed to \verb,f',.
 For each clause in \verb,f, that is not in \verb,f',, the \verb,consecution, function is called to
 see if the clause is inductive relative to the frame \verb,f,. If it is, then
-the clause can be added to \verb,f',, and if it is not, then the
+the clause can be added to \verb,f',, and if not, the
 function must have \verb,False, as the first element in the pair it returns.
 
 \subsubsection{Subsumed clauses}
@@ -1706,7 +1706,7 @@ checker can avoid making the consecution queries that arise from attempts to pus
 
 Versions of \verb,push, that consider subsumed clauses include a call to the function
 \verb,removeSubsumed, when acquiring the list of clauses to attempt to push.
-The \verb,removeSubsumed, function takes a list of clauses and removes all clauses in the list
+The \verb,removeSubsumed, function takes a list of clauses and removes all clauses
 subsumed by other clauses in the list.
 The \verb,push, function replaces the frame
 \verb,f, with a version of \verb,f, without subsumed clauses
@@ -1728,7 +1728,7 @@ attempts to drop each literal in turn and checks
 that the resulting clause $c$ satisfies formulas $I \Rightarrow c$ and
 $F_k \wedge c \wedge T \Rightarrow c'$ as the original clause did.
 %If the resulting clause satisfies both queries
-If it does, then the literal can be successfully dropped.
+If it does, the literal can be successfully dropped.
 Otherwise, the literal is added to a list \verb,needed, of necessary literals.
 After a parameterizable number of failed attempts at dropping a literal from the clause or after
 having attempted dropping all the literals, the
@@ -1776,7 +1776,7 @@ the model the SAT solver gives for $\neg c' \wedge c \wedge T \wedge F_k$.
 
 The {\it down} algorithm then finds the deepest frame $F_{j - 1}$ for which $\neg {\it ctg}$ is inductive
 and attempts to generalize $\neg {\it ctg}$ relative to that frame with a recursive call to the
-{\it mic} algorithm. The generalization of $\neg {\it ctg}$ can then be added to frame $F_j$,
+{\it mic} algorithm. The generalization of $\neg {\it ctg}$ can be added to frame $F_j$,
 and {\it down} is called recursively using the updated set of frames.
 
 The implementation of {\it down} is approximate for aforementioned efficiency
@@ -1842,7 +1842,7 @@ relies on a priority queue of proof obligations.
 When proof obligation $(s,i)$ is added to the priority queue,
 it is assigned a priority higher than any proof obligation in the queue $(t,j)$ with $j > i$,
 lower than any proof obligation in the queue $(u,k)$ with $k < i$, and lower
-than any proof obligation $(v,i)$ (with the same depth) already in the queue.
+than any proof obligation $(v,i)$ (i.e., with the same depth) already in the queue.
 
 Unlike other variants, in {\it PriorityQueue}, there is
 no distinction between the safety property $P$ and any other property
@@ -1861,7 +1861,7 @@ not be reachable in any number of steps of the transition relation from the init
 
 In attempting to fulfill a proof obligation $(s,i)$, {\it fulfillObligations} proceeds
 generally in the same way as the other variants: if a consecution query succeeds,
-then {\it pushFrame} is called (line \ref{pqueuestr:pushFrame}), and if not, a CTI is discovered with the intent
+{\it pushFrame} is called (line \ref{pqueuestr:pushFrame}), and if not, a CTI is discovered with the intent
 to prove its negation is inductive relative to frame $F_{i - 1}$.
 
 The structure of the {\it pushFrame} function is modified to
@@ -1888,7 +1888,7 @@ version of {\it propagate} to push clauses and check for fixed points up to
 depth $j \leq i$, where $j$ is the greatest value that is less than $i$
 such that $\neg c$ is inductive relative to $F_{j - 1}$
 (lines \ref{pqueuestr:preprop}, \ref{pqueuestr:propagate}). If a fixed point is
-found, then the algorithm can terminate with success (line \ref{pqueuestr:fix}). Otherwise, the clause
+found, the algorithm can terminate with success (line \ref{pqueuestr:fix}). Otherwise, the clause
 $\neg c$ is generalized relative to frame $F_{j - 1}$
 using the simpler approximation for finding MICs, giving clause
 $\neg d \subseteq c$. Then proof obligation $(d,j)$ is enqueued, and
@@ -2163,20 +2163,20 @@ use priority queues are more efficient than simple recursive implementations
 One of the performance advantages of the \emph{PriorityQueue} implementation is that CTIs do not need
 to be rediscovered \cite{een11}: after a proof obligation $(s,i)$ is enqueued, until the algorithm fails or finds a fixed point,
 the queue will always contain a proof obligation $(s,j)$ for $j \geq i$. When the proof obligation $(s,i)$
-fulfilled at a certain depth $i$, $(s,i + 1)$ is then enqueued.
+fulfilled at a certain depth $i$, $(s,i + 1)$ is enqueued.
 
 Considering an example can help understand how re-enqueuing fulfilled obligations at
 greater depths prevents the need to rediscover CTIs.
 If $s$ is a CTI for proving a property
 $p$ at depth $i + 2$, then the proof obligation $(s, i+1)$ must be fulfilled
 in order to fulfill proof obligation $(\neg p, i+2)$. If $(s,i)$ is already
-in the priority queue, then \verb,proveObligations, must fulfill and
+in the priority queue, \verb,proveObligations, must fulfill and
 remove $(s,i)$ from the
 priority queue and enqueue $(s, i + 1)$; it must then fulfill and remove $(s, i + 1)$ before
 reaching proof obligation $(\neg p, i + 2)$. By the time \verb,proveObligations,
 attempts to fulfill $(\neg p, i + 2)$, the CTI $s$ has already been proven
 unreachable in $i + 1$ steps; if there is a CTI preventing a proof obligation
-from being fulfilled after $(s,i)$ has been fulfilled, then the CTI must be different
+from being fulfilled after $(s,i)$ has been fulfilled, the CTI must be different
 from $s$.
 
 The \emph{PriorityQueue} implementation performs inductive generalization for each CTI only once, though,
@@ -2306,7 +2306,7 @@ examples through testing and validating against \emph{IC3ref}
 \end{itemize}
 
 The project aims and success criteria were exceeded with the implementation of other
-IC3 backends for \emph{MC} (Section \ref{prep:ic3})
+IC3 back ends for \emph{MC} (Section \ref{prep:ic3})
 and the ability of \emph{MC} to correctly check examples
 from the HWMCC (Section \ref{eval:solving}).
 
