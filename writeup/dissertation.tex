@@ -143,7 +143,7 @@ algorithm.
 This chapter provides context for the project through a
 brief introduction to formal verification and model checking,
 a discussion of symbolic and SAT-based model checking,
-and an outline of some of the important features of the IC3 algorithm.
+and an outline of some important features of the IC3 algorithm.
 
 Software and hardware bugs can be costly. The Intel Pentium FDIV hardware bug cost an
 estimated \$475 million \cite{pratt95}, and the Ariane 5 software bug cost
@@ -158,8 +158,8 @@ in the improvement of the design or implementation of hardware or software syste
 and formal verification is a form of formal methods that focuses on proving
 properties of systems.
 Some formal methods, such as type checking and static analysis, are widely
-adopted, but others that are not as lightweight and easy-to-use
-may not be as widely applied but may still be commonly applied within certain
+adopted. Others that are not as lightweight and easy-to-use
+may not be as widely applied but may still be common within certain
 domains, such as model checking in the semiconductor industry.
 Model checking has been used to verify that circuits correctly implement the SRT
 algorithm that the Pentium processors with the FDIV bug did not \cite{clarke96}.
@@ -183,9 +183,9 @@ considering each reachable state in the model.
 Symbolic model checking arose as a method of mitigating the effects of
 the state explosion problem. By representing
 states and the transition relation between them as logical formulas
-(details of which are provided in Section \ref{prep:logic}),
+(see Section \ref{prep:logic} for details),
 symbolic model checking allows sets of states to be
-represented efficiently as logical formulas involving state variables
+represented efficiently as logical formulas
 instead of as an explicit list of each individual state in the set
 \cite{mcmillan92}. 
 
@@ -224,7 +224,7 @@ The IC3 (Incremental Construction of Inductive Clauses for Indubitable Correctne
 algorithm is a state-of-the-art,
 SAT-based model-checking
 algorithm for proving safety properties (i.e. properties that must hold
-in all reachable states) of hardware \cite{bradley11}. This section outlines some of the
+in all reachable states) of hardware \cite{bradley11}. This section outlines some
 merits of the IC3 algorithm; a description of IC3 follows in Section
 \ref{prep:ic3}.
 
@@ -233,7 +233,7 @@ the 2010 Hardware Model Checking Competition (HWMCC'10) \cite{hwmcc10},
 a competitive event that receives model checker and benchmark submissions from
 industry and
 academia. Its performance at HWMCC'10 generated interest in the IC3 algorithm, and
-since then, several variants of the algorithm have been developed.
+since then, several variants of IC3 have been developed.
 %2015 paper
 
 The IC3 algorithm has advantages when compared to other model-checking
@@ -411,8 +411,8 @@ addClause' solver clause =
 
 Values inside \verb,IO, instances of the \verb,Monad, class can be extracted
 using \verb,unsafePerformIO, at the expense of guaranteed type safety; for pure
-computations, the use of \verb,unsafePerformIO, does not compromise the type
-safety of the program.
+computations, the use of \verb,unsafePerformIO, does not compromise the
+program's type safety.
 }
 
 %List syntax
@@ -583,22 +583,21 @@ I give a brief review of concepts in logic before formally defining transition s
 and explaining how propositional logic formulas represent states.
 
 \paragraph{Logic}{
-A variable is a propositional symbol that can be assigned Boolean values.
+%A variable is a propositional symbol that can be assigned Boolean values.
 A \emph{literal} is either an atom $a$ (which can
 be a variable or Boolean value) or its negation $\neg a$.
-
 A \emph{cube} is a conjunction of literals and may be represented as the set
 of literals that occur in it. Similarly, a \emph{clause} is a disjunction of literals that
 may also be represented as the set of literals that occur in it.
+Cubes and clauses are duals; the negation of a cube is the
+clause specified obtained by negating each literal in the cube
+and vice-versa.
 
 A cube $d$ is a \emph{subcube} of another cube $c$ (written $d \subset c$)
 iff the the literals in $d$ are a subset of those in $c$.
 Similarly, $d$ is a \emph{subclause} of another clause $c$ (also
-denoted $d \subset c$) iff the literals in $d$ are a subset of those in $c$.
+denoted $d \subset c$) iff the literals in $d$ are a subset of those in $c$.}
 
-By de Morgan's laws, cubes and clauses are duals; the negation of a cube is the
-clause specified by the set obtained by negating each literal in the cube
-and vice-versa.}
 
 %A propositional formula is in \emph{conjunctive normal form} (CNF) iff it is a conjunction 
 %$\bigwedge_i D_i$ of disjunctions $D_i$ of literals (i.e. clauses). A set of clauses
@@ -769,31 +768,30 @@ aag 3 0 2 1 1
 6                *{\it Output}*
 6 2 4            *{\it AND gate}*
 \end{lstlisting}
-The circuit has no inputs, two latches with indices $2$ and $4$ and one AND gate
-with index $6$ that takes the outputs of the two latches as inputs.
-The output of the whole circuit is the output of the AND gate.
+The circuit has no inputs, two latches and one AND gate
+whose output is the output of the whole circuit.
 }
 
 
 \section{MiniSat}
 \label{prep:minisat}
 
-This section provides some of the prerequisite knowledge about MiniSat
+This section provides some knowledge about MiniSat necessary
 for creating an interface to MiniSat. The MiniSat code
 explained is in C++.
 
 To solve a SAT query, MiniSat creates an instance of a \verb,Solver, object,
 which contains a set of variables, sets of clauses, and possibly a model or conflict vector.
 The set of variables in the \verb,Solver, gives all the variables that may appear in
-a SAT query, the set of clauses forms the SAT query, and the model or conflict vector
+a SAT query, the set of clauses helps form the SAT query, and the model or conflict vector
 gives further information about the last SAT query made.
 
 Minisat represents variables with a \verb,Var, type and
 literals with a \verb,Lit, type.
 MiniSat represents sets of clauses as \verb,vec<Lit>,s,
-vectors of literals. The set of clauses in a \verb,Solver, represents a CNF query.
+vectors of literals. The conjunction of clauses in a \verb,Solver, represents a CNF query.
 If the \verb,Solver,'s \verb,solve(), function is called,
-the resulting \verb,bool, indicates the satisfiability of the query.
+the resulting \verb,bool, indicates the query's satisfiability.
 
 The \verb,solve(), function is overloaded so that it may also take an assumption \verb,vec<Lit>*, as
 an argument.
@@ -1113,9 +1111,9 @@ differences:\\
 
 %I now briefly explain the motivations for the deviations from the \emph{Basic}
 %implementation. The details of these deviations are given in Section \ref{impl:modelchecker}.
-The ``Priority Queue'' alteration was based on the observation that keeping
-track of proof obligations with priority queues is more efficient than the simple
-recursive implementation of the IC3 algorithm \cite{een11,griggio14}.
+The ``Priority Queue'' alteration was based on the observation that implementations
+using priority queues tend to be more efficient than simple
+recursive implementations of the IC3 algorithm \cite{een11,griggio14}.
 The ``Smaller CTIs'' alteration was based on the improvement of finding
 predecessors to counterexamples that describe sets of several states rather
 than singleton states \cite{griggio14}.
@@ -1147,7 +1145,7 @@ which stores the components specified in the AIGER file.
 \subsection{Model}
 
 The \verb,Model, data structure stores the number of variables and
-number of inputs as well as lists of literals that represent outputs, bad states,
+inputs as well as lists of literals that represent outputs, bad states,
 and invariant constraints. It also stores latches and AND gates as
 lists of literal lists. Below, I discuss the representation of literals, latches, and
 AND gates.
@@ -1241,11 +1239,11 @@ Additional functions use a Haskell idiom for providing a more natural
 interface for C libraries; they use \verb,unsafePerformIO, to return
 values outside the \verb,IO, monad.
 
-To solve a query with MiniSat, the \verb,solveWithAssumps, function
-is usually called (see \ref{solveWithAssumps}),
+The \verb,solveWithAssumps, function can be called to
+solve a query with MiniSat (see Figure \ref{solveWithAssumps}),
 taking a solver \verb,s, and a list of literals \verb,assumps,
 that make up the assumption vector. The \verb,solveWithAssumps, function
-visible to other modules then uses Haskell wrapper functions to create
+visible to other modules uses Haskell wrapper functions to create
 a MiniSat \verb,vec<Lit>, to represent the assumption vector and call
 the C wrapper function \verb,solveMiniSatWithAssumps,.
 
@@ -1312,7 +1310,7 @@ Beyond straightforward unmarshalling, some additional work was necessary
 to convert from the MiniSat representation of literals to the \emph{MC} representation.
 
 MiniSat variable $2 \times x$ represents the variable with name $x$, where $x$ is a nonnegative
-integer. MiniSat variable $(2 \times x) + 1$ represents its corresponding next-state variable
+integer; MiniSat variable $(2 \times x) + 1$ represents
 $x'$.
 The \verb,model, returned in the \verb,result, struct
 points to an array of three-valued Boolean (the normal Boolean values and an
@@ -1325,7 +1323,8 @@ value the positive or negative literal for that index is added to the
 \label{impl:representation}
 This section describes the representation and construction of hardware models (i.e.
 transition systems) and frames in \emph{MC}.
-\subsection{Harware Model Representation}
+
+\subsection{Model Representation}
 \subsubsection{Literals and Clauses}
 The \verb,Lit, data structure in \verb,Model.Model, represents literals in
 the back end.
@@ -1355,7 +1354,7 @@ The \verb,transition, list of clauses that specify latches and AND
 gates capture the transition relation $T$.
 The \verb,safe, literal gives the safety property.
 
-\subsection{Hardware Model Construction}
+\subsection{Model Construction}
 % Describe how transition systems are constructed given AIG models.
 
 The \verb,Model.Model, module contains functions to convert the \verb,Model, data
@@ -1663,8 +1662,8 @@ function must have \verb,False, as the first element in the pair it returns.
 \subsubsection{Subsumed clauses}
 The \emph{Basic} and \emph{BetterCTI} implementations' \verb,push, function avoids unnecessary
 consecution queries by only considering clauses in \verb,f, that are not in \verb,f',.
-Further consecution queries may be eliminated by removing the clauses in \verb,f,
-that are subsumed by other clauses, which is done by all variants other than {\it Basic}
+Further consecution queries may be eliminated by removing subsumed clauses in \verb,f,,
+which is done by all variants other than {\it Basic}
 and \emph{BetterCTI}.
 
 A clause $c$ \emph{subsumes} a clause $c'$ if $c$ is a subclause of
