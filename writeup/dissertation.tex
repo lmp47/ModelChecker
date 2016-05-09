@@ -592,9 +592,9 @@ of literals that occur in it. Similarly, a \emph{clause} is a disjunction of lit
 may also be represented as the set of literals that occur in it.
 
 A cube $d$ is a \emph{subcube} of another cube $c$ (written $d \subset c$)
-iff the all literals in $d$ are also in $c$.
+iff the the literals in $d$ are a subset of those in $c$.
 Similarly, $d$ is a \emph{subclause} of another clause $c$ (also
-denoted $d \subset c$) iff all literals in $d$ are also in $c$.
+denoted $d \subset c$) iff the literals in $d$ are a subset of those in $c$.
 
 By de Morgan's laws, cubes and clauses are duals; the negation of a cube is the
 clause specified by the set obtained by negating each literal in the cube
@@ -1251,11 +1251,11 @@ the C wrapper function \verb,solveMiniSatWithAssumps,.
 
 The function \verb,solveMinisatWithAssumps,, a wrapper for the version of \verb,solve(),
 that takes an assumption vector as an argument, returns a pointer to a
-\verb,result, struct rather than just whether or not the query was satisfiable
-as the MiniSat \verb,solve(), function does.
-The Haskell interface uses the FFI and the \verb,hsc2hs, preprocessor
+\verb,result, struct instead of, like the MiniSat \verb,solve(), function,
+just an indication of the query's satisfiability.
+The Haskell interface uses the FFI and \verb,hsc2hs, preprocessor
 for handling the \verb,result, struct. For example, \verb,solveWithAssumps,
-uses the Haskell FFI's \verb,peek, function,
+uses the FFI's \verb,peek, function,
 which provides a value read from a memory location inside
 an \verb,IO, monad, to read in the \verb,result, struct. After unmarshalling
 the \verb,result, struct into a Haskell \verb,Result, datatype, \verb,solveWithAssumps,
@@ -1263,7 +1263,7 @@ uses \verb,unsafePerformIO, to extract the \verb,Result, from the \verb,IO, mona
 
 The \verb,result, struct in \verb,Minisat/CSolver.h,
 allows a single function call to return
-all the results of a SAT query. The struct contains an indication of query satisfiability
+all the information from solving a SAT query. The struct contains an indication of query satisfiability
 and pointers to the model and conflict vector (if any) of the \verb,Solver,:
 \begin{lstlisting}[language=C]
 struct result {
@@ -1306,7 +1306,7 @@ struct result {
 
 The information kept in a \verb,Result, Haskell datatype comes directly from the
 \verb,result, returned by the C wrapper functions.
-I used the \verb,hsc2hs, preprocessor to handle pointer offsets
+I used \verb,hsc2hs, to handle pointer offsets
 when unmarshalling from the C struct.
 Beyond straightforward unmarshalling, some additional work was necessary
 to convert from the MiniSat representation of literals to the \emph{MC} representation.
@@ -1339,7 +1339,7 @@ list of the \verb,Lit,s in the clause.
 % Describe how transition systems and safety properties are represented.
 The \verb,Model, data structure in \verb,Model.Model, encompasses both
 the representation of transition systems and the safety property for the back end to check.
-It serves as the representation of the hardware in the back end:
+It represents the hardware in the back end:
 \begin{lstlisting}
 data Model = Model { vars :: Word
                    , initial :: [Clause]
@@ -1380,7 +1380,7 @@ clauses whose conjunction describes the latches' initial values,
 and the second contains a clauses whose conjunction describes the
 latches' next-state values.
 
-Consider a given \verb,Parser.AigModel.Latch, $[l, n, i]$, representing the latch with
+Consider a given \verb,Parser.AigModel.Latch, $[l, n, i]$ representing the latch with
 output $l$, next state $n$, %taken from the set of literals,
 and initial value $i$.
 %also taken from the set literals.
@@ -1411,10 +1411,10 @@ The \verb,makeAnds, function generates a single \verb,Clause, list for a list of
 where the conjunction of the clauses in the list describes the relationship between the AND-gate's output
 and inputs.
 
-Consider a \verb,Parser.AigModel.And,, of the form $[a, i_1, i_2]$, representing the AND gate
+Consider a \verb,Parser.AigModel.And, of the form $[a, i_1, i_2]$ representing the AND gate
 with output $a$ and inputs $i_1$ and $i_2$.
 The \verb,makeAnds, function uses the values of $a$, $i_1$, and $i_2$ to generate
-\verb,Clause,s that describe the AND gates' values.
+\verb,Clause,s that describe the AND gate.
 By the semantics of AND gates, the generated current-state clauses should have a conjunction
 logically equivalent to $a \Leftrightarrow (i_1 \wedge i_2)$ and the generated next-state
 clauses should have a conjunction logically equivalent to
@@ -1423,7 +1423,7 @@ by priming the generated current-state clauses, so they satisfy
 $a' \Leftrightarrow i_1' \wedge i_2'$.
 
 If both inputs are Booleans (i.e. both use \verb,Parser.AigModel.Lit,'s \verb,Boolean,
-constructor), then a singleton clause suffices to describe the AND gate.
+constructor), then a singleton clause sufficiently describes the AND gate.
 If $i_1 \wedge i_2$ holds, then $\{a\}$ describes this constantly {\it True} AND gate.
 If not, then $\{\neg a\}$ describes this constantly {\it False} AND gate.
 
@@ -1453,10 +1453,9 @@ The \verb,Solver, may also contain the \verb,transition, clauses for the hardwar
 \label{impl:modelchecker}
 
 I implemented several variants of the IC3 algorithm:
-the most basic variant (\emph{Basic}), a variant that
-improves upon \emph{Basic} by discovering smaller CTIs (\emph{BetterCTI}),
-and a variant that improves upon \emph{BetterCTI} by considering subsumed clauses
-(\emph{BetterPropagation}).
+\emph{Basic}; \emph{BetterCTI}, which improves upon \emph{Basic} by discovering
+smaller CTIs; and \emph{BetterPropagation}, which improves upon \emph{BetterCTI}
+by considering subsumed clauses
 I also implemented a variant that uses priority queues (\emph{PriorityQueue})
 and a variant that uses CTGs to improve generalization (\emph{CTG}).
 
@@ -1469,9 +1468,9 @@ follows.
 \subsection{Overall structure}
 
 The structure of the algorithm in the implementations is similar
-to the structure in Figure \ref{overview}; however, there are
+to Figure \ref{overview}; however, there are
 small differences that result from implementing the algorithm in a
-functional language and an adjustment to how the propagation phase is
+functional language and adjusting how the propagation phase is
 carried out.
 
 The pseudocode in Figure \ref{recstr}
@@ -1668,20 +1667,20 @@ Further consecution queries may be eliminated by removing the clauses in \verb,f
 that are subsumed by other clauses, which is done by all variants other than {\it Basic}
 and \emph{BetterCTI}.
 
-A clause $c$ \emph{subsumes} a clause $c'$ if the literals in $c$ are a subset of the literals
-in $c'$. In this case, $c \Rightarrow c'$ holds, so $c'$ can be removed from the set of clauses. By
-removing subsumed clauses $c'$ from a frame before trying to push clauses, the model
-checker can avoid making the consecution queries that arise from attempts to push those clauses.
+A clause $c$ \emph{subsumes} a clause $c'$ if $c$ is a subclause of
+$c'$. In this case, $c \Rightarrow c'$ holds, so $c'$ can be removed from the set of clauses. By
+removing subsumed clauses from a frame before trying to push clauses, \emph{MC}
+can avoid making the consecution queries that arise from attempts to push those clauses.
 
 Versions of \verb,push, that consider subsumed clauses include a call to the function
 \verb,removeSubsumed, when acquiring the list of clauses to attempt to push.
-The \verb,removeSubsumed, function takes a list of clauses and removes all clauses
+The \verb,removeSubsumed, function takes a list of clauses and removes all clauses that are
 subsumed by other clauses in the list.
 The \verb,push, function replaces the frame
 \verb,f, with a version of \verb,f, without subsumed clauses
 for the rest of the function and proceeds as the basic implementation's \verb,push, function does,
 returning a triple containing the updated \verb,f, along with the fixed-point \verb,Bool,
-and updates \verb,Frame, \verb,f',.
+and updated \verb,Frame, \verb,f',.
 
 \subsection{Inductive Generalization}
 \label{impl:generalization}
