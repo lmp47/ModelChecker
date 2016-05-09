@@ -500,8 +500,6 @@ several formats (e.g. HTML) from annotated Haskell code.
 \paragraph{HUnit}{
 HUnit \cite{hunit} is a framework for writing unit tests in Haskell based on the
 JUnit framework \cite{junit} for Java.
-HUnit tests can be specified by using functions
-that return the \verb,Assertion, type to write \verb,TestCase,s.
 }
 % See Section \ref{eval:solving} for more on testing.}
 
@@ -580,24 +578,23 @@ Symbolic model checkers represent the underlying system as
 logical formulas that describe the behavior of the system as one-step transitions
 between states. %Propositional logic formulas define transition systems and states.
 
+Assuming basic knowledge of propositional logic,
 I give a brief review of concepts in logic before formally defining transition systems
-and explaining how propositional logic formulas represent states. I assume basic
-knowledge of propositional logic.
+and explaining how propositional logic formulas represent states.
 
 \paragraph{Logic}{
-A variable is a propositional symbol that can be assigned Boolean values {\it True}
-or {\it False}. A \emph{literal} is defined as being either an atom $a$ (which can
+A variable is a propositional symbol that can be assigned Boolean values.
+A \emph{literal} is either an atom $a$ (which can
 be a variable or Boolean value) or its negation $\neg a$.
 
-A \emph{cube} is defined to be a conjunction of literals and may be represented as the set
+A \emph{cube} is a conjunction of literals and may be represented as the set
 of literals that occur in it. Similarly, a \emph{clause} is a disjunction of literals that
 may also be represented as the set of literals that occur in it.
 
-Given a cube $c$, a cube $d$ is a \emph{subcube} of $c$ (written $d \subset c$)
-iff the set of literals in $d$ are a subset of the set of literals in $c$.
-Similarly, given a clause $c$, a clause $d$ is a \emph{subclause} of $c$ (also
-denoted $d \subset c$) iff the set of literals in $d$ are a subset of
-the literals in $c$.
+A cube $d$ is a \emph{subcube} of another cube $c$ (written $d \subset c$)
+iff the all literals in $d$ are also in $c$.
+Similarly, $d$ is a \emph{subclause} of another clause $c$ (also
+denoted $d \subset c$) iff all literals in $d$ are also in $c$.
 
 By de Morgan's laws, cubes and clauses are duals; the negation of a cube is the
 clause specified by the set obtained by negating each literal in the cube
@@ -634,9 +631,11 @@ $I \Rightarrow C$ and $F \wedge C \wedge T \Rightarrow C'$ hold.
 A single state of the transition system (or singleton set containing that state)
 is specified through the assignment of all state variables in the transition system
 to Boolean values.
-A cube in which every variable appears exactly once represents a \emph{complete} assignment.
-An incomplete assignment is a cube in which
-at least one variable in the transition system does not appear. An incomplete
+A cube in which every variable
+appears exactly once represents a \emph{complete} assignment;
+if at least one variable does not appear, then the assignment
+is \emph{incomplete}.
+An incomplete
 assignment $c$ specifies the set of cubes $\{a \in{\it FullAssignment}|c \subset a\}$,
 where {\it FullAssignment} is the set of complete assignments to variables in the
 transition system.
@@ -670,12 +669,12 @@ using the Aiger Utilities' \verb,bliftoaig, tool. Because one of
 the project's components is an AIGER parser, I describe the AIGER format
 in more depth.
 
-The AIGER format has several versions, and each allows hardware to be
+The AIGER format has several versions, each allowing hardware to be
 specified as
 And-Inverter Graphs with latch elements.
 % that provide single clock-tick delays.
 All circuits are modeled as a graph of nodes consisting only of
-AND gates, inverters, and latches, where the latches behave like D
+two-input AND gates, inverters, and latches, where the latches behave like D
 flip-flops and output the value of the current input at the next
 clock tick.
 
@@ -691,11 +690,11 @@ ascending order of their variable names in the binary format.
 %format, but the binary format encodes AND gates under the assumption
 %that inputs' indices are in ascending order.
 The binary version's assumptions on component ordering allow the format
-to be more compact. The HWMCC examples use the binary format.
+to be more compact.
 
-A new version of the AIGER format is currently under development \cite{aiger}, with
-examples from HWMCC'14 onward using the new version. The AIGER parser component
-of this project handles both old and new versions of the format.
+A new version of the AIGER format is currently under development \cite{aiger};
+examples from HWMCC'14 onward use the new version. The AIGER parser component
+of this project handles all versions of the format.
 
 I describe how AIGER formats represent variables
 and describe the old ASCII version of the AIGER format, which
@@ -709,10 +708,9 @@ Variables themselves are not represented directly in AIGER format; instead, the
 format uses nonnegative numbers called indices to represent literals,
 which identify wires and their values in a circuit.
 
-For any variable named $x$, the index for positive literal $x$ is given by
-$2 \times x$, and the index for negative literal $\neg x$ is given by
-$2 \times x + 1$, i.e. a function to map from variable names $x$ and a Boolean
-value $b$ giving the sign of the literal would be as follows:
+A function to map from a variable name $x$ and a Boolean
+value $b$ giving the sign of the literal to an index for
+the corresponding literal is as follows:
 $${\it index}(x, b) =
 \begin{cases}
 2x & {\rm if}~b \\
@@ -737,7 +735,7 @@ where
 \item \verb,M, specifies the maximum index of a variable.
 \item \verb,L, specifies the number of latches.
 \item \verb,O, specifies the number of outputs.
-\item \verb,A, specifies the number of two-input AND gates.
+\item \verb,A, specifies the number of AND gates.
 \end{itemize}
 
 The different components are specified after the header
@@ -751,7 +749,7 @@ a literal of any sign).
 A latch has initial value 0 (i.e., {\it False}) and is specified by two indices.
 The first index represents the positive literal for its corresponding variable name,
 and the second represents the latch's next-state value.
-An AND gate, which is always binary,
+An AND gate
 is specified by the index representing the positive literal
 of its variable name and the two indices that specify its input values.
 
@@ -972,8 +970,7 @@ one such the $\neg c$ is the minimal inductive subclause for $F_i$ and $\neg s$.
 \subsection{Minimal Inductive Subclauses}
 The \emph{minimal inductive subclause} (MIC) for a frame $F_i$ and a clause $\neg s$
 inductive relative to $F_i$
-is a clause $\neg c$ whose
-literals are the smallest subset of the literals in $\neg s$ such that
+is the smallest subclause $\neg c$ of $\neg s$ s such that
 $\neg c$ is also inductive relative to $F_i$.
 The MIC can be found by dropping each literal
 in $\neg s$ in turn and checking the resulting clause.
@@ -1030,17 +1027,16 @@ generalization \cite{hassan13}.
 
 \subsubsection{Counterexamples to Generalization}
 
-Checking if a subclause $\neg c = s \setminus \{l\}$ of a clause $\neg s$ is inductive
-relative to a frame $F_i$ involves checking if
-$F_i \wedge T \wedge \neg c \Rightarrow \neg c'$ holds.
-If the implication does not hold, then $\neg c$ is not inductive relative to
-$F_k$. In the original method of generalization described above,
-$\neg s$ then cannot be generalized to $\neg c$, and generalization
+For a subclause $\neg c = s \setminus \{l\}$ of a clause $\neg s$ to be
+inductive relative to a frame $F_i$,
+$F_i \wedge T \wedge \neg c \Rightarrow \neg c'$ must hold.
+In the method of generalization described above,
+if the implication does not hold, then
+$\neg s$ cannot be generalized to $\neg c$, and generalization
 proceeds without dropping $l$.
 
-Similarly to the reason that a consecution query at $F_k$ might fail,
-the reason that
-$F_k \wedge T \wedge c \Rightarrow c'$ is unsatisfiable might be that
+Similarly to why a consecution query at $F_k$ may fail,
+$F_k \wedge T \wedge c \Rightarrow c'$ might be unsatisfiable because
 $F_k$ is too loose an approximation. As with consecution queries, discovering a
 new clause that can be added to $F_k$ may allow queries that
 check for relative induction to succeed, and the discovery of this
@@ -1469,7 +1465,7 @@ follows.
 
 \subsection{Overall structure}
 
-The general structure of the algorithm in the implementations is similar
+The structure of the algorithm in the implementations is similar
 to the structure in Figure \ref{overview}; however, there are
 small differences that result from implementing the algorithm in a
 functional language and an adjustment to how the propagation phase is
@@ -2243,12 +2239,8 @@ placed in the priority queue.
 \chapter{Conclusion}
 \label{conc}
 
-This chapter summarizes the work done and goals met for this project.
-Following the summary in Section \ref{conc:summary}, I give
-suggestions for further extensions to the project in Section \ref{conc:extensions}.
-
-\section{Summary}
-\label{conc:summary}
+This chapter summarizes the work done and goals met for this project and gives
+suggestions for further extensions to the project.
 
 The IC3 algorithm provides a new way to perform SAT-based symbolic model checking of
 safety properties of hardware, and the performance of its initial implementation
@@ -2299,9 +2291,7 @@ BLIF & 233\\
 
 The code for this project may be found at \url{https://github.com/lmp47/ModelChecker}.
 
-\section{Further Extensions}
-\label{conc:extensions}
-
+\paragraph{Further Work}{
 Instead of the extensions mentioned in the initial project proposal,
 I elected to implement other variants of the model checker and examine their
 effects on the model checker's performance.
@@ -2324,7 +2314,7 @@ scheme that is compatible with the IC3 algorithm \cite{vizel12}. The implementat
 of this modified algorithm achieved significant speedups compared with the
 original IC3 algorithm implementation \verb,ic3,, and a variant
 of the model checker in Haskell that uses this abstraction-refinement scheme may 
-exhibit a similar improvement.
+exhibit a similar improvement.}
 %The modified algorithm uses different
 %abstractions for the different approximated sets of states (i.e. frames). Upon
 
