@@ -561,7 +561,7 @@ eased the specification of new models that would
 be compatible with \emph{MC} and \emph{IC3ref},
 which accept only AIGER-formatted inputs.
 In particular, I used the {\tt bliftoaig}
-tool to convert circuits specified using the Berkeley Logic Interchange Format
+tool to convert circuits specified using the Berkeley Logic Interchange Format (BLIF)
 to circuits specified using the binary AIGER format, and the {\tt aigtoaig} tool,
 to convert between the ASCII and binary AIGER formats. }
 
@@ -614,7 +614,7 @@ where for any variable or set of variables $x$, $x'$ is the set of next-state va
 For a known set of inputs $i$ and variables $x$, $T(i,x,x')$ may be written
 as $T$.
 
-For each logical expression $X$ containing only current-state variables,
+For any expression $X$ containing only current-state variables,
 $X'$ denotes the same expression in which each variable has been
 replaced by its corresponding next-state variable.
 For example, the following gives a transition relation that toggles all the
@@ -627,7 +627,7 @@ $I \Rightarrow C$ and $F \wedge C \wedge T \Rightarrow C'$ hold.
 }
 
 \paragraph{States}{
-A single state of the transition system (or singleton set containing that state)
+A single state of a transition system (or singleton set containing that state)
 is specified through the assignment of all state variables in the transition system
 to Boolean values.
 A cube in which every variable
@@ -642,14 +642,14 @@ More generally, any logical formula $b$ involving the variables in the transitio
 system gives the set of states
 $\{a \in {\it FullAssignment} | a \wedge b~{\rm is~satisfiable}\}$.
 
-Given logical formula $B$, a \emph{$B$ state} is an element in the set of states
+A \emph{$B$ state} is an element in the set of states
 represented
-by $B$. A set of states $s$ is said to be \emph{reachable}
+by logical formula $B$.
+For a transition system $(i, x, I, T)$, a
+set of states $s$ is \emph{reachable}
 in $k$ steps of the transition relation iff there exist input variables and
 states $s_0, \ldots, s_k$ such that
-$s_0$ is an $I$ state and $s_j \wedge T \Rightarrow s_{j + 1}$ for $1 \leq j < k$,
-where $T$ represents the transition relation of the transition system.
-
+$s_0$ is an $I$ state and $s_j \wedge T \Rightarrow s_{j + 1}$ for $1 \leq j < k$.
 }
 
 
@@ -661,8 +661,8 @@ where $T$ represents the transition relation of the transition system.
 %Comments?
 
 I specified fourteen example hardware models using
-both the AIGER format and Berkeley Logic Interchange Format (BLIF).
-Because using the AIGER format to specify larger models was cumbersome,
+both the AIGER format and BLIF.
+Because specifying larger models in AIGER was cumbersome,
 I specified some models using BLIF and converted them to AIGER
 using the Aiger Utilities' \verb,bliftoaig, tool. Because one of
 the project's components is an AIGER parser, I describe the AIGER format
