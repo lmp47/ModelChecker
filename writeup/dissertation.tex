@@ -1834,7 +1834,6 @@ reached, {\it pushFrame} makes a recursive call to {\it filfillObligations} with
 priority queue (line \ref{pqueuestr:pushrec}).
 
 When a CTI $c$ for proof obligation $(s,i)$ is discovered, the proof obligation $(c,i - 1)$
-%for proving the negation of the CTI
 could be enqueued before calling {\it fulfillObligations} recursively.
 The \emph{PriorityQueue} implementation employs a different approach that keeps the number of
 generalization attempts low by generalizing once when the proof obligation
@@ -1896,7 +1895,7 @@ The parameterizable number of failed attempts
 at dropping literals in the \verb,inductiveGeneralization, functions was set to
 three, and the parameterizable number of CTGs that each generalization attempt
 in the {\it CTG} implementation will handle was also set to three, matching the
-values for these parameters used by \emph{IC3ref}.
+values for these parameters used by \emph{IC3ref} \cite{refic3}.
 
 \section{Correctness}
 \label{eval:solving}
@@ -1937,10 +1936,11 @@ Example & Number of Variables \\
 \end{tabular}
 \end{center}
 
-For examples solved without timing out,
+The variants solving HWMCC examples exceeded the goal of solving ``small examples''.
+For HWMCC examples solved without timing out,
 the largest (in terms of number of variables) unsafe example for which the variants gave a
 solution was \verb,bj08goodbakerycyclef7.aig, with 19900 variables,
-and the largest safe example %for which the variants gave a solution
+and the largest safe example 
 was \verb,pdtvsar8multip26.aig, with 7174 variables.
 The following table provides context for the typical number of variables in HWMCC
 examples:
@@ -2419,48 +2419,46 @@ parseTest name =
 \label{benchmarks}
 
 In the following tables, ``Average Literals per Clause'' is abbreviated as
-``ALC,'' and ``Standard Deviation'' is abbreviated as ``SD.''
+``ALC,'' and ``Standard Deviation'' is abbreviated as ``SD.'' Times are given in seconds.
 
 \section{Basic}
 \csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
-    table head= \hline Name & Frames & ALC & CTIs & Queries & Mean Time (s) & SD of
-Time(s)\\\hline,
+    table head= \hline Name & Frames & ALC & CTIs & Queries & Mean Time & SD of
+Time\\\hline,
     late after line=\\\hline]%
 {basic.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, queries = \queries, time = \time, stdev = \stdev}%
 {\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
 
 \section{BetterCTI}
 \csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
-    table head= \hline Name & Frames & ALC & CTIs & Queries & Mean Time (s) & SD of Time
-(s)\\\hline,
+    table head= \hline Name & Frames & ALC & CTIs & Queries & Mean Time & SD of Time
+\\\hline,
     late after line=\\\hline]%
 {betterCTI.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, queries = \queries, time = \time, stdev = \stdev}%
 {\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
 
 \section{BetterPropagation}
 \csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
-    table head= \hline Name & Frames & ALC & CTIs & Queries & Mean Time (s) & SD of Time
-(s)\\\hline,
+    table head= \hline Name & Frames & ALC & CTIs & Queries & Mean Time & SD of Time
+\\\hline,
     late after line=\\\hline]%
 {betterPropagation.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, queries = \queries, time = \time, stdev = \stdev}%
 {\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
 
 \section{PriorityQueue}
 \csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|p{4.5em}|p{4em}|,
-    table head= \hline Name & Frames & ALC & CTIs & Queries & Mean Time (s) & SD of Time
-(s)\\\hline,
+    table head= \hline Name & Frames & ALC & CTIs & Queries & Mean Time & SD of Time
+\\\hline,
     late after line=\\\hline]%
 {priorityQueue.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, queries = \queries, time = \time, stdev = \stdev}%
 {\name & \frames & \litspercls & \ctis & \queries & \time & \stdev}%
 
 \section{CTG}
-\csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|l|p{4.5em}|p{4em}|,
-    table head= \hline Name & Frames & ALC & CTIs & CTGs & Queries & Mean Time (s) & SD of Time (s)\\\hline,
+\csvreader[longtable=|l|p{3em}|p{3.5em}|l|l|l|p{3.5em}|p{3.5em}|,
+    table head= \hline Name & Frames & ALC & CTIs & CTGs & Queries & Mean Time & SD of Time\\\hline,
     late after line=\\\hline]%
 {ctg.csv}{name = \name, frames = \frames, litspercls = \litspercls, ctis = \ctis, ctgs = \ctgs, queries = \queries, time = \time, stdev = \stdev}%
 {\name & \frames & \litspercls & \ctis & \ctgs & \queries & \time & \stdev}%
-
-%\section{Reference Implementation}
 
 \chapter{Project Proposal}
 
