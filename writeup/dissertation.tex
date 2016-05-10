@@ -237,7 +237,7 @@ since then, several variants of IC3 have been developed.
 %2015 paper
 
 The IC3 algorithm has advantages when compared to other model-checking
-techniques such as $k$-induction and BMC that allow it to prove more
+algorithms (e.g. $k$-induction and BMC) that allow it to prove more
 properties more efficiently. Unlike $k$-induction, the IC3 algorithm
 discovers new invariants based on the safety property that it is trying to
 verify. As a result, these
@@ -318,7 +318,7 @@ knowledge of Standard ML.
 Haskell functions are defined as a series of equations and
 are defined similarly to Standard ML functions with the
 \verb,fun, keyword omitted. Anonymous functions in Haskell
-use \verb,\, to bind variables analagously to Standard
+use \verb,\, to bind variables analogously to Standard
 ML's \verb,fn, keyword. Function composition is achieved with the \verb,., infix operator.
 
 Haskell functions may be defined  by pattern matching, and the pattern languages of Standard
@@ -339,7 +339,7 @@ signatures can be provided. For example, the type signature for
 the \verb,prove, function in \verb,IC3.hs,, a curried function that takes
 a \verb,Model, and a \verb,Lit, and returns a \verb,Bool,,
 is \verb,prove :: Model -> Lit -> Bool,. Type signatures may begin with
-constraints specifying that a polymorphic type variable occuring in the type
+constraints specifying that a polymorphic type variable occurring in the type
 signature must be an instance of a certain type class.
 
 
@@ -349,12 +349,6 @@ Functions specified within the definition of a type class
 must be supported for any type that is an instance of that type class.
 Haskell compilers can automatically provide instances of standard
 type classes for some types.
-%For example, a the \verb,Lit, datatype (in \verb,Parser/AigModel.hs,) is an instance of
-%the \verb,Show,, \verb,Eq,, and \verb,Ord, type classes, with the instances being
-%automatically derived:
-%\begin{lstlisting}
-%data Lit = Var Word | Neg Word | Boolean Bool deriving (Show, Eq, Ord)
-%\end{lstlisting}
 
 Haskell's \verb,Monad, class encompasses composable
 structures that describe (possibly impure) computations.
@@ -569,7 +563,8 @@ to convert between the ASCII and binary AIGER formats. }
 \paragraph{MiniSat}{
 MiniSat \cite{minisat,een05}
 is a SAT solver implemented in C++ that solves Boolean satisfiability problems
-posed in conjunctive normal form (CNF). Further details are given in Section \ref{prep:minisat}.
+posed in conjunctive normal form (CNF). See Section \ref{prep:minisat} for further
+details.
 }
 
 \section{Symbolic Representation}
@@ -733,7 +728,7 @@ where
 \begin{itemize}
 \item \verb,V, specifies the format type of the file, with \verb,aag, indicating the ASCII format and \verb,aig,
 indicating the binary format.
-\item \verb,M, specifies the maximum index of a variable.
+\item \verb,M, specifies the maximum variable name.
 \item \verb,L, specifies the number of latches.
 \item \verb,O, specifies the number of outputs.
 \item \verb,A, specifies the number of AND gates.
@@ -849,7 +844,7 @@ The pseudocode in Figure \ref{overview} gives an overview of the basic IC3 algor
 \label{overview}
 \end{algorithm}
 
-The IC3 algorithm maintains a set of $k + 1$ frames $F_0,\ldots,F_k$.
+IC3 maintains a set of $k + 1$ frames $F_0,\ldots,F_k$.
 Each frame $F_i$ is a set of clauses whose conjunction represents an
 over-approximation of the set of states reachable by the transition
 system in at most $i$ steps from the initial state (e.g. $F_0 = I$).
@@ -940,12 +935,12 @@ $F_0, \ldots, F_k$, and, for every $F_i$ with $0 \leq i < k$ (line \ref{forprop}
 pushes all the clauses that it can from $F_i$ to $F_{i + 1}$ (line \ref{push}).
 
 If $F_i = F_{i + 1}$ holds for any $i$ at any point, then a fixed point has
-been found; all the clauses in $F_i$ and therefore $F_{i + 1}$
+been found; all the clauses in $F_i$ (and therefore $F_{i + 1}$)
 can be pushed.
 Because $F_i$ contains the safety property $P$ as one of its clauses,
 $P$ holds in all reachable states from the initial state,
 and the algorithm terminates (line \ref{fixed}). Because the number of
-clauses in each frame $F_i$ decreases monotonically as $i$ increases and the
+clauses in each frame $F_i$ decreases monotonically as $i$ increases and
 frame $F_0$ can only have finitely many states, the algorithm always
 terminates.
 
@@ -1077,7 +1072,7 @@ frame $F_k$ allows $s$ to be generalized to $c$.
 \end{figure}
 
 This chapter describes the implementation of \emph{MC}.
-The implementation can be broken up into four main components
+The implementation consists of four main components
 (see Figure \ref{components}): the AIGER parser
 (Section \ref{impl:aiger}), the
 MiniSat interface (Section \ref{impl:minisat}), the hardware model representation
@@ -1180,8 +1175,8 @@ to \verb.[Var 0, Neg 0, Boolean False]..
 For AND gates,
 \begin{itemize}
 \item the first element gives the AND gate's output (i.e. variable name)
-(as a positive literal), and
-\item the next two elements give the literals whose values are the AND gate's inputs.
+as a positive literal, and
+\item the next two elements give the literals whose values are the gate's inputs.
 \end{itemize}
 For example, the AND gate from Figure \ref{aagCircuit} represented by \verb,6 2 4, is
 parsed to \verb.[Var 2, Var 0, Var 1]..
@@ -1361,8 +1356,7 @@ The \verb,Model.Model, module contains functions to convert the \verb,Model, dat
 structure from the \verb,Parser.AigModel, module into the model representation
 used by the back end. In particular, \verb,toModel, takes a \verb,Parser.AigModel.Model,
 and outputs a \verb,Model.Model.Model,. The \verb,Model.Model.Lit,
-data structure only has constructors for variables and their negations,
-with the following datatype declaration:
+datatype only has constructors for variables and their negations:
 \begin{lstlisting}
 data Lit = Var Word | Neg Word | Var' Word | Neg' Word deriving (Show, Eq, Ord)
 \end{lstlisting}
@@ -1390,7 +1384,7 @@ next-state values.
 Generating the initial value clause of the latch proceeds as follows: if $i = {\it True}$,
 then the singleton clause $\{l\}$ is generated for the initial value list, and if $i = {\it False}$,
 then the singleton clause $\{\neg l\}$ is generated.
-If $i$ is a literal rather than a Boolean value, then the latch is
+If $i$ is not a Boolean value, then the latch is
 uninitialized and no clauses are generated for its initial value.
 
 Generating next-state clauses proceeds similarly.
@@ -1443,9 +1437,8 @@ $$a \Leftrightarrow (i_1 \wedge i_2) \simeq
 In addition to a representation of transition systems, \emph{MC} needs a representation
 of the frames used by the IC3 algorithm.
 The \verb,Frame, data structure represents frames in all back ends.
-Along with the set of clauses (represented by a list of literals), a \verb,Frame, also
-includes a \verb,Solver,, which contains at least all the clauses in the frame's set
-of clauses.
+Along with the set of clauses (represented by a list of literal lists), a \verb,Frame, also
+includes a \verb,Solver,, which contains at least all the clauses in the frame.
 The \verb,Solver, may also contain the \verb,transition, clauses for the hardware model.
 
 \section{Model Checking}
@@ -1584,7 +1577,7 @@ to handle the updates to the frames made by ${\it proveNegCTI}$.
 
 The initiation query $I \Rightarrow P$ is an implication, but a MiniSat \verb,Solver, can only
 solve CNF queries (with an optional assumption cube).
-As a result, all variants use the fact that
+All variants use the fact that
 $I \Rightarrow P$ holds iff $\neg P \wedge I$ is unsatisfiable to yield
 the following implementation in \verb,IC3.hs,:
 
@@ -1990,7 +1983,7 @@ Number of ctgs: 242
 Number of queries: 15225
 True
 \end{lstlisting}
-\caption{Sample output for running the \emph{CTG} implementation on example {\tt counters3.aig}.}
+\caption{Sample output from running \emph{CTG} on example {\tt counters3.aig}.}
 \label{sampleoutput}
 \end{figure}
 
@@ -2019,7 +2012,7 @@ and \emph{CTG} implementations give similar results.
 Profiling revealed that functions in the \verb,MiniSat.Minisat, module consume the most time
 when solving examples, suggesting that the overall performance of the variants is heavily dependent on
 the size and number of SAT-solver queries.
-In this section, I will discuss the impact that different
+This section describes the impact that different
 variants of the model checker have on the size and number of SAT-solver queries and performance.
 
 \begin{figure}[t]
@@ -2178,10 +2171,10 @@ must interact with MiniSat through an interface and suffer from associated overh
 marshalling data from the data structures returned from the C wrapper for MiniSat into the corresponding
 Haskell data structures.
 
-The reference implementation also makes use of empirical results to improve the performance of MiniSat queries.
+The reference implementation also uses empirical results to improve the performance of MiniSat queries.
 For example, in the \verb,stateOf, function, which extracts a model from a failed consecution query
 (to e.g. find a CTI cube), the set of literals passed to the MiniSat \verb,Solver, are reordered according
-found to be the best choice empirically \cite{minisat}.
+to an order found to be the best choice empirically \cite{minisat}.
 
 \subsubsection{Overall Structure}
 
@@ -2195,7 +2188,7 @@ CTIs and reducing the number of generalization attempts,
 but \emph{IC3ref} does not.
 
 For a CTI $s$ that prevents the fulfillment
-of a proof obligation at depth $i$, the reference implementation enqueues proof
+of a proof obligation at depth $i$, \emph{IC3ref} enqueues proof
 obligation $(s,i - 1)$
 and performs generalization relative to the frame $F_{i - 1}$ each time $\neg s$ has been shown
 to be inductive relative to frame $F_{i - 1}$. Generalization does not seem
@@ -2203,7 +2196,7 @@ to be as expensive for \emph{IC3ref} as \emph{MC}, probably as a
 result of the model representation (Section \ref{eval:ic3ref:model}) and
 MiniSat interface (Section \ref{eval:ic3ref:minisat}) differences.
 
-Because the reference implementation does not prevent CTIs from being rediscovered,
+Because \emph{IC3ref} does not prevent CTIs from being rediscovered,
 it does not
 enqueue a new proof obligation $(s, i+1)$ each time a proof obligation $(s, i)$ has been
 fulfilled, unlike \emph{PriorityQueue}.
