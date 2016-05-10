@@ -201,12 +201,12 @@ by explicit-state model checking \cite{mcmillan92}.
 
 % Transition into talking about SAT-based model checking
 The efficiency of BDD representations relies on choosing an appropriate
-ordering, which can be computationally expensive, and in some cases,
-there is no such ordering that results in a space-efficient BDD
+ordering, which can be computationally expensive; in some cases
+there is no ordering that results in a space-efficient BDD
 \cite{biere99a}.
 
-An alternative to BDD-based symbolic model-checking techniques are SAT-based
-techniques, which use procedures for solving the Boolean satisfiability
+SAT-based techniques provide an alternative to BDD-based symbolic model checking.
+They use procedures for solving the Boolean satisfiability
 problem and, unlike BDD-based methods, do not use the canonical representations
 of propositional formulas.
 Such techniques include bounded model checking (BMC)
@@ -272,7 +272,7 @@ checking more deeply, and to put into practice software engineering and design t
 The project aims have been achieved through the completion of the following:
 \begin{itemize}
 \item I gained background knowledge about Haskell, the IC3 algorithm, and software
-development tools widely used in industry, such as Git (Chapter \ref{prep}).
+development tools widely used in industry (Chapter \ref{prep}).
 \item I implemented the components of a model checker, including several variants of
 the IC3 algorithm (Chapter \ref{impl}).
 \item I empirically evaluated the model-checking capabilities of the implementations,
@@ -581,12 +581,12 @@ I assume basic knowledge of propositional logic.
 \paragraph{Logic}{
 %A variable is a propositional symbol that can be assigned Boolean values.
 A \emph{literal} is either an atom $a$ (which can
-be a variable or Boolean value) or its negation $\neg a$.
+be a propositional variable or Boolean value) or its negation $\neg a$.
 A \emph{cube} is a conjunction of literals and may be represented as the set
 of literals that occur in it. Similarly, a \emph{clause} is a disjunction of literals that
 may also be represented as the set of literals that occur in it.
 Cubes and clauses are duals; the negation of a cube is the
-clause specified obtained by negating each literal in the cube
+clause obtained by negating each literal in the cube
 and vice-versa.
 
 A cube $d$ is a \emph{subcube} of another cube $c$ (written $d \subset c$)
@@ -611,9 +611,9 @@ For a known set of inputs $i$ and variables $x$, $T(i,x,x')$ may be written
 as $T$.
 
 For any expression $X$ containing only current-state variables,
-$X'$ denotes the same expression in which each variable has been
+$X'$ denotes the same expression in which each variable is
 replaced by its corresponding next-state variable.
-For example, the following gives a transition relation that toggles all the
+For example, the following gives a transition relation that toggles all
 {\it True} variables to {\it False}:
 $$T(i,x,x') = \bigwedge_{v \in x} (v \Rightarrow \neg v').$$
 
@@ -656,7 +656,7 @@ $s_0$ is an $I$ state and $s_j \wedge T \Rightarrow s_{j + 1}$ for $1 \leq j < k
 
 %Comments?
 
-I specified fourteen example hardware models using
+I specified example hardware models using
 both the AIGER format and BLIF.
 Specifying larger models in AIGER was cumbersome, so
 I specified some models using BLIF and converted them to AIGER
@@ -927,12 +927,12 @@ prove that $\neg d$ holds at depth $k$ repeats.
 When the consecution query succeeds, the algorithm moves to the propagation phase.
 
 \emph{Pushing} a clause $c$ from frame $F_i$ to frame $F_{i + 1}$ refers to the act
-of setting $F_{i + 1} := F_{i + 1} \cup \{ c \}$ with $c \in F_i$.
+of setting $F_{i + 1} := F_{i + 1} \cup \{ c \}$, where $c \in F_i$.
 A clause $c$ can be pushed from frame $F_i$ to the next frame $F_{i + 1}$
 if the consecution query $F_i \wedge T \Rightarrow c'$ holds.
 The propagation phase of the algorithm goes through the set of frames
 $F_0, \ldots, F_k$, and, for every $F_i$ with $0 \leq i < k$ (line \ref{forprop}),
-pushes all the clauses that it can from $F_i$ to $F_{i + 1}$ (line \ref{push}).
+pushes all the clauses possible from $F_i$ to $F_{i + 1}$ (line \ref{push}).
 
 If $F_i = F_{i + 1}$ holds for any $i$ at any point, then a fixed point has
 been found; all the clauses in $F_i$ (and therefore $F_{i + 1}$)
@@ -1127,9 +1127,9 @@ that improves upon basic inductive generalization \cite{hassan13}.
 
 %The relevant files for this section can be found in the \verb,Parser, directory.
 The parser component parses ASCII or binary-formatted AIGER files and
-assumes that the new format is used
-(note that the new format is backward compatible).
-Justice properties and fairness constraints are not handled by \emph{MC}, so
+assumes that the (backward-compatible) new format is used.
+Justice properties and fairness constraints are not handled by \emph{MC} (see
+Appendix \ref{aiger}), so
 the parser ignores them.
 
 The \verb,Parser.AigerParser, module, which implements the parser in Haskell, and
@@ -1304,10 +1304,10 @@ when unmarshalling from the C struct.
 Beyond straightforward unmarshalling, some additional work was necessary
 to convert from the MiniSat representation of literals to the \emph{MC} representation.
 
-MiniSat variable $2 \times x$ represents the variable with name $x$, where $x$ is a nonnegative
-integer; MiniSat variable $(2 \times x) + 1$ represents
+The MiniSat variable $2 \times x$ represents the variable with name $x$, where $x$ is a nonnegative
+integer, and MiniSat variable $(2 \times x) + 1$ represents
 $x'$.
-The \verb,model, returned in the \verb,result, struct
+The \verb,model, returned in the \verb,result, struct may
 points to an array of three-valued Boolean (the normal Boolean values and an
 \emph{undefined} value) \verb,lbool, values indexed by MiniSat variable indices.
 To extract models, the array values are accessed; for each \emph{True} or \emph{False}
@@ -1655,14 +1655,14 @@ function must return a pair with \verb,False, as its first element, since a fixe
 
 \subsubsection{Subsumed clauses}
 The \emph{Basic} and \emph{BetterCTI} implementations' \verb,push, function avoids unnecessary
-consecution queries by only considering clauses in \verb,f, that are not in \verb,f',.
-All other variants eliminate
-further consecution queries by removing subsumed clauses in \verb,f,,
+consecution queries by only considering clauses in \verb,f, that are not in \verb,f',;
+other variants eliminate even
+more consecution queries by removing subsumed clauses in \verb,f,,
 
 A clause $c$ \emph{subsumes} a clause $c'$ if $c$ is a subclause of
 $c'$. In this case, $c \Rightarrow c'$ holds, so $c'$ can be removed from the set of clauses. By
 removing subsumed clauses from a frame before trying to push clauses, \emph{MC}
-can avoid making the consecution queries that arise from attempts to push those clauses.
+avoids making the consecution queries that arise from attempts to push those clauses.
 
 Versions of \verb,push, that consider subsumed clauses include a call to the function
 \verb,removeSubsumed, when acquiring the list of clauses to attempt to push.
@@ -1687,7 +1687,6 @@ The simplest method for approximating a MIC (see Figure \ref{inductiveGeneraliza
 tries to drop each literal in turn and checks
 that the resulting clause $c$ satisfies formulas $I \Rightarrow c$ and
 $F_k \wedge c \wedge T \Rightarrow c'$ as the original clause did.
-%If the resulting clause satisfies both queries
 If it does, the literal can be successfully dropped.
 Otherwise, the literal is added to a list \verb,needed, of necessary literals.
 After reaching a parameterizable number of failed attempts at dropping a literal from the clause or after
@@ -1800,19 +1799,19 @@ $(s, i)$.
 The variant of the algorithm used in \emph{PriorityQueue} (see Figure \ref{pqueuestr})
 relies on a priority queue of proof obligations.
 When proof obligation $(s,i)$ is added to the priority queue,
-it is assigned a priority higher than any proof obligation in the queue $(t,j)$ with $j > i$,
-lower than any proof obligation in the queue $(u,k)$ with $k < i$, and lower
+it is assigned a priority higher than any proof obligation $(t,j)$ with $j > i$,
+lower than any proof obligation $(u,k)$ with $k < i$, and lower
 than any proof obligation $(v,i)$ (i.e., with the same depth) already in the queue.
 
 Unlike other variants, in {\it PriorityQueue}, there is
-no distinction between the safety property $P$ and any other property
+no distinction between the safety property $P$ and other properties
 needing to be proved.
 The priority queue maintains all the information about which properties need to be
 proven, and the main recursive {\it fulfillObligations} function (line \ref{pqueuestr:fulfillObs}) attempts to prove
 whichever property has the highest priority in the queue, i.e. fulfill the proof obligation with the highest priority (this proof obligation
-is the one returned by ${\it dequeue(queue)}$ in line \ref{dequeue}).
+is returned by ${\it dequeue(queue)}$ in line \ref{dequeue}).
 
-Whenever a proof obligation $(s,i)$ is fulfilled (at a certain depth $i$) the proof obligation
+Whenever a proof obligation $(s,i)$ is fulfilled the proof obligation
 $(s, i + 1)$ is added to the queue by {\it pushFrame} (line \ref{pqueuestr:enqueue}).
 Enqueueing the new proof obligation is valid
 because $s$ states can reach $\neg P$ states in some
@@ -1836,7 +1835,7 @@ priority queue (line \ref{pqueuestr:pushrec}).
 
 When a CTI $c$ for proof obligation $(s,i)$ is discovered, the proof obligation $(c,i - 1)$
 %for proving the negation of the CTI
-could be enqueued before calling {\it fulfillObligations} recursively again.
+could be enqueued before calling {\it fulfillObligations} recursively.
 The \emph{PriorityQueue} implementation employs a different approach that keeps the number of
 generalization attempts low by generalizing once when the proof obligation
 for the CTI is enqueued rather than generalizing each time a proof obligation
@@ -1845,7 +1844,7 @@ is fulfilled.
 The approach in \emph{PriorityQueue} checks
 that $I \Rightarrow \neg c$, adds $\neg c$ to $F_0$, and then uses a modified
 version of {\it propagate} to push clauses and check for fixed points up to
-depth $j \leq i$, where $j$ is the greatest value that is less than $i$
+depth $j \leq i$, where $j$ is the greatest value less than $i$
 such that $\neg c$ is inductive relative to $F_{j - 1}$
 (lines \ref{pqueuestr:preprop}, \ref{pqueuestr:propagate}). If a fixed point is
 found, the algorithm can terminate with success (line \ref{pqueuestr:fix}). Otherwise, the clause
@@ -1879,7 +1878,7 @@ I describe the solving capabilities of the variants
 and how the project aim of being able to solve several examples has been met
 (Section \ref{eval:solving}). I then provide an empirical analysis of the
 model checker (Section \ref{eval:analysis}), which includes a description of
-the output of the model checker and a comparison of benchmarks.
+the output of \emph{MC} and a comparison of benchmarks.
 
 To evaluate the implementations, I ran them
 on 14 handwritten examples and 150 examples from
@@ -2038,7 +2037,7 @@ indicate one standard deviation above and below the average time.}
 
 \paragraph{Smaller Counterexamples to Induction}{
 The \emph{BetterCTI} implementation exhibits consistently
-better performance than the \emph{Basic} implementation for examples
+better performance than \emph{Basic} for examples
 that require finding at least one CTI. In such cases,
 discovering CTI clauses with fewer literals leads, as expected, to a smaller average number of
 literals per clause (as seen in Figure \ref{eval:lits}), which suggests smaller SAT queries.
@@ -2269,21 +2268,21 @@ As a result, interfacing with different SAT solvers and implementing lazy
 abstraction-refinement remain as future work.
 
 Implementing interfaces with different SAT solvers may allow more examples to be solved efficiently.
-Aaron Bradley notes that the performance of the IC3 algorithm is considerably affected
-by the behavior of the SAT solver it uses \cite{bradley12}; even if each SAT query takes the same amount of
+Bradley notes that the performance of the IC3 algorithm is considerably affected
+by the behavior of the SAT solver used \cite{bradley12}; even if each SAT query takes the same amount of
 time, the algorithm's performance may still vary if the SAT solver behaves even slightly differently.
-Because the choice of SAT solver may affect which examples can be solved efficiently, allowing the model
-checker to use different SAT solvers may increase the number of examples that can be solved.
+Because the choice of SAT solver may affect which examples can be solved efficiently, allowing \emph{MC}
+to use different SAT solvers may increase the number of examples that can be solved.
 
 Abstraction-refinement is a technique used in verification to mitigate the effects
 of the state explosion problem. Abstraction removes irrelevant details of the model,
 and if the abstraction is found to be too coarse at some point during verification,
-refinement can add necessary details of the model back into the abstraction.
+refinement adds necessary details of the model back into the abstraction.
 Yakir Vizel, Orna Grumberg, and Sharon Shoham introduced a abstraction-refinement
 scheme that is compatible with the IC3 algorithm \cite{vizel12}. The implementation
 of this modified algorithm achieved significant speedups compared with the
-original IC3 algorithm implementation \verb,ic3,, and a variant
-of the model checker in Haskell that uses this abstraction-refinement scheme may 
+original IC3 implementation \verb,ic3,, and a variant
+of \emph{MC} that uses this abstraction-refinement scheme may 
 exhibit a similar improvement.}
 %The modified algorithm uses different
 %abstractions for the different approximated sets of states (i.e. frames). Upon
@@ -2350,14 +2349,14 @@ format header.
 The header can be truncated
 after the AND-gate count if all remaining counts are
 zero, making the new format
-backward compatible.
+backward-compatible.
 
 The ``bad state'' properties allow negated safety properties to be specified
 separately from outputs.
 The invariant constraints allow for the specification of properties that
 hold at all states up to and including the state where the ``bad state''
 holds.
-Justice and fairness constraints are not used by
+Justice properties and fairness constraints are not used by
 \emph{MC} and will not be explained further.
 
 Components are specified after the header in the same order that their
