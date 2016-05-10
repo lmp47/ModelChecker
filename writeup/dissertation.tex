@@ -117,10 +117,10 @@ does not contain material that has already been used to any substantial
 extent for a comparable purpose.
 
 \bigskip
-\leftline{Signed [signature]}
+\leftline{Signed}
 
 \medskip
-\leftline{Date [date]}
+\leftline{Date}
 
 \tableofcontents
 
@@ -310,8 +310,9 @@ All code for the project, with the exception of the C wrapper for the
 MiniSat interface (described in Section \ref{impl:minisat})
 is written in the purely functional
 programming language Haskell \cite{haskell}.
-Assuming knowledge of Standard ML, I briefly explain some features of the
-language that will make the rest of the report easier to follow.
+I briefly explain some features of the
+language that will make the rest of the report easier to follow. I assume
+knowledge of Standard ML.
 
 \paragraph{Functions}{
 Haskell functions are defined as a series of equations and
@@ -474,7 +475,7 @@ transition system representation, and IC3 algorithm implementation.
 \label{prep:tools}
 
 I used a variety of tools to employ standard software engineering practices, such
-as version control and testing, and to ease the development of
+as version control and testing, and ease the development of
 the project's code.
 
 \paragraph{Git}{
@@ -490,7 +491,7 @@ project, to include MiniSat within the project.
 
 \paragraph{Haddock}{
 The commonly-used Haddock \cite{haddock} documentation tool was used to generate documentation
-for the code. Haddock automatically generates documentation in
+for Haskell code. Haddock automatically generates documentation in
 several formats (e.g. HTML) from annotated Haskell code.
 %It is commonly
 %used to document Haskell code, being used for most packages available
@@ -578,9 +579,9 @@ Symbolic model checkers represent the underlying system as
 logical formulas that describe the behavior of the system as one-step transitions
 between states. %Propositional logic formulas define transition systems and states.
 
-Assuming basic knowledge of propositional logic,
 I give a brief review of concepts in logic before formally defining transition systems
 and explaining how propositional logic formulas represent states.
+I assume basic knowledge of propositional logic.
 
 \paragraph{Logic}{
 %A variable is a propositional symbol that can be assigned Boolean values.
@@ -638,7 +639,7 @@ An incomplete
 assignment $c$ specifies the set of cubes $\{a \in{\it FullAssignment}|c \subset a\}$,
 where {\it FullAssignment} is the set of complete assignments to variables in the
 transition system.
-More generally, any logical formula $b$ involving the variables in the transition
+More generally, any formula $b$ involving the variables in the transition
 system gives the set of states
 $\{a \in {\it FullAssignment} | a \wedge b~{\rm is~satisfiable}\}$.
 
@@ -662,7 +663,7 @@ $s_0$ is an $I$ state and $s_j \wedge T \Rightarrow s_{j + 1}$ for $1 \leq j < k
 
 I specified fourteen example hardware models using
 both the AIGER format and BLIF.
-Because specifying larger models in AIGER was cumbersome,
+Specifying larger models in AIGER was cumbersome, so
 I specified some models using BLIF and converted them to AIGER
 using the Aiger Utilities' \verb,bliftoaig, tool. Because one of
 the project's components is an AIGER parser, I describe the AIGER format
@@ -672,7 +673,7 @@ The AIGER format has several versions, each allowing hardware to be
 specified as
 And-Inverter Graphs with latch elements.
 % that provide single clock-tick delays.
-All circuits are modeled as a graph of nodes consisting only of
+Circuits are modeled as a graph of nodes consisting only of
 two-input AND gates, inverters, and latches, where the latches behave like D
 flip-flops and output the value of the current input at the next
 clock tick.
@@ -730,7 +731,8 @@ V M I L O A
 \end{verbatim}
 where
 \begin{itemize}
-\item \verb,V, specifies the format type, with \verb,aag,, specifying that the file is in the ASCII format and \verb,aig,, specifying that the file is in the binary format.
+\item \verb,V, specifies the format type of the file, with \verb,aag, indicating the ASCII format and \verb,aig,
+indicating the binary format.
 \item \verb,M, specifies the maximum index of a variable.
 \item \verb,L, specifies the number of latches.
 \item \verb,O, specifies the number of outputs.
@@ -750,7 +752,7 @@ The first index represents the positive literal for its corresponding variable n
 and the second represents the latch's next-state value.
 An AND gate
 is specified by the index representing the positive literal
-of its variable name and the two indices that specify its input values.
+of its variable name and the two indices specifying its input values.
 
 \begin{figure}[t]
 \centering
@@ -891,7 +893,7 @@ be added to the set of $F_k$ clauses.
 %while loop on line \ref{reconsec}.
 While the query
 $F_k \wedge \neg s \wedge T \Rightarrow s'$ is unsuccessful,
-the algorithm extracts a CTI cube and
+the algorithm extracts a CTI and
 calls {\it proveNegCTI} to show that the counterexample is
 inductive relative to frame $F_{j - 1}$ so that the negated
 counterexample can be added to frame $F_j$.
@@ -981,11 +983,11 @@ $F_i$: for a subclause $t = \neg s \setminus \{l\}$ obtained by dropping
 literal $l$ from $\neg s$, it checks that
 $I \Rightarrow t$ and $F_i \wedge t \wedge T \Rightarrow t'$ both hold.
 
-If both formulas hold, then the literal $l$ can be dropped from $\neg s$.
+If both formulas hold, then $l$ can be dropped from $\neg s$.
 If only $F_i \wedge t \wedge T \Rightarrow t'$ fails to hold, then
 expanding the set of states in $t$ by removing %some of the
 literals in $t$ could result in a clause that is inductive relative to $F_i$.
-If $I \Rightarrow t$ fails to hold, then removing any literals in $t$ to
+If $I \Rightarrow t$ fails to hold, then removing literals in $t$ to
 obtain a subclause $u \subset t$ would still result in the query $I \Rightarrow u$
 failing, since $u \Rightarrow t$ holds.
 
@@ -1026,10 +1028,10 @@ generalization \cite{hassan13}.
 \subsubsection{Counterexamples to Generalization}
 
 For a subclause $\neg c = s \setminus \{l\}$ of a clause $\neg s$ to be
-inductive relative to a frame $F_i$,
+inductive relative to a frame $F_i$, the implication
 $F_i \wedge T \wedge \neg c \Rightarrow \neg c'$ must hold.
 In the method of generalization described above,
-if the implication does not hold, then
+if it does not hold,
 $\neg s$ cannot be generalized to $\neg c$, and generalization
 proceeds without dropping $l$.
 
@@ -1037,7 +1039,7 @@ Similarly to why a consecution query at $F_k$ may fail,
 $F_k \wedge T \wedge c \Rightarrow c'$ might be unsatisfiable because
 $F_k$ is too loose an approximation. As with consecution queries, discovering a
 new clause that can be added to $F_k$ may allow queries that
-check for relative induction to succeed, and the discovery of this
+check for relative induction to succeed. The discovery of this
 clause can be directed by a counterexample extracted from the
 SAT solver after the query for $F_k \wedge T \wedge c \Rightarrow c'$.
 
@@ -1076,7 +1078,7 @@ frame $F_k$ allows $s$ to be generalized to $c$.
 \label{components}
 \end{figure}
 
-This chapter describes the implementation of the \emph{MC} model checkers.
+This chapter describes the implementation of \emph{MC}.
 The implementation can be broken up into four main components
 (see Figure \ref{components}): the AIGER parser
 (Section \ref{impl:aiger}), the
@@ -1164,7 +1166,7 @@ of the variable whose name is given by the \verb,Word, the constructor takes as 
 argument.
 Variable names are adjusted (by subtracting 1) so that they start at 0.
 For example, the AIGER index 3 is parsed to \verb,Neg 0,;
-the odd index 3 indicates that it is a negative literal of the variable 1;
+the odd index 3 specifies a negative literal of the variable 1;
 subtracting by 1 gives the new variable name 0.
 
 Latches and AND gates are represented by three-element \verb,[Lit],s. For latches,
