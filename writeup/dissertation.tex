@@ -223,7 +223,7 @@ and the IC3 algorithm.
 The IC3 (Incremental Construction of Inductive Clauses for Indubitable Correctness)
 algorithm is a state-of-the-art,
 SAT-based model-checking
-algorithm for proving safety properties (i.e. properties that must hold
+algorithm for proving safety properties (i.e., properties that must hold
 in all reachable states) of hardware \cite{bradley11}. This section outlines some
 merits of the IC3 algorithm; a description of IC3 follows in Section
 \ref{prep:ic3}.
@@ -237,7 +237,7 @@ since then, several variants of IC3 have been developed.
 %2015 paper
 
 The IC3 algorithm has advantages when compared to other model-checking
-algorithms (e.g. $k$-induction and BMC) that allow it to prove more
+algorithms (e.g., $k$-induction and BMC) that allow it to prove more
 properties more efficiently. Unlike $k$-induction, the IC3 algorithm
 discovers new invariants based on the safety property that it is trying to
 verify. As a result, these
@@ -249,12 +249,12 @@ of the transition relation at a time, leading to smaller,
 simpler SAT queries. As a result, IC3 requires less memory than BMC-based
 methods in practice \cite{bradley12}.
 
-%Mention other applications of the IC3 algorithm, e.g. to checking
+%Mention other applications of the IC3 algorithm. E.g., to checking
 %LTL properties and to software model checking.
 
 Though the IC3 algorithm was designed for model checking safety properties of hardware,
 it has been applied to model checking more
-elaborate properties expressing temporal constraints (e.g. LTL and CTL
+elaborate properties expressing temporal constraints (e.g., LTL and CTL
 properties) and model checking software
 \cite{bradley12,cimatti12}.
 Results suggest that more recent developments of software verification
@@ -427,7 +427,7 @@ as its analogue.
 A Haskell program consists of modules, which organize code.
 Modules (or selected functions from modules) can be imported into other
 modules, allowing library functions to be used. Modules can be referred
-to (e.g. in import statements) by names that incorporate where they are
+to (e.g., in import statements) by names that incorporate where they are
 stored in the directory structure. For example, the \verb,Model, module in file
 \verb,Model/Model.hs, can be referred to as \verb,Model.Model,.
 }
@@ -486,7 +486,7 @@ project, to include MiniSat within the project.
 \paragraph{Haddock}{
 The commonly-used Haddock \cite{haddock} documentation tool was used to generate documentation
 for Haskell code. Haddock automatically generates documentation in
-several formats (e.g. HTML) from annotated Haskell code.
+several formats (e.g., HTML) from annotated Haskell code.
 %It is commonly
 %used to document Haskell code, being used for most packages available
 %on the Haskell package database Hackage.
@@ -500,13 +500,13 @@ JUnit framework \cite{junit} for Java.
 
 \paragraph{Criterion}{
 Criterion \cite{criterion} is a library for benchmarking Haskell code.
-Criterion can output benchmarking results in any format (e.g. CSV) specified in the \verb,.tpl,
+Criterion can output benchmarking results in any format (e.g., CSV) specified in the \verb,.tpl,
 template format.}
 
 \paragraph{Cabal}{
 Cabal \cite{cabal} is the standard package and dependency management system for Haskell.
 A \verb,.cabal, file in the root directory of a project specifies
-information (e.g. version and dependencies) about the Cabal package.
+information (e.g., version and dependencies) about the Cabal package.
 The \verb,.cabal, file for this project uses the \verb,Test-Suite, and \verb,Benchmark,
 sections to respectively allow the HUnit test and the benchmarking
 program for the project to be run in a standard way using Cabal.
@@ -594,12 +594,6 @@ iff the the literals in $d$ are a subset of those in $c$.
 Similarly, $d$ is a \emph{subclause} of another clause $c$ (also
 denoted $d \subset c$) iff the literals in $d$ are a subset of those in $c$.}
 
-
-%A propositional formula is in \emph{conjunctive normal form} (CNF) iff it is a conjunction 
-%$\bigwedge_i D_i$ of disjunctions $D_i$ of literals (i.e. clauses). A set of clauses
-%can be interpreted as the CNF formula resulting from the conjunction
-%of the clauses. Any propositional formula can be converted to an equivalent CNF
-%form.}
 
 \paragraph{Transition Systems}{
 A \emph{transition system} is a tuple $(i,x,I,T)$ consisting of a set of input
@@ -812,7 +806,7 @@ for the queries that IC3 makes.
 %Describe how the IC3 algorithm works when trying to prove a model has a property
 %$P$.
 This section describes the basic IC3 algorithm and some of its extensions.
-Given a hardware model (i.e. a finite-state transition system $(i,x,I,T)$) and a
+Given a hardware model (i.e., a finite-state transition system $(i,x,I,T)$) and a
 safety property $P$, IC3 aims either to prove inductively that $P$ holds
 at all states reachable from the initial state or
 to find a reachable $\neg P$ state.
@@ -847,7 +841,7 @@ The pseudocode in Figure \ref{overview} gives an overview of the basic IC3 algor
 IC3 maintains a set of $k + 1$ frames $F_0,\ldots,F_k$.
 Each frame $F_i$ is a set of clauses whose conjunction represents an
 over-approximation of the set of states reachable by the transition
-system in at most $i$ steps from the initial state (e.g. $F_0 = I$).
+system in at most $i$ steps from the initial state (e.g., $F_0 = I$).
 The deepest frame $F_k$ in the set of frames is the \emph{frontier}.
 
 %Initiation query
@@ -855,7 +849,7 @@ The \emph{initiation query} $I \Rightarrow P$ (line \ref{initiation}) checks tha
 the property $P$ holds in the initial state $I$.
 %This query is run once at the start of
 %the algorithm for the desired property.
-If it fails (i.e. does not hold), then the algorithm terminates;
+If it fails (i.e., does not hold), then the algorithm terminates;
 a state in which $\neg P$ holds is reachable in 0 steps.
 If it succeeds, then the algorithm enters its main loop (line \ref{main}),
 which it only exits when it has determined whether or not the
@@ -1164,9 +1158,9 @@ subtracting by 1 gives the new variable name 0.
 
 Latches and AND gates are represented by three-element \verb,[Lit],s. For latches,
 \begin{itemize}
-\item the first element gives the latch's output (i.e. variable name)
+\item the first element gives the latch's output (i.e., variable name)
 as a positive literal,
-\item the second gives the latch's input (i.e. the next-state literal), and
+\item the second gives the latch's input (i.e., the next-state literal), and
 \item the final element gives the latch's initial state.
 \end{itemize}
 For example, the latch from Figure \ref{aagCircuit} represented by \verb,2 3, is parsed
@@ -1174,7 +1168,7 @@ to \verb.[Var 0, Neg 0, Boolean False]..
 
 For AND gates,
 \begin{itemize}
-\item the first element gives the AND gate's output (i.e. variable name)
+\item the first element gives the AND gate's output (i.e., variable name)
 as a positive literal, and
 \item the next two elements give the literals whose values are the gate's inputs.
 \end{itemize}
@@ -1415,7 +1409,7 @@ $a' \Leftrightarrow i_1' \wedge i_2'$. The next-state clauses are generated
 by priming the generated current-state clauses, so they satisfy
 $a' \Leftrightarrow i_1' \wedge i_2'$.
 
-If both inputs are Booleans (i.e. both use \verb,Parser.AigModel.Lit,'s \verb,Boolean,
+If both inputs are Booleans (i.e., both use \verb,Parser.AigModel.Lit,'s \verb,Boolean,
 constructor), then a singleton clause sufficiently describes the AND gate.
 If $i_1 \wedge i_2$ holds, then $\{a\}$ describes this constantly {\it True} AND gate.
 If not, then $\{\neg a\}$ describes this constantly {\it False} AND gate.
@@ -1610,7 +1604,7 @@ the variables in the \verb,Model,.
 
 \subsubsection{Basic}
 In \emph{Basic}, \verb,nextCTI, asks for a model
-(i.e. a set of literals representing a variable assignment)
+(i.e., a set of literals representing a variable assignment)
 for the satisfiable query $\neg P' \wedge F_k \wedge T$.
 The model's current-state literals then give a predecessor state (a state from which
 a $\neg P$ state can be reached in one step of the transition relation) for $\neg P$,
@@ -1679,7 +1673,7 @@ and updated \verb,Frame, \verb,f',.
 Finding the MIC of a clause is inefficient in practice
 \cite{griggio14};
 all implemented versions of generalization
-(i.e. all \verb,inductiveGeneralization, function implementations) approximate the MIC with a call to
+(i.e., all \verb,inductiveGeneralization, function implementations) approximate the MIC with a call to
 \verb,generalize,.
 
 \subsubsection{Simple}
@@ -1693,7 +1687,7 @@ After reaching a parameterizable number of failed attempts at dropping a literal
 having attempted dropping all the literals, the
 \verb,inductiveGeneralization, function implementing this approximation
 returns the clause that results from appending \verb,needed, to the remaining
-literals in the clause (i.e. literals that \verb,generalize, has not tried to drop).
+literals in the clause (i.e., literals that \verb,generalize, has not tried to drop).
 
 This corresponds to the algorithm described in Figure \ref{mic}, but where {\it down}
 checks for the relative inductiveness of the subclause without attempting to expand it.
@@ -1749,7 +1743,7 @@ Unlike other variants, which use recursive calls that explicitly specify which p
 to prove at which depth, the \emph{PriorityQueue} implementation keeps track of what
 to prove next with a priority queue of proof obligations.
 This variant makes
-use of some of the same functions (e.g. \verb,negCTI, and \verb,push,) as the others but
+use of some of the same functions (e.g., \verb,negCTI, and \verb,push,) as the others but
 differs in its overall structure.
 I provide a definition of proof obligations, an
 overview of the structure of the \emph{PriorityQueue} variant,
@@ -1808,7 +1802,8 @@ no distinction between the safety property $P$ and other properties
 needing to be proved.
 The priority queue maintains all the information about which properties need to be
 proven, and the main recursive {\it fulfillObligations} function (line \ref{pqueuestr:fulfillObs}) attempts to prove
-whichever property has the highest priority in the queue, i.e. fulfill the proof obligation with the highest priority (this proof obligation
+whichever property has the highest priority in the queue, i.e.,
+fulfill the proof obligation with the highest priority (this proof obligation
 is returned by ${\it dequeue(queue)}$ in line \ref{dequeue}).
 
 Whenever a proof obligation $(s,i)$ is fulfilled the proof obligation
@@ -1964,7 +1959,7 @@ HWMCC'13 & 548 & 5623524\\
 \label{eval:output}
 
 All \emph{MC} implementations print the string \verb,True, if the safety
-property holds (i.e. if a bad state is not reachable from the initial state) and
+property holds (i.e., if a bad state is not reachable from the initial state) and
 \verb,False, if it does not. The implementations also provide debug output that provides
 statistics on solving if a nonzero number of frames was required to solve the example.
 In particular, all variants' outputs give the number of frames, the average number of
@@ -2129,7 +2124,7 @@ literals per clause (which suggests larger queries and worse performance).
 %the implementations.
 
 The performance of the \emph{MC} variants is, for all except very small examples
-(e.g. \verb,simple1.aag,),
+(e.g., \verb,simple1.aag,),
 worse compared to the performance of \emph{IC3ref}
 with or without generalization involving CTGs enabled (as seen in Figure \ref{eval:time}).
 
@@ -2164,7 +2159,7 @@ from $s$.
 \label{eval:ic3ref:minisat}
 The reference implementation is more closely coupled to MiniSat's implementation. Because both the reference
 implementation and MiniSat are written in C++, the reference implementation can and does call MiniSat functions
-and instantiate MiniSat objects (e.g. \verb,SimpSolver,s) directly.
+and instantiate MiniSat objects (e.g., \verb,SimpSolver,s) directly.
 In contrast, the Haskell implementations
 must interact with MiniSat through an interface and suffer from associated overheads, such as those from
 marshalling data from the data structures returned from the C wrapper for MiniSat into the corresponding
@@ -2172,7 +2167,7 @@ Haskell data structures.
 
 The reference implementation also uses empirical results to improve the performance of MiniSat queries.
 For example, in the \verb,stateOf, function, which extracts a model from a failed consecution query
-(to e.g. find a CTI cube), the set of literals passed to the MiniSat \verb,Solver, are reordered according
+(to, e.g., find a CTI cube), the set of literals passed to the MiniSat \verb,Solver, are reordered according
 to an order found to be the best choice empirically \cite{minisat}.
 
 \subsubsection{Overall Structure}
@@ -2284,8 +2279,6 @@ of this modified algorithm achieved significant speedups compared with the
 original IC3 implementation \verb,ic3,, and a variant
 of \emph{MC} that uses this abstraction-refinement scheme may 
 exhibit a similar improvement.}
-%The modified algorithm uses different
-%abstractions for the different approximated sets of states (i.e. frames). Upon
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % the bibliography
