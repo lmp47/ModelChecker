@@ -801,15 +801,15 @@ If the \verb,Solver,'s clauses form some CNF query $C$ and
 \verb,solve(assumps), is called, where \verb,assumps, represents some set $A$ of literals,
 then the SAT query is $C \wedge \bigwedge_{l \in A} l$.
 
-If there has been at least one query made of the \verb,Solver, and the last query was
+If at least one query has been made of the \verb,Solver, and the last query was
 satisfiable, the \verb,Solver,'s \verb,model, variable points to a set of variable assignments
 for that SAT query.
-If there has been at least one query made of the \verb,Solver, and the last query was
+If at least one query has been made of the \verb,Solver, and the last query was
 unsatisfiable, the \verb,Solver,'s \verb,conflict, variable points to a set of literals that
 contains the assumed literals that caused the query to be unsatisfiable.
 
 \emph{MC} uses instances of \verb,SimpSolver,, a subclass of the \verb,Solver, class
-that does simplification and returns full assignments, providing more useful results
+that performs simplification and returns full assignments, providing more useful results
 for the queries that IC3 makes.
 
 \section{The IC3 Algorithm}
@@ -862,32 +862,30 @@ the property $P$ holds in the initial state $I$.
 %the algorithm for the desired property.
 If it fails (i.e. does not hold), then the algorithm terminates;
 a state in which $\neg P$ holds is reachable in 0 steps.
-If it succeeds, then the algorithm enters its main loop (line \ref{main}).
-
-%The main loop of the algorithm is the while loop beginning on line \ref{main}.
-The algorithm only exits its main loop when it has determined whether or not the
+If it succeeds, then the algorithm enters its main loop (line \ref{main}),
+which it only exits when it has determined whether or not the
 safety property holds at all reachable states in the model.
 
 %Consecution query
 The \emph{consecution query} $F_k \wedge T \Rightarrow P'$ (line \ref{consecution})
-checks whether the property $P$ holds in the next
-frame. If it does, then IC3 creates a new
+checks whether property $P$ holds in the next
+frame. If it does, IC3 creates a new
 frontier frame $F_{k + 1}$ (line \ref{create}).
-%Describe what happens when a consecution query fails
 
+%Describe what happens when a consecution query fails
 If a consecution query $F_k \wedge T \Rightarrow P'$ fails, then
 there is an $F_k$ state $s_k$ and a $\neg P'$ state $s_{k + 1}$ with $T(i,s_k,s_{k + 1})$.
 The state $s_k$ is called a \emph{counterexample to induction} (CTI).
-The algorithm then aims to refine the approximation $F_k$ of the set of states
-reachable in at most $k$ steps by showing that all states that are
+The algorithm then attempts to refine the approximation $F_k$ of the set of states
+reachable in at most $k$ steps by showing that all states
 reachable in at most $k$ steps are $\neg s_k$ states.
 
 The call to {\it nextCTI} (line \ref{CTI}) finds the CTI
 state $s_k$. When passed parameters $s = s_k$ and $j = k$,
 the call to {\it proveNegCTI} (line \ref{negCTI})
-attempts to prove that $\neg s$ is inductive relative to $F_{k - 1}$,
-in which case all $F_k$ states are necessarily $\neg s$ states, so $\neg s$ can
-be added to the set of $F_k$ clauses.
+attempts to prove that $\neg s_k$ is inductive relative to $F_{k - 1}$,
+in which case all $F_k$ states are necessarily $\neg s_k$ states, so $\neg s_k$ can
+be added to $F_k$.
 
 %The {\it proveNegCTI} algorithm works similarly to the
 %while loop on line \ref{reconsec}.
@@ -900,7 +898,7 @@ counterexample can be added to frame $F_j$.
 If the shallowest possible depth $j = 0$ is reached, then
 {\it proveNegCTI} fails and returns {\it False}.
 
-The {\it proveNegCTI} pseudocode in Figure \ref{proveNegCTI}
+The {\it proveNegCTI} pseudocode (Figure \ref{proveNegCTI})
 does not explicitly check for $I \Rightarrow
 \neg s$ because if
 $I \Rightarrow \neg s$ does not hold, then eventually ${\it proveNegCTI}$
@@ -958,13 +956,13 @@ frame $F_i$ and adding the clause $\neg s$ to frame $F_{i + 1}$, the state
 $s$ is eliminated from $F_{i + 1}$. An improvement can be made by generalizing
 the single state $s$ to a set of several states $c$ and treating
 $c$ as the CTI. If $\neg c$ is successfully proven to be relatively inductive
-to $F_i$, then adding it to frame $F_{i + 1}$ eliminates several states (i.e.,
-all $c$ states) at once rather than only $s$. Because the cube $c$
+to $F_i$, then adding it to frame $F_{i + 1}$ eliminates
+all $c$ states rather than only $s$. Because the cube $c$
 is chosen so that $\neg c \Rightarrow \neg s$, at least one CTI state
 has been removed from $F_{i + 1}$, and because $c$ contains several states,
 it is possible that several CTIs may have been removed from $F_{i + 1}$
-by adding the clause $\neg c$ to it. The process of finding such a cube $c$
-is referred to as \emph{generalization}, and the best such $c$ is the
+by adding the clause $\neg c$ to it. Finding such a cube $c$
+is called \emph{generalization}, and the best such $c$ is the
 one such the $\neg c$ is the minimal inductive subclause for $F_i$ and $\neg s$.
 
 \subsection{Minimal Inductive Subclauses}
@@ -1022,8 +1020,8 @@ passed by reference.}
 \label{mic}
 \end{algorithm}
 
-Considering counterexamples to generalization can result in more effective
-generalization \cite{hassan13}.
+%Considering counterexamples to generalization can result in more effective
+%generalization \cite{hassan13}.
 
 \subsubsection{Counterexamples to Generalization}
 
@@ -1044,7 +1042,7 @@ clause can be directed by a counterexample extracted from the
 SAT solver after the query for $F_k \wedge T \wedge c \Rightarrow c'$.
 
 This counterexample is called a \emph{counterexample
-to generalization} (CTG), and proving the negated CTG to be true at
+to generalization} (CTG), and proving that the negated CTG holds at
 frame $F_k$ allows $s$ to be generalized to $c$.
 
 
@@ -1223,7 +1221,7 @@ extern "C" int addMinisatClause (Minisat::SimpSolver* solver,
 }
 \end{lstlisting}
 
-The FFI is then used to provide a wrapper function that calls
+The FFI provides a wrapper function that calls
 the C function:
 \begin{lstlisting}
 foreign import ccall safe "addMinisatClause"
@@ -1456,7 +1454,7 @@ The \verb,Solver, may also contain the \verb,transition, clauses for the hardwar
 I implemented several variants of the IC3 algorithm:
 \emph{Basic}; \emph{BetterCTI}, which improves upon \emph{Basic} by discovering
 smaller CTIs; and \emph{BetterPropagation}, which improves upon \emph{BetterCTI}
-by considering subsumed clauses
+by considering subsumed clauses.
 I also implemented a variant that uses priority queues (\emph{PriorityQueue})
 and a variant that uses CTGs to improve generalization (\emph{CTG}).
 
@@ -1549,8 +1547,8 @@ from model $M$.}
 \label{recstr}
 \end{algorithm}
 
-Because the implementation \emph{MC} is in Haskell, the
-structure of the algorithm has been modified to be recursive rather than iterative.
+Because the implementation is in Haskell, the
+algorithm's structure has been modified to be recursive rather than iterative.
 The {\it prove} function (line \ref{recstr:prove}) makes an initiation query
 (line \ref{recstr:init}), and, if it succeeds, calls
 {\it prove'} (line \ref{recstr:prove'call}),
@@ -1619,19 +1617,20 @@ the variables in the \verb,Model,.
 
 \subsubsection{Basic}
 In \emph{Basic}, \verb,nextCTI, asks for a model
-(i.e. the set of true literals) for the satisfiable query $\neg P' \wedge F_k \wedge T$.
+(i.e. a set of literals representing a variable assignment)
+for the satisfiable query $\neg P' \wedge F_k \wedge T$.
 The model's current-state literals then give a predecessor state (a state from which
 a $\neg P$ state can be reached in one step of the transition relation) for $\neg P$,
 i.e., the current-state literals give the CTI.
 The function that called \verb,nextCTI, extracts these current-state literals from the model.
 
 \subsubsection{Smaller Counterexamples to Induction}
-In all implementations of the algorithm other than {\it Basic},
+In all variants other than {\it Basic},
 \verb,nextCTI, again asks for a model $m$
 for the satisfiable query $\neg P' \wedge F_k \wedge T$. The only literals in $m$ that
-must be included in the CTI are those current-state literals that result in
+must be included in the CTI are current-state literals that result in
 the unsatisfiability of $m \wedge P' \wedge T$. That is, the current-state literals of any
-subcube $q$ of $m$ for which $q \wedge P' \wedge T$ holds is also a valid CTI, with
+subcube $q$ of $m$ for which $q \wedge P' \wedge T$ holds is also a CTI, with
 the state $m$ being in the set represented by $q$.
 
 The conflict vector obtained from SAT-solver query $P' \wedge T$ and assumption
@@ -1653,20 +1652,19 @@ rely on the implementation of the
 The {\it Basic} and {\it BetterCTI} implementations' \verb,push, function,
 when invoked as \verb,push f model f', tries to push all clauses in \verb,Frame, \verb,f,
 that are not in \verb,Frame, \verb,f', to \verb,f', and
-results in a pair containing a \verb,Bool, indicating whether a fixed point has been reached
+results in a pair containing a \verb,Bool, indicating if a fixed point has been reached
 (i.e., all clauses could be pushed) and a \verb,Frame, with all the clauses in \verb,f', and all
 the clauses in \verb,f, that could be pushed to \verb,f',.
-For each clause in \verb,f, that is not in \verb,f',, the \verb,consecution, function is called to
+For each clause in \verb,f, that is not in \verb,f',, \verb,push, uses the \verb,consecution, function to
 see if the clause is inductive relative to the frame \verb,f,. If it is, then
-the clause can be added to \verb,f',, and if not, the
-function must have \verb,False, as the first element in the pair it returns.
+the clause can be added to \verb,f',. If not, the
+function must return a pair with \verb,False, as its first element, since a fixed point was not found.
 
 \subsubsection{Subsumed clauses}
 The \emph{Basic} and \emph{BetterCTI} implementations' \verb,push, function avoids unnecessary
 consecution queries by only considering clauses in \verb,f, that are not in \verb,f',.
-Further consecution queries may be eliminated by removing subsumed clauses in \verb,f,,
-which is done by all variants other than {\it Basic}
-and \emph{BetterCTI}.
+All other variants eliminate
+further consecution queries by removing subsumed clauses in \verb,f,,
 
 A clause $c$ \emph{subsumes} a clause $c'$ if $c$ is a subclause of
 $c'$. In this case, $c \Rightarrow c'$ holds, so $c'$ can be removed from the set of clauses. By
@@ -1675,7 +1673,7 @@ can avoid making the consecution queries that arise from attempts to push those 
 
 Versions of \verb,push, that consider subsumed clauses include a call to the function
 \verb,removeSubsumed, when acquiring the list of clauses to attempt to push.
-The \verb,removeSubsumed, function takes a list of clauses and removes all clauses that are
+The \verb,removeSubsumed, function takes a list of clauses and removes all clauses
 subsumed by other clauses in the list.
 The \verb,push, function replaces the frame
 \verb,f, with a version of \verb,f, without subsumed clauses
@@ -1693,17 +1691,17 @@ all implemented versions of generalization
 
 \subsubsection{Simple}
 The simplest method for approximating a MIC (see Figure \ref{inductiveGeneralization})
-attempts to drop each literal in turn and checks
+tries to drop each literal in turn and checks
 that the resulting clause $c$ satisfies formulas $I \Rightarrow c$ and
 $F_k \wedge c \wedge T \Rightarrow c'$ as the original clause did.
 %If the resulting clause satisfies both queries
 If it does, the literal can be successfully dropped.
 Otherwise, the literal is added to a list \verb,needed, of necessary literals.
-After a parameterizable number of failed attempts at dropping a literal from the clause or after
+After reaching a parameterizable number of failed attempts at dropping a literal from the clause or after
 having attempted dropping all the literals, the
 \verb,inductiveGeneralization, function implementing this approximation
 returns the clause that results from appending \verb,needed, to the remaining
-literals in the clause (i.e. literals that the \verb,generalize, has not tried to drop).
+literals in the clause (i.e. literals that \verb,generalize, has not tried to drop).
 
 This corresponds to the algorithm described in Figure \ref{mic}, but where {\it down}
 checks for the relative inductiveness of the subclause without attempting to expand it.
@@ -1978,8 +1976,8 @@ property holds (i.e. if a bad state is not reachable from the initial state) and
 \verb,False, if it does not. The implementations also provide debug output that provides
 statistics on solving if a nonzero number of frames was required to solve the example.
 In particular, all variants' outputs give the number of frames, the average number of
-literals per clause, the number of CTIs found, and the total number of queries made. The {\it CTG} implementation also reports the number of CTGs found. A sample output
-for the {\it CTG} implementation on example \verb,counters3.aig,
+literals per clause, the number of CTIs found, and the total number of queries made. The {\it CTG} implementation also reports the number of CTGs found. Sample output
+for {\it CTG} on example \verb,counters3.aig,
 is given in Figure \ref{sampleoutput}.
 
 \begin{figure}[t]
@@ -2052,12 +2050,11 @@ that require finding at least one CTI. In such cases,
 discovering CTI clauses with fewer literals leads, as expected, to a smaller average number of
 literals per clause (as seen in Figure \ref{eval:lits}), which suggests smaller SAT queries.
 
-As mentioned previously, because the \emph{BetterCTI} implementation uses
+As mentioned previously, because \emph{BetterCTI} uses
 CTIs that encompass sets of states rather than single states, when a negated CTI is proven at a depth
 $k$, several states have been shown to be unreachable within $k$ steps of the transition relation
 from the initial state. Dealing with a set of CTI states rather than a single CTI state
-at a time allows
-the \emph{BetterCTI} implementation to deal with fewer CTIs in some cases,
+at a time allows \emph{BetterCTI} to deal with fewer CTIs in some cases,
 %(because the CTI sets of states
 %may encompass several CTI states)
 leading to fewer queries.
@@ -2070,22 +2067,22 @@ For example, the \emph{Basic} variant finds 59 CTIs and makes 414 queries to sol
 The improvement of finding more general CTIs enabled the \emph{BetterCTI} variant of the implementation
 (and all other implementations that include finding smaller CTIs) to
 solve six more examples (\verb,counterp0.aig,, \verb,counterp0neg.aig,, \verb,pdtvishuffman7.aig,, 
-\verb,pdtvismiim3.aig,, \verb,6s318r.aig,, \verb,srg5ptimo.aig,) than the \emph{Basic} version without
+\verb,pdtvismiim3.aig,, \verb,6s318r.aig,, \verb,srg5ptimo.aig,) than \emph{Basic} without
 timing out.}
 
 \paragraph{Propagation}{
 Removing subsumed clauses (see Section \ref{impl:propagation}) also results in better performance on several
 examples. While the performance impact that the improvement has is less drastic than the improvement of
-\emph{BetterCTI} over \emph{Basic}, the \emph{BetterPropagation} version performs
+\emph{BetterCTI} over \emph{Basic}, \emph{BetterPropagation} performs
 considerably better
-than the \emph{BetterCTI} version on the \verb,counters3.aig, and \verb,counters4.aig, examples in
+than \emph{BetterCTI} on the \verb,counters3.aig, and \verb,counters4.aig, examples in
 particular (as seen in Figure \ref{eval:time}), where the adjustments allow the algorithm to prove the safety properties using fewer
 queries (as seen in Figure \ref{eval:queries}). Even for examples such as \verb,pdtvismiim3.aig,, where \emph{BetterPropagation} makes more
 queries than \emph{BetterCTI}, \emph{BetterPropagation} manages to perform better than \emph{BetterCTI}
 because it makes smaller queries.}
 
 \paragraph{Counterexamples to Generalization}{
-The \emph{CTG} variation that deals with CTGs (see Section \ref{impl:generalization})
+The \emph{CTG} variant (see Section \ref{impl:generalization})
 performs worse than the \emph{BetterPropagation} version
 on examples, even in cases where \emph{CTG} reduces the average number of frames per clause (see Figures \ref{eval:time}, \ref{eval:lits}).
 The most likely cause is that the examples used are too small for the performance benefit of
@@ -2157,8 +2154,8 @@ The reference implementation keeps track of which variables are inputs, latches,
 Each \emph{IC3ref} \verb,Model, maintains both the primed and current values for inputs and latches and keeps a
 table to memoize the values of AND gates.
 
-As mentioned earlier, when the consecution query $F_k \wedge T \Rightarrow P'$ fails, this corresponds
-to the CNF query $F_k \wedge T \wedge \neg P'$ being satisfiable.
+As mentioned earlier, when the consecution query $F_k \wedge T \Rightarrow P'$ fails, 
+the CNF query $F_k \wedge T \wedge \neg P'$ is satisfiable.
 While a full satisfying assignment
 $s$ gives a CTI state, it is better to use a set of states $c \subset s$ as a CTI cube, so that several
 CTI states can be eliminated at once.
