@@ -16,12 +16,13 @@ import qualified Parser.AigModel as Aig
 import Data.Word
 
 -- | A transition system with safety property type. Contains number
--- of variables, initial states, transition relation and safety property
+-- of variables, initial states, transition relation and safety property.
 data Model = Model { vars :: Word
                    , initial :: [Clause]
                    , transition :: [Clause]
                    , safe :: Lit } deriving Show
 data Lit = Var Word | Neg Word | Var' Word | Neg' Word deriving (Show, Eq, Ord)
+-- | Represents a clause.
 type Clause = [Lit]
 
 
@@ -33,26 +34,26 @@ toLit _           = error "Cannot get Lit from Boolean"
 toNegLit :: Aig.Lit -> Lit
 toNegLit = neg.toLit
 
--- | Negate a literal
+-- | Negates a literal.
 neg :: Lit -> Lit
 neg (Var l)  = Neg  l
 neg (Neg l)  = Var  l
 neg (Var' l) = Neg' l
 neg (Neg' l) = Var' l
 
--- | Convert an unprimed literal into a primed one
+-- | Converts an unprimed literal into a primed one.
 prime :: Lit -> Lit
 prime (Var l) = Var' l
 prime (Neg l) = Neg' l
 prime lit     = error ("Cannot prime a prime: " ++ show lit)
 
--- | Convert a primed literal into an unprimed one
+-- | Converts a primed literal into an unprimed one.
 unprime :: Lit -> Lit
 unprime (Var' l) = Var l
 unprime (Neg' l) = Neg l
 unprime lit      = error ("Cannot unprime an unprimed literal: " ++ show lit) 
 
--- | Split a list of literals into unprimed and primed lists of literals
+-- | Splits a list of literals into unprimed and primed lists of literals.
 currentNext :: [Lit] -> ([Lit], [Lit])
 currentNext ls = cn ls [] []
   where
@@ -63,7 +64,7 @@ currentNext ls = cn ls [] []
       Neg _ -> cn ls (l:curr) next
       _     -> cn ls curr (l:next)
 
--- | Turn 'Parser.AigModel.Model's into transition systems with a safety property
+-- | Turns 'Parser.AigModel.Model's into transition systems with a safety property.
 toModel :: Aig.Model -> Model
 toModel m =
   Model { vars = vars

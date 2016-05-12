@@ -41,7 +41,7 @@ import Data.Word
 import Data.Bits
 
 -- | Accepts a filepath for an AIGER (@aig@ or @aag@) file and
--- returns the corresponding 'AigModel.Model'.
+-- returns the corresponding 'Parser.AigModel.Model'.
 getModelFromFile :: String -> IO Model
 getModelFromFile s = do
                      aiger <- BS.readFile s
