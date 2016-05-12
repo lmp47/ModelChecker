@@ -46,14 +46,14 @@ readR x = atomicModifyIORef' x read'
 data Frame = Frame { solver  :: Solver
                    , clauses :: [Clause] }
 
--- | Gives the result of adding to the provided 'Frame' a
+-- | Gives the result of adding to the provided frame a
 -- 'Model.Model.Clause'.
 addClauseToFrame :: Frame -> Clause -> Frame
 addClauseToFrame f c = Frame { solver = addClause (solver f) c
                              , clauses = if c `notElem` clauses f then c:clauses f else clauses f }
 
 -- | Given a number of variables and a list of 'Model.Model.Clause's,
--- creates a 'Frame' that can contain that many variables,
+-- creates a frame that can contain that many variables,
 -- initialized to contain the clauses in the list.
 getFrame :: Word -> [Clause] -> Frame
 getFrame vars clauses = Frame { solver = addClauses (addVars newSolver vars) clauses
