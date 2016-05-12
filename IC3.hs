@@ -51,24 +51,30 @@ readR x = atomicModifyIORef' x read'
 data Frame = Frame { solver  :: Solver
                    , clauses :: [Clause] }
 
+-- | Gives the result of adding to the provided frame a
+-- 'Model.Model.Clause'.
 addClauseToFrame :: Frame -> Clause -> Frame
 addClauseToFrame f c = Frame { solver = addClause (solver f) c
                              , clauses = if c `notElem` clauses f then c:clauses f else clauses f }
 
+-- | Given a number of variables and a list of 'Model.Model.Clause's,
+-- creates a frame that can contain that many variables,
+-- initialized to contain the clauses in the list.
 getFrame :: Word -> [Clause] -> Frame
 getFrame vars clauses = Frame { solver = addClauses (addVars newSolver vars) clauses
                               , clauses = clauses }
 
--- | Keep transitions out of the clauses list
+-- | Adds transitions to 'Minisat.Minisat.Solver's in frames
+-- but keeps transitions out of the clauses list.
 addTransitionToFrame :: Frame -> Model -> Frame
 addTransitionToFrame f' model = Frame { solver = addClauses (solver f') (transition model)
                                       , clauses = clauses f' }
 
--- | Get frame with given clauses and given model's transition relation and variables
+-- | Gets frame with given clauses and given model's transition relation and variables.
 getFrameWith :: [Clause] -> Model -> Frame
 getFrameWith clauses model = addTransitionToFrame (getFrame (vars model) clauses) model
 
--- | Given a model and a safety property, checks if the model satisfies the property
+-- | Given a model and a safety property, checks if the model satisfies the property.
 prove :: Model -> Lit -> Bool
 prove model prop =
   unsafePerformIO (zero ctiCount >> zero ctgCount >> zero queryCount >> return (
@@ -87,13 +93,13 @@ consecution :: Frame -> Clause -> Bool
 consecution f prop = unsafePerformIO (increment queryCount >> return (
   not (satisfiable (solveWithAssumps (solver f) (map (prime.neg) prop))) ))
 
--- | Print the clauses per frame in the provided list of frames
+-- | Prints the clauses per frame in the provided list of frames.
 printFrames :: [Frame] -> IO ()
 printFrames [f] = print (clauses f)
 printFrames (f:fs) = print ("Frame " ++ show (length fs)) >> print (show $ clauses f) >> printFrames fs
 printFrames [] = print "No frames in list."
 
--- | Calculate the average number of literals per clause in each frame
+-- | Calculates the average number of literals per clause in each frame.
 calcAvgLitsPerCls :: [Frame] -> Double
 calcAvgLitsPerCls frames =
   sum (map calcAvgPerFrame frames) / fromIntegral (length frames)
@@ -102,7 +108,7 @@ calcAvgLitsPerCls frames =
     let cls = clauses f in
       fromIntegral (sum (map length cls)) / fromIntegral (length cls)
 
--- | Trace stat output
+-- | Trace stat output.
 stats :: [Frame] -> IORef Int -> IORef Int -> IORef Int -> a -> a
 stats frames cc gc qc = trace ("Number of frames: " ++ show (length frames) ++
                             "\nAverage number of literals/clause (not counting transition relation): "
@@ -112,7 +118,7 @@ stats frames cc gc qc = trace ("Number of frames: " ++ show (length frames) ++
                             "\nNumber of queries: " ++ show (unsafePerformIO $ readR qc) )
 
 -- | Consecution phase of the algorithm (calls subsequent consecution queries for
--- other frames)
+-- other frames).
 prove' :: Model -> Lit -> Frame -> [Frame] -> Bool
 prove' m prop frame acc =
   if consecution frame [prop]
@@ -141,7 +147,7 @@ prove' m prop frame acc =
                           Nothing -> Nothing
     propagate frames = Just frames
 
--- | Try to prove CTI unreachable at current depth given the current frame, CTI, previous frames, property, and later frames
+-- | Tries to prove CTI unreachable at current depth given the current frame, CTI, previous frames, property, and later frames
 proveNegCTI :: Model -> Frame -> [Lit] -> [Frame] -> Clause -> [Frame] -> (Bool, Frame, [Frame], [Frame])
 proveNegCTI m f _ [] p fs = (False, f, [], fs)
 proveNegCTI m f cti acc p fs =
@@ -176,7 +182,7 @@ pushNegCTG negCTG acc (f:fs) m =
       then pushNegCTG negCTG (acc ++ [f]) fs m
       else (acc, f:fs)
 
--- | Find an approximate minimal subclause of the provided clause that satisfies initiation
+-- | Finds an approximate minimal subclause of the provided clause that satisfies initiation.
 -- and consecution and adds to the last frame
 inductiveGeneralization :: Clause -> [Frame] -> Frame -> [Frame] -> Model -> Word -> Word -> (Clause, [Frame], [Frame])
 inductiveGeneralization clause bfs fc afs m w w' = generalize clause bfs fc afs [] w w'
@@ -216,7 +222,7 @@ inductiveGeneralization clause bfs fc afs m w w' = generalize clause bfs fc afs 
                       else down (ls `intersect` map neg s) (f0:fs) (fc:afs) ( r - 1 )
                 _ -> error "Could not find predecessor when finding MIC"
                    
--- | Finds a CTI given a safety property clause
+-- | Finds a CTI given a safety property clause.
 nextCTI :: Frame -> Clause -> Model -> [Lit]
 nextCTI frame prop m =
   case unsafePerformIO (increment ctiCount >> return res) of
@@ -251,7 +257,7 @@ removeSubsumed cs =
         else remove cls cs (c:acc)
     remove _ _ acc = acc
 
--- | Push clauses to next frame
+-- | Pushes clauses to next frame.
 push :: Frame -> Model -> Frame -> (Frame, Bool, Frame)
 push f model f' =
   pusher (cleaned \\ clauses f') True f'
